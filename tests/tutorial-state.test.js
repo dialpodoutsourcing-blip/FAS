@@ -1,0 +1,10 @@
+const assert=require('node:assert/strict');
+const {createTourState,TOUR_STEPS}=require('../assets/js/tutorial.js');
+assert.equal(TOUR_STEPS.length,23,'tour includes ADAM and FAS introductions');
+assert.equal(TOUR_STEPS[0].id,'meet-adam');assert.match(TOUR_STEPS[0].speech,/I'm ADAM/);assert.match(TOUR_STEPS[0].speech,/confidently launch/);
+assert.equal(TOUR_STEPS[1].id,'welcome');assert.match(TOUR_STEPS[1].speech,/Fitness Authority System/);assert.match(TOUR_STEPS[1].speech,/Seven specialist agents/);assert.match(TOUR_STEPS[1].speech,/Vault/);
+const talk=TOUR_STEPS.find(s=>s.action==='selectTalkMode');assert.ok(talk);assert.equal(talk.target,'input-modes');
+assert.deepEqual([...new Set(TOUR_STEPS.map(s=>s.chapter))],['dashboard','adam','vault','launch']);
+const ids=new Set();for(const step of TOUR_STEPS){for(const key of ['id','chapter','title','label','description','speech','view','target','arrow']){assert.equal(typeof step[key],'string');assert.ok(step[key].trim(),`${step.id} has ${key}`);}assert.ok(!ids.has(step.id));ids.add(step.id);assert.ok(Object.isFrozen(step));}assert.ok(Object.isFrozen(TOUR_STEPS));
+const state=createTourState();assert.equal(state.index(),0);state.back();assert.equal(state.index(),0);state.goTo(999);assert.equal(state.index(),22);state.next();assert.equal(state.index(),22);state.reset();assert.equal(state.current().id,'meet-adam');
+console.log('Tutorial state checks passed.');

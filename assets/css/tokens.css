@@ -1,0 +1,60 @@
+/* ==========================================================
+   FAS · ADAM member area · Brand tokens
+   Source: Winfuel Authority Ventures Final Branding board
+   ========================================================== */
+:root {
+  /* Brand palette (from the brand board) */
+  --simple-black: #080806;
+  --crispy-ivory: #E5D9CB;
+  --leather: #AB7633;
+  --white: #FFFFFF;
+  --gold-gradient: linear-gradient(100deg, #C8B48A 0%, #F7F0E3 30%, #D9C7A3 58%, #AB7633 100%);
+
+  /* UI shades built from the palette */
+  --bg: var(--simple-black);
+  --surface: #100F0C;
+  --surface-2: #161511;
+  --surface-3: #1D1B16;
+  --line: #25231E;
+  --line-2: #34312A;
+  --gold: #D3B57C;            /* mid-tone of the gold gradient, for text and icons */
+  --gold-soft: rgba(211,181,124,.12);
+  --gold-line: rgba(211,181,124,.42);
+
+  --text: #F4EFE8;
+  --text-2: #BDB4A8;
+  --muted: #8F877B;
+
+  /* Status (always paired with an icon and a word) */
+  --ok: #D3B57C;              /* complete = gold */
+  --ok-bg: rgba(211,181,124,.14);
+  --info: #E5D9CB;            /* check this = ivory */
+  --info-bg: rgba(229,217,203,.10);
+  --alert: #E08A6E;           /* missing / blocked */
+  --alert-bg: rgba(224,138,110,.13);
+  --locked: #7C756B;
+  --locked-bg: #17160F;
+
+  /* The 7 specialists: one jewel accent each, framed by the gold system */
+  --m-anchor: #D9BC7E;        /* gold */
+  --m-extract: #BFD0DF;       /* platinum */
+  --m-radar: #5FB597;         /* emerald */
+  --m-forge: #E08A5A;         /* copper */
+  --m-architect: #7A9FDB;     /* sapphire */
+  --m-voice: #AE93D6;         /* amethyst */
+  --m-launch: #D9768A;        /* ruby */
+
+  /* Type (brand board) */
+  --font-heading: 'Bebas Neue', 'Oswald', 'Arial Narrow', sans-serif;
+  --font-sub: 'Montserrat', 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'Inter', 'Segoe UI', system-ui, sans-serif;
+
+  /* Shape and size */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --tap: 48px;
+  --tap-lg: 58px;
+  --sidebar-w: 252px;
+  --gutter: clamp(20px, 4vw, 52px);
+}
