@@ -5,7 +5,7 @@
   var peer=null,channel=null,audio=null,ready=false,active=false,cancelPending=false,muted=false,destroyed=false,currentText='',queuedText='',generation=0;
   function status(value){if(!destroyed)onStatus(value);}
   function send(value){if(channel&&channel.readyState==='open')channel.send(JSON.stringify(value));}
-  function request(text){if(!text||muted||destroyed)return;var token=++generation;active=true;cancelPending=false;send({type:'response.create',response:{instructions:'Speak only this tutorial narration. Preserve its meaning exactly. Use warm, natural, conversational pacing. Do not add facts, greetings, questions, or closing remarks. Narration: '+text,metadata:{tutorial_token:String(token)}}});}
+  function request(text){if(!text||muted||destroyed)return;var token=++generation;active=true;cancelPending=false;if(audio&&audio.play)audio.play().catch(function(){status('Narration unavailable — captions are still available');});send({type:'response.create',response:{instructions:'Speak only this tutorial narration. Preserve its meaning exactly. Use warm, natural, conversational pacing. Do not add facts, greetings, questions, or closing remarks. Narration: '+text,metadata:{tutorial_token:String(token)}}});}
   function cancel(){generation+=1;queuedText='';if(active&&!cancelPending){send({type:'response.cancel'});cancelPending=true;}if(audio&&audio.pause)audio.pause();}
   async function connect(){
    status('Connecting ADAM…');
