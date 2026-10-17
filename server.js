@@ -14,6 +14,7 @@ function createApp({fetchImpl=globalThis.fetch,apiKey=process.env.OPENAI_API_KEY
   try{for(const model of ['gpt-realtime-2.1','gpt-realtime-1.5']){const form=new FormData();form.set('sdp',sdp);form.set('session',JSON.stringify({...buildRealtimeSessionConfig(),model:model}));const upstream=await fetchImpl(REALTIME_URL,{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'OpenAI-Safety-Identifier':'local-fas-tutorial'},body:form});if(upstream.ok){const answer=await upstream.text();if(answer.trim())return res.type('application/sdp').send(answer);return res.status(502).json({error:'Narration unavailable.'});}if(![502,503,504].includes(upstream.status))return res.status(502).json({error:'Narration unavailable.'});}return res.status(502).json({error:'Narration unavailable.'});}catch(_){return res.status(502).json({error:'Narration unavailable.'});}
  });
  app.use((error,req,res,next)=>{if(error&&error.type==='entity.too.large')return res.status(400).json({error:'A valid audio SDP offer is required.'});return next(error);});
+ app.get('/',(req,res)=>res.redirect('/index.html'));
  app.use(express.static(path.resolve(__dirname),{setHeaders:function(res,filePath){if(filePath.endsWith('.html'))res.setHeader('Cache-Control','no-store');}}));return app;
 }
 const app=createApp();
