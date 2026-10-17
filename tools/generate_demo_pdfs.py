@@ -25,7 +25,7 @@ GREEN = colors.HexColor("#5FB597")
 
 DOCS = [
   dict(key="anchor", agent="ANCHOR", title="Trusted Expert Blueprint", accent="#D9BC7E",
-    thesis="Alex Morgan helps ambitious professionals over 40 rebuild durable strength and energy without punishing workouts or all-or-nothing plans.",
+    thesis="Mike Gonzalez helps ambitious professionals over 40 rebuild durable strength and energy without punishing workouts or all-or-nothing plans.",
     summary="A focused authority position for a strength and longevity coach. The blueprint defines who the business serves, the result it can credibly promise, the proof behind the position, and the claims it deliberately avoids.",
     metrics=[("PRIMARY BUYER", "40-55 leaders"), ("CORE RESULT", "Durable strength"), ("POSITION", "Evidence-led")],
     rows=[("Authority arena", "Strength and longevity coaching for time-poor professionals"), ("Credible promise", "Build strength, energy, and training consistency in 12 weeks"), ("Evidence base", "12 years coaching; 180+ client programs; documented adherence data"), ("Boundary", "No injury treatment, diagnosis, or guaranteed body-composition result")],
@@ -142,7 +142,7 @@ def cover(doc):
     metrics = [[Paragraph(f'<font color="#8C6A2E">{a}</font><br/><font size="15"><b>{b}</b></font>', styles["Bodyx"]) for a,b in doc["metrics"]]]
     mt = Table(metrics, colWidths=[56*mm]*3, rowHeights=[25*mm])
     mt.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,-1),colors.HexColor("#F2EDE3")),("BOX",(0,0),(-1,-1),.5,accent),("INNERGRID",(0,0),(-1,-1),.4,colors.HexColor("#D4CBBB")),("VALIGN",(0,0),(-1,-1),"MIDDLE"),("LEFTPADDING",(0,0),(-1,-1),10)]))
-    return [Spacer(1, 25*mm), Paragraph(doc["agent"], styles["Agent"]), Spacer(1, 4*mm), Paragraph(doc["title"], styles["DocTitle"]), Spacer(1, 5*mm), Paragraph(doc["thesis"], styles["Deck"]), Spacer(1, 18*mm), mt, Spacer(1, 18*mm), Paragraph("PREPARED FOR", styles["H2x"]), Paragraph("Alex Morgan  /  Forty Forward Coaching", styles["Bodyx"]), Spacer(1, 4*mm), Paragraph("Version 1.0  /  Approved demo  /  17 October 2026", styles["Smallx"]), PageBreak()]
+    return [Spacer(1, 25*mm), Paragraph(doc["agent"], styles["Agent"]), Spacer(1, 4*mm), Paragraph(doc["title"], styles["DocTitle"]), Spacer(1, 5*mm), Paragraph(doc["thesis"], styles["Deck"]), Spacer(1, 18*mm), mt, Spacer(1, 18*mm), Paragraph("PREPARED FOR", styles["H2x"]), Paragraph("Mike Gonzalez  /  Freedom Builderz Coaching", styles["Bodyx"]), Spacer(1, 4*mm), Paragraph("Version 1.0  /  Approved demo  /  17 October 2026", styles["Smallx"]), PageBreak()]
 
 def body_pages(doc):
     accent = colors.HexColor(doc["accent"])

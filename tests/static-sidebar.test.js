@@ -11,8 +11,8 @@ for (const page of pages) {
   assert.ok(sidebar, `${page} has the shared sidebar`);
   assert.equal((sidebar.match(/class="[^"]*\bnav-link\b[^"]*"[^>]*>[\s\S]*?<svg/g) || []).length, 5, `${page} keeps all five navigation icons`);
   assert.equal((sidebar.match(/<use href="#em-(?:anchor|extract|radar|forge|architect|voice|launch)"/g) || []).length, 7, `${page} keeps all seven specialist emblems`);
-  assert.match(sidebar, /class="user__name"[^>]*>Alex Morgan</, `${page} shows the expert name`);
-  assert.match(sidebar, /class="user__sub">Forty Forward Coaching</, `${page} shows the business name`);
+  assert.match(sidebar, /class="user__name"[^>]*>Mike Gonzalez</, `${page} shows the expert name`);
+  assert.match(sidebar, /class="user__sub">Freedom Builderz Coaching</, `${page} shows the business name`);
   assert.match(sidebar, /class="user__settings"[^>]*aria-label="Open settings"/, `${page} includes an accessible settings control`);
   assert.match(sidebar, /user__settings[\s\S]*?<svg[^>]*>[\s\S]*?<path[^>]+M12 15\.5/s, `${page} settings control uses the shared gear icon`);
 }
