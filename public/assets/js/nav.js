@@ -82,6 +82,12 @@
   });
 
   /* 5. Premium transition shown whenever a specialist is opened. */
+  function stopLoaderNarration(loader) {
+    if (!loader || !loader._narrator) return;
+    loader._narrator.destroy();
+    loader._narrator = null;
+  }
+
   function createAgentLoader() {
     var loader = document.createElement('div');
     loader.className = 'agent-loader';
@@ -112,9 +118,11 @@
     var start = loader.querySelector('[data-loader-start]');
     var back = loader.querySelector('[data-loader-back]');
     start.addEventListener('click', function () {
+      stopLoaderNarration(loader);
       if (loader._destination) window.location.assign(loader._destination.href);
     });
     back.addEventListener('click', function () {
+      stopLoaderNarration(loader);
       loader._runId = (loader._runId || 0) + 1;
       loader.hidden = true;
       loader.classList.remove('is-ready');
@@ -137,6 +145,7 @@
       var agent = window.FAS.agents.get(destination.searchParams.get('agent'));
       event.preventDefault();
       if (!agentLoader) agentLoader = createAgentLoader();
+      stopLoaderNarration(agentLoader);
       var icon = agentLoader.querySelector('[data-loader-icon]');
       var title = agentLoader.querySelector('[data-loader-title]');
       var role = agentLoader.querySelector('[data-loader-role]');
@@ -171,6 +180,14 @@
       agentLoader.hidden = false;
       document.body.classList.add('agent-loading');
       document.body.setAttribute('aria-busy', 'true');
+      if (window.FAS.createRealtimeNarrator && agent.introduction) {
+        var narrator = window.FAS.createRealtimeNarrator({
+          fetchImpl: window.fetch.bind(window)
+        });
+        agentLoader._narrator = narrator;
+        narrator.connect().catch(function () {});
+        narrator.speak(agent.introduction);
+      }
       var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       var duration = reduced ? 450 : 1200;
       var started = performance.now();

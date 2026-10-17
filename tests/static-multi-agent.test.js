@@ -91,6 +91,10 @@ assert.match(nav, /WHAT THIS AGENT DOES/, 'loader explains the specialist role')
 assert.match(nav, /WHAT IT CREATES FOR YOU/, 'loader previews concrete deliverables');
 assert.match(nav, /agent\.briefing/, 'loader uses the detailed specialist briefing');
 assert.match(nav, /agent\.generates/, 'loader lists agent-specific deliverables');
+assert.match(nav, /FAS\.createRealtimeNarrator/, 'loader uses the Cedar narrator');
+assert.match(nav, /narrator\.speak\(agent\.introduction\)/, 'loader narrates the selected specialist introduction');
+assert.match(nav, /stopLoaderNarration\(loader\)[\s\S]*window\.location\.assign/s, 'starting the specialist stops its loader narration');
+assert.match(nav, /back\.addEventListener\('click'[\s\S]*stopLoaderNarration\(loader\)/s, 'closing the loader stops its narration');
 assert.match(nav, /START ['"]?\s*\+\s*agent\.name/, 'loader labels its start action for the selected agent');
 assert.match(nav, /SPECIALIST READY/, 'loader has a persistent ready state');
 assert.match(nav, /start\.addEventListener\('click'[\s\S]*window\.location\.assign\(loader\._destination\.href\)/s, 'navigation only occurs from the Start action');
