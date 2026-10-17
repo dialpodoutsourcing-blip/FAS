@@ -1,0 +1,3 @@
+const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');const {execFileSync}=require('node:child_process');
+const root=path.resolve(__dirname,'..');
+test('build prepares every browser entry and asset for Vercel static hosting',()=>{execFileSync(process.execPath,['tools/prepare-vercel.js'],{cwd:root});for(const file of ['index.html','chat.html','review.html','vault.html','launch.html','assets/js/tutorial.js','assets/js/realtime-narrator.js','assets/css/styles.css'])assert.ok(fs.existsSync(path.join(root,'public',file)),`public/${file} exists`);assert.match(fs.readFileSync(path.join(root,'public/index.html'),'utf8'),/<title>Dashboard · FAS<\/title>/);});

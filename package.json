@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "build": "node tools/prepare-vercel.js",
     "start": "node server.js",
     "test": "node --test tests/*.test.js"
   },

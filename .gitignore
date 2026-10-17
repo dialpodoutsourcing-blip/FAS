@@ -4,3 +4,4 @@ node_modules/
 *.wav
 *.pcm
 .superpowers/
+public/
