@@ -20,6 +20,10 @@ assert.match(chat, /data-voice-ambient[^>]+aria-hidden="true"/, 'voice panel inc
 assert.match(chat, /data-voice-hud[^>]+aria-hidden="true"/, 'voice panel includes a decorative processing HUD');
 assert.match(chat, /data-voice-hud-secondary[^>]+aria-hidden="true"/, 'voice panel includes a decorative right-side analysis HUD');
 assert.match(chat, /VOICE ANALYSIS/, 'right-side HUD identifies its analysis role');
+assert.match(chat, /data-voice-status[^>]+aria-live="polite"/, 'voice mode exposes an accessible live status');
+assert.match(chat, /data-voice-recovery[^>]+hidden/, 'voice mode includes a hidden recovery panel');
+assert.match(chat, /data-voice-retry[^>]*>Retry voice</, 'voice recovery can retry the connection');
+assert.match(chat, /data-voice-type-instead[^>]*>Type instead</, 'voice recovery preserves the Type fallback');
 [
   'Uses your real experience and evidence',
   'Separates your facts from ADAM’s suggestions',
@@ -32,8 +36,12 @@ assert.match(chat, /cannot guarantee business results/, 'trust drawer includes a
 
 const agentsScript = chat.indexOf('<script src="assets/js/agents.js"></script>');
 const adamScript = chat.indexOf('<script src="assets/js/adam.js"></script>');
+const coordinatorScript = chat.indexOf('<script src="assets/js/interview-coordinator.js"></script>');
+const interviewerScript = chat.indexOf('<script src="assets/js/realtime-interviewer.js"></script>');
 assert.ok(agentsScript >= 0, 'chat loads the specialist registry');
 assert.ok(adamScript > agentsScript, 'specialist registry loads before the chat controller');
+assert.ok(coordinatorScript > agentsScript && coordinatorScript < adamScript, 'durable coordinator loads before the chat controller');
+assert.ok(interviewerScript > coordinatorScript && interviewerScript < adamScript, 'Realtime interviewer loads before the chat controller');
 
 [
   'data-agent-name', 'data-agent-title', 'data-agent-step', 'data-agent-chip',
@@ -129,6 +137,8 @@ assert.match(styles, /@media \(max-height:\s*760px\)[\s\S]*#panel-voice \.vorb/s
 assert.match(styles, /\.wave span\s*\{[^}]*background:\s*var\(--gold\)[^}]*animation:\s*waveTicker/s, 'voice ticker is always gold and animated');
 assert.match(styles, /@keyframes waveTicker/, 'voice ticker has an organic bar animation');
 assert.match(styles, /\.chat-page #panel-voice \.voice__controls\s*\{[^}]*gap:\s*10px/s, 'voice controls stay in a compact centered group');
+assert.match(styles, /\.voice__recovery\s*\{[^}]*display:\s*flex/s, 'voice recovery actions are visibly grouped');
+assert.match(styles, /\.voice__recovery\[hidden\]\s*\{[^}]*display:\s*none/s, 'voice recovery remains hidden until needed');
 assert.match(styles, /\.wave span\s*\{[^}]*width:\s*6px/s, 'voice ticker bars are twice as thick');
 assert.match(styles, /\.chat-page #panel-voice\s*\{[^}]*gap:\s*10px/s, 'voice question, controls, and transcript share a consistent rhythm');
 assert.match(styles, /\.agent-loader\s*\{[^}]*position:\s*fixed[^}]*z-index:\s*1000/s, 'agent loader covers the interface');

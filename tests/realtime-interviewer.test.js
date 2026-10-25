@@ -142,6 +142,32 @@ test('speech interruption, explicit pause/resume, and background lifecycle contr
   assert.equal(h.track.enabled, false);
 });
 
+test('application copy can still be spoken while microphone input is paused', async () => {
+  const { createRealtimeInterviewer } = load();
+  const h = harness();
+  const controller = createRealtimeInterviewer(h.options);
+  await controller.start(); h.peer.channel.readyState = 'open'; h.peer.channel.emit('open');
+  controller.pause();
+  assert.equal(h.track.enabled, false);
+  controller.speak('Your interview is complete.');
+  assert.equal(h.peer.channel.sent.at(-1).type, 'response.create');
+  assert.match(h.peer.channel.sent.at(-1).response.instructions, /interview is complete/);
+  assert.equal(h.track.enabled, false);
+});
+
+test('speech playback failure is reported without disabling the Type fallback', async () => {
+  const { createRealtimeInterviewer } = load();
+  const h = harness();
+  h.audio.play = function () { this.plays += 1; return this.plays > 1 ? Promise.reject(new Error('autoplay private detail')) : Promise.resolve(); };
+  const controller = createRealtimeInterviewer(h.options);
+  await controller.start(); h.peer.channel.readyState = 'open'; h.peer.channel.emit('open');
+  controller.speak('A question');
+  await Promise.resolve(); await Promise.resolve();
+  assert.equal(h.errors.length, 1);
+  assert.equal(h.errors[0].code, 'voice_playback_failed');
+  assert.doesNotMatch(h.errors[0].message, /private detail/);
+});
+
 test('stop preserves partial text, never finalizes it, waits for finalized work, and cleans up once', async () => {
   const { createRealtimeInterviewer } = load();
   let release;

@@ -8,7 +8,7 @@ const root=path.resolve(__dirname,'..');
 
 test('build prepares every browser entry and asset for Vercel static hosting',()=>{
   execFileSync(process.execPath,['tools/prepare-vercel.js'],{cwd:root});
-  for(const file of ['index.html','account.html','chat.html','review.html','vault.html','launch.html','assets/js/runtime-config.js','assets/js/auth-client.js','assets/js/account-context.js','assets/js/auth-guard.js','assets/js/local-import.js','assets/js/account.js','assets/js/tutorial.js','assets/js/realtime-narrator.js','assets/css/styles.css'])assert.ok(fs.existsSync(path.join(root,'public',file)),`public/${file} exists`);
+  for(const file of ['index.html','account.html','chat.html','review.html','vault.html','launch.html','assets/js/runtime-config.js','assets/js/auth-client.js','assets/js/account-context.js','assets/js/auth-guard.js','assets/js/local-import.js','assets/js/account.js','assets/js/tutorial.js','assets/js/realtime-narrator.js','assets/js/realtime-interviewer.js','assets/js/interview-coordinator.js','assets/css/styles.css'])assert.ok(fs.existsSync(path.join(root,'public',file)),`public/${file} exists`);
   assert.match(fs.readFileSync(path.join(root,'public/index.html'),'utf8'),/<title>Dashboard · FAS<\/title>/);
 });
 

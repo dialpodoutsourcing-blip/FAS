@@ -69,18 +69,18 @@
       return true;
     }
 
-    function playRemote() {
+    function playRemote(notifyFailure) {
       if (!audio || !audio.play) return;
       var playing;
       try { playing = audio.play(); } catch (_) { return; }
-      if (playing && playing.catch) playing.catch(function () {});
+      if (playing && playing.catch) playing.catch(function () { if (notifyFailure) onError(safeError('ADAM audio could not play. Continue with Type or retry voice.', 'voice_playback_failed')); });
     }
 
     function sendSpeech(text) {
-      if (!text || paused || stopped) return false;
+      if (!text || stopped) return false;
       if (!ready) { queuedSpeech = text; return false; }
       responseActive = true;
-      playRemote();
+      playRemote(true);
       return send({
         type: 'response.create',
         response: {
@@ -140,12 +140,12 @@
       }
       if (data.type === 'response.output_audio.delta' || data.type === 'response.audio.delta') {
         responseActive = true;
-        if (!paused && !stopped) setState('speaking');
+        if (!stopped) setState('speaking');
         return;
       }
       if (data.type === 'response.done') {
         responseActive = false;
-        if (!paused && !stopped) setState('listening');
+        if (!stopped) setState(paused ? 'paused' : 'listening');
         return;
       }
       if (data.type === 'error') {
@@ -179,7 +179,7 @@
       }
       audio = makeAudio();
       audio.autoplay = true;
-      playRemote();
+      playRemote(false);
       setState('connecting');
       bindLifecycle();
       startPromise = Promise.resolve().then(function () {
@@ -189,12 +189,12 @@
         peer = makePeer();
         var tracks = stream.getAudioTracks ? stream.getAudioTracks() : [];
         tracks.forEach(function (track) { peer.addTransceiver(track, { direction: 'sendrecv', streams: [stream] }); });
-        peer.ontrack = function (event) { if (!audio) return; audio.srcObject = event.streams && event.streams[0] || null; playRemote(); };
+        peer.ontrack = function (event) { if (!audio) return; audio.srcObject = event.streams && event.streams[0] || null; playRemote(true); };
         channel = peer.createDataChannel('oai-events');
         channel.addEventListener('open', function () {
           ready = true;
           if (!paused && !stopped) setState('listening');
-          if (queuedSpeech && !paused) { var text = queuedSpeech; queuedSpeech = ''; sendSpeech(text); }
+          if (queuedSpeech) { var text = queuedSpeech; queuedSpeech = ''; sendSpeech(text); }
         });
         channel.addEventListener('message', handleMessage);
         return peer.createOffer();
@@ -240,7 +240,7 @@
       if (stopped || !localStream) return false;
       paused = false;
       localStream.getAudioTracks().forEach(function (track) { track.enabled = true; });
-      playRemote();
+      playRemote(true);
       setState(ready ? 'listening' : 'connecting');
       return true;
     }

@@ -43,15 +43,20 @@
     if (tab) tab.click();
   };
   $$('[data-goto-voice]').forEach(function (b) { b.addEventListener('click', function () { FAS.mode('voice'); }); });
-  $$('[data-goto-text]').forEach(function (b) { b.addEventListener('click', function () { FAS.mode('text'); }); });
+  $$('[data-goto-text]').forEach(function (b) { b.addEventListener('click', function () { switchToTyping(); }); });
   if (window.location.hash === '#voice') FAS.mode('voice');
 
   /* ---------------- ORB ---------------- */
   var LABELS = {
     idle: 'Tap the mic and start talking',
+    connecting: 'Connecting securely…',
     listening: 'Listening...',
     thinking: 'Thinking...',
-    speaking: 'ADAM is talking'
+    speaking: 'ADAM is talking',
+    paused: 'Voice paused',
+    stopped: 'Voice session ended',
+    error: 'Voice needs attention',
+    unsupported: 'Use Type on this browser'
   };
 
   $$('.wave span').forEach(function (bar) {
@@ -86,16 +91,13 @@
   var micBtn = $('[data-voice-mic]');
   if (micBtn) {
     micBtn.addEventListener('click', function () {
-      var listening = FAS.orb.state !== 'listening';
-      FAS.orb.setState(listening ? 'listening' : 'idle');
-      emit('fas:mic', { listening: listening });
+      handleVoiceMicClick();
     });
   }
   var endBtn = $('[data-voice-end]');
   if (endBtn) {
     endBtn.addEventListener('click', function () {
-      FAS.orb.setState('idle');
-      emit('fas:voice-end');
+      endVoiceInterview();
     });
   }
   $$('[data-orb-preview]').forEach(function (b) {
@@ -271,6 +273,10 @@
   var completionAnnounced = false;
   var blueprintPromise = null;
   var conversationHistory = [];
+  var voiceInterviewer = null;
+  var voiceStart = null;
+  var voiceTurnPromise = null;
+  var voiceOrientationSpoken = false;
   var turnSequence = 0;
   function createTurnId(source){turnSequence+=1;return(source||'type')+'-'+Date.now()+'-'+turnSequence;}
   function initializeInterviewCoordinator(){
@@ -306,9 +312,173 @@
       if(!interview.currentQuestion()&&!hasArtifact){var restoredStatus=$('[data-answer-status]'),restoredButton=form&&form.querySelector('[type="submit"]');if(interview.completion().complete){announceCompletion();if(restoredStatus)restoredStatus.textContent='Generating your blueprint…';generateBlueprint(getCompletionUrl(),restoredStatus).catch(function(){artifactRetryPending=true;if(form)form.removeAttribute('aria-busy');if(restoredStatus)restoredStatus.textContent='Your answers are saved, but the blueprint could not be prepared. Retry blueprint.';if(restoredButton){restoredButton.disabled=false;restoredButton.textContent='Retry blueprint';}});}else{artifactRetryPending=true;if(restoredButton)restoredButton.textContent='Retry blueprint';if(restoredStatus)restoredStatus.textContent='Your answers are saved. Retry blueprint generation.';}}
     }).catch(function(){if(FAS.interview){interview=FAS.interview.create({agent:FAS.agent.current});initializeInterviewCoordinator();renderCurrentQuestion(interview.currentQuestion());}});
   }
-  (FAS.authReady||Promise.resolve({mode:'local'})).then(initializePersistence);
+  var persistenceReady=(FAS.authReady||Promise.resolve({mode:'local'})).then(initializePersistence);
 
   function apiFetch(url,init){var config=window.FAS_CONFIG||{};if(!config.configured||!FAS.auth||!FAS.auth.requireSession)return fetch(url,init);return FAS.auth.requireSession().then(function(session){var next=Object.assign({},init||{}, {headers:Object.assign({},init&&init.headers||{},{Authorization:'Bearer '+session.accessToken})});return fetch(url,next);});}
+
+  function setVoiceStatus(message,showRecovery){
+    var status=$('[data-voice-status]'),recovery=$('[data-voice-recovery]');
+    if(status)status.textContent=message||'';
+    if(recovery)recovery.hidden=!showRecovery;
+  }
+
+  function getVoiceAccessToken(){
+    var config=window.FAS_CONFIG||{};
+    if(!config.configured||!FAS.auth||!FAS.auth.requireSession)return Promise.resolve('');
+    return FAS.auth.requireSession().then(function(session){return session.accessToken;});
+  }
+
+  function voiceStateChanged(state){
+    if(LABELS[state])FAS.orb.setState(state);
+    var copy={connecting:'Connecting your private voice session…',listening:'Listening. Answer naturally when you are ready.',thinking:'Saving your answer and preparing the next question…',speaking:'ADAM is responding. You can interrupt at any time.',paused:'Voice is paused. Press the mic to resume.',stopped:'Voice session ended. Continue with Type whenever you like.',error:'The voice connection needs attention.',unsupported:'Voice is unavailable in this browser. Type mode is still ready.'};
+    if(copy[state])setVoiceStatus(copy[state],state==='error'||state==='unsupported');
+  }
+
+  function voiceFailed(error){
+    var message=error&&error.code==='voice_unsupported'?'Voice is not supported by this browser. Continue with Type.':'Microphone access or the voice connection failed. Check browser permission, then Retry voice or use Type instead.';
+    setVoiceStatus(message,true);
+  }
+
+  function buildVoiceInterviewer(){
+    if(!FAS.createRealtimeInterviewer)return null;
+    return FAS.createRealtimeInterviewer({
+      getAccessToken:getVoiceAccessToken,
+      onState:voiceStateChanged,
+      onPartialTranscript:function(partial){FAS.voice.setTranscript(partial.text);},
+      onFinalTranscript:handleVoiceTurn,
+      onError:voiceFailed
+    });
+  }
+
+  function startVoiceInterview(){
+    var recovery=$('[data-voice-recovery]');if(recovery)recovery.hidden=true;
+    if(!voiceInterviewer)voiceInterviewer=buildVoiceInterviewer();
+    if(!voiceInterviewer){voiceFailed({code:'voice_unsupported'});return Promise.reject(new Error('Voice unsupported'));}
+    if(voiceInterviewer.state()==='paused'){voiceInterviewer.resume();return Promise.resolve(true);}
+    if(voiceStart)return voiceStart;
+    voiceStart=voiceInterviewer.start();
+    Promise.all([voiceStart,persistenceReady]).then(function(){
+      if(!interview||!interview.currentQuestion())throw new Error('Interview is not ready');
+      if(voiceOrientationSpoken)return;
+      voiceOrientationSpoken=true;
+      var orientation='You are in hands-free interview mode. Take your time. You can say repeat the question, pause, switch to typing, or end. ';
+      var exactQuestion=interview.currentQuestion().question;
+      voiceInterviewer.speak(orientation+exactQuestion);
+      setVoiceStatus('Hands-free interview started. ADAM will listen after the question.',false);
+    }).catch(function(){voiceFailed({code:'voice_connection_failed'});});
+    emit('fas:mic',{listening:true});
+    return voiceStart;
+  }
+
+  function classifyVoiceCommand(text){
+    var value=String(text||'').toLowerCase().replace(/[^a-z\s]/g,' ').replace(/\s+/g,' ').trim();
+    if(/^(repeat|repeat the question|say that again|repeat that)$/.test(value))return'repeat';
+    if(/^(pause|pause interview|pause the interview|stop listening)$/.test(value))return'pause';
+    if(/^(switch to typing|switch to type|type instead|use typing)$/.test(value))return'switch_to_type';
+    if(/^(end|end interview|end the interview|stop interview|finish voice)$/.test(value))return'end';
+    return null;
+  }
+
+  function handleVoiceCommand(command){
+    if(!voiceInterviewer)return Promise.resolve();
+    if(command==='repeat'){
+      var question=interview&&interview.currentQuestion();
+      if(question)voiceInterviewer.speak(question.question);
+      setVoiceStatus('Repeating the current question.',false);
+    }else if(command==='pause'){
+      voiceInterviewer.pause();setVoiceStatus('Voice is paused. Press the mic to resume.',false);
+    }else if(command==='switch_to_type'){
+      switchToTyping();
+    }else if(command==='end'){
+      return endVoiceInterview();
+    }
+    return Promise.resolve();
+  }
+
+  function handleVoiceTurn(turn){
+    var command=classifyVoiceCommand(turn.text);
+    if(command)return handleVoiceCommand(command);
+    FAS.voice.setTranscript(turn.text);
+    if(!interviewCoordinator){voiceFailed({code:'voice_not_ready'});return Promise.resolve();}
+    FAS.chat.addMessage({role:'user',text:turn.text,tag:'YOU'});
+    conversationHistory.push({role:'user',content:turn.text});
+    FAS.orb.setState('thinking');
+    setVoiceStatus('Saving your spoken answer…',false);
+    var answerSaved=false,status=$('[data-answer-status]'),completionUrl=getCompletionUrl();
+    var work=interviewCoordinator.submit({text:turn.text,source:'talk',turnId:turn.turnId}).then(function(result){
+      answerSaved=true;
+      if(status)status.textContent='Answer saved.';
+      emit('fas:answer-saved',{answer:result.saved});emit('fas:checkpoint',{checkpoint:result.checkpoint});
+      if(result.nextQuestion){
+        FAS.chat.addMessage({role:'agent',text:result.message});
+        renderCurrentQuestion({question:result.nextQuestion},true);
+        setVoiceStatus('Answer saved. ADAM is continuing the interview.',false);
+        voiceInterviewer.speak(result.message);
+      }
+      if(result.summary)FAS.chat.addMessage({role:'note',text:'Checkpoint saved · Review recent answers anytime in History.',tag:'CHECKPOINT',variant:'checkpoint'});
+      if(result.completion.gaps.length)emit('fas:interview-gap',{gaps:result.completion.gaps});
+      if(result.completion.complete){
+        var completionMessage=voiceCompletionCopy();
+        announceCompletion();
+        voiceInterviewer.pause();
+        voiceInterviewer.speak(completionMessage);
+        if(status)status.textContent='Generating your blueprint…';
+        setVoiceStatus('Interview complete. Your blueprint is being prepared…',false);
+        return generateBlueprint(completionUrl,status);
+      }
+      return result;
+    }).catch(function(){
+      if(!answerSaved){
+        if(status)status.textContent='Save failed. Your spoken answer has not been stored.';
+        if(input&&!input.value)input.value=turn.text;
+        setVoiceStatus('Your spoken answer could not be saved. It is waiting in Type so you can retry safely.',true);
+      }else{
+        artifactRetryPending=true;
+        if(status)status.textContent='Your answers are saved, but the blueprint could not be prepared. Retry blueprint.';
+        setVoiceStatus('Your interview is safely saved. Blueprint generation needs another try.',true);
+      }
+    });
+    var tracked=work.finally(function(){if(voiceTurnPromise===tracked)voiceTurnPromise=null;});
+    voiceTurnPromise=tracked;
+    return tracked;
+  }
+
+  function switchToTyping(){
+    if(voiceInterviewer){
+      var draft=voiceInterviewer.partialTranscript();
+      voiceInterviewer.pause();
+      if(draft&&input&&!input.value)input.value=draft;
+    }
+    FAS.mode('text');
+    if(input)input.focus();
+    setVoiceStatus('Voice paused. Your unfinished words are available in Type.',false);
+  }
+
+  function endVoiceInterview(){
+    emit('fas:voice-end');
+    if(!voiceInterviewer){FAS.orb.setState('stopped');return Promise.resolve();}
+    setVoiceStatus('Ending voice safely after any answer finishes saving…',false);
+    return voiceInterviewer.stop({waitFor:voiceTurnPromise}).then(function(){FAS.orb.setState('stopped');});
+  }
+
+  function handleVoiceMicClick(){
+    if(!voiceInterviewer)return startVoiceInterview();
+    var state=voiceInterviewer.state();
+    if(state==='paused')return voiceInterviewer.resume();
+    if(state==='error'||state==='unsupported'||state==='stopped')return retryVoiceInterview();
+    if(state==='listening'||state==='thinking'||state==='speaking'){voiceInterviewer.pause();return;}
+    if(state==='idle')return startVoiceInterview();
+  }
+
+  function retryVoiceInterview(){
+    var previous=voiceInterviewer;
+    voiceInterviewer=null;voiceStart=null;voiceOrientationSpoken=false;
+    var stopped=previous?previous.stop({waitFor:voiceTurnPromise}):Promise.resolve();
+    return stopped.then(startVoiceInterview);
+  }
+
+  var voiceRetry=$('[data-voice-retry]');if(voiceRetry)voiceRetry.addEventListener('click',retryVoiceInterview);
+  var voiceTypeInstead=$('[data-voice-type-instead]');if(voiceTypeInstead)voiceTypeInstead.addEventListener('click',switchToTyping);
 
   function closeDrawers() {
     $$('[data-chat-history-drawer], [data-chat-saved-drawer], [data-chat-trust-drawer]').forEach(function (drawer) { drawer.hidden = true; });
@@ -412,7 +582,8 @@
     return apiFetch('/api/artifact-synthesis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agentKey:'anchor',answers:answers})}).then(function(response){if(!response.ok)throw new Error('Synthesis unavailable');return response.json();}).then(function(payload){return FAS.artifacts.applySynthesis(artifact,payload.sections);}).catch(function(){return artifact;});
   }
 
-  function announceCompletion(){if(completionAnnounced)return;completionAnnounced=true;var label=FAS.agent.current.key==='anchor'?'Trusted Expert Blueprint':FAS.agent.current.title;FAS.chat.addMessage({role:'agent',tag:'ADAM',variant:'completion',text:'Great—you’ve finished '+FAS.agent.current.name+'. Your answers are saved. I’m generating your '+label+' now. Next, you’ll review it and choose your PDF design.'});if(input)input.disabled=true;var button=form&&form.querySelector('[type="submit"]');if(button)button.disabled=true;$$('[data-agent-stages] .stage').forEach(function(stage){stage.classList.remove('is-active');stage.classList.add('is-done');stage.removeAttribute('aria-current');});}
+  function voiceCompletionCopy(){var label=FAS.agent.current.key==='anchor'?'Trusted Expert Blueprint':FAS.agent.current.title;return'Great—you’ve finished '+FAS.agent.current.name+'. Your answers are saved. I’m generating your '+label+' now. Next, you’ll review it and choose your PDF design.';}
+  function announceCompletion(){if(completionAnnounced)return;completionAnnounced=true;FAS.chat.addMessage({role:'agent',tag:'ADAM',variant:'completion',text:voiceCompletionCopy()});if(input)input.disabled=true;var button=form&&form.querySelector('[type="submit"]');if(button)button.disabled=true;$$('[data-agent-stages] .stage').forEach(function(stage){stage.classList.remove('is-active');stage.classList.add('is-done');stage.removeAttribute('aria-current');});}
 
   function generateBlueprint(completionUrl,status){if(blueprintPromise)return blueprintPromise;if(form)form.setAttribute('aria-busy','true');var button=form&&form.querySelector('[type="submit"]');if(button)button.disabled=true;blueprintPromise=projectStore.loadProject().then(function(project){var artifact=FAS.artifacts.build(FAS.agent.current.key,project);return synthesizeCompletedArtifact(project,artifact);}).then(function(artifact){emit('fas:artifact-ready',{artifact:artifact});return projectStore.saveArtifact(artifact);}).then(function(saved){artifactRetryPending=false;if(status)status.textContent='Blueprint ready. Opening your review…';window.location.assign(completionUrl);return saved;}).catch(function(error){blueprintPromise=null;throw error;});return blueprintPromise;}
 

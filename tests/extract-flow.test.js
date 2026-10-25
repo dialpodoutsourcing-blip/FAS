@@ -77,3 +77,38 @@ test('a one-time restart clears only the selected agent from local project memor
  assert.match(adam,/query\.delete\('restart'\)/);
 });
 
+test('Talk starts one Realtime interviewer only after durable interview context is ready',()=>{
+ assert.match(html,/assets\/js\/realtime-interviewer\.js/);
+ assert.ok(html.indexOf('realtime-interviewer.js')<html.indexOf('adam.js'));
+ assert.match(adam,/FAS\.createRealtimeInterviewer/);
+ assert.match(adam,/Promise\.all\(\[voiceStart,persistenceReady\]\)/);
+ assert.match(adam,/orientation[\s\S]*currentQuestion\(\)\.question[\s\S]*voiceInterviewer\.speak/s);
+});
+
+test('final spoken turns use the shared coordinator and proactively speak the grounded next prompt',()=>{
+ assert.match(adam,/function handleVoiceTurn/);
+ assert.match(adam,/interviewCoordinator\.submit\(\{text:turn\.text,source:'talk',turnId:turn\.turnId\}\)/);
+ assert.match(adam,/FAS\.voice\.setTranscript\(turn\.text\)/);
+ assert.match(adam,/FAS\.orb\.setState\('thinking'\)/);
+ assert.match(adam,/renderCurrentQuestion\(\{question:result\.nextQuestion\}/);
+ assert.match(adam,/voiceInterviewer\.speak\(result\.message\)/);
+});
+
+test('standalone Talk commands are handled without saving answers',()=>{
+ for(const command of ['repeat','pause','switch_to_type','end'])assert.ok(adam.includes(command),command);
+ const commandCheck=adam.indexOf('classifyVoiceCommand(turn.text)');
+ const durableSubmit=adam.indexOf("interviewCoordinator.submit({text:turn.text,source:'talk'",commandCheck);
+ assert.ok(commandCheck>=0&&durableSubmit>commandCheck,'commands are intercepted before durable submission');
+ assert.match(adam,/partialTranscript\(\)[\s\S]*input\.value/s,'switching to Type transfers a partial draft');
+ assert.match(adam,/stop\(\{waitFor:voiceTurnPromise\}\)/,'ending waits for a finalized in-flight turn');
+});
+
+test('Talk completion announces, stops input, generates once, and keeps recovery truthful',()=>{
+ assert.match(adam,/voiceCompletionCopy/);
+ assert.match(adam,/voiceInterviewer\.pause\(\)[\s\S]*voiceInterviewer\.speak\(completionMessage\)/s);
+ assert.match(adam,/generateBlueprint\(completionUrl,status\)/);
+ assert.match(adam,/Retry voice/);
+ assert.match(adam,/Type instead/);
+ assert.match(adam,/Microphone access|voice connection|spoken answer/i);
+});
+

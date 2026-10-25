@@ -434,6 +434,9 @@ body.tour-frame [data-tutorial-trigger] { display: none !important; }
 .vorb__spinner { position: absolute; inset: 22px; border-radius: 50%; opacity: 0; background: conic-gradient(from 0deg, transparent 0 62%, var(--gold) 100%); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px)); mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px)); }
 .vorb__agent { position: absolute; right: 10px; bottom: 10px; z-index: 3; }
 .voice__state { font-family: var(--font-heading); font-size: 34px; letter-spacing: .6px; text-transform: uppercase; text-align: center; }
+.voice__status { margin: -4px 0 0; color: var(--gold-soft); font-size: 11px; line-height: 1.35; text-align: center; }
+.voice__recovery { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.voice__recovery[hidden] { display: none; }
 .wave { display: flex; align-items: center; justify-content: center; gap: 3px; width: 100%; max-width: 310px; height: 48px; }
 .wave span { width: 6px; height: var(--wave-height, 10px); border-radius: 999px; background: var(--gold); box-shadow: 0 0 10px rgba(211,181,124,.34); opacity: .55; transform-origin: center; animation: waveTicker var(--wave-speed, 1s) ease-in-out infinite alternate; animation-delay: var(--wave-delay, 0ms); }
 .voice [data-orb-state="idle"] .vorb__core { animation: orbIdle 3.8s ease-in-out infinite; }
@@ -962,7 +965,7 @@ body.src-off .part__src { display: none; }
 .chat-shell__workspace { min-height: 0; padding: 14px 18px; overflow: hidden; }
 .chat-shell__main { height: 100%; min-height: 0; display: block; }
 .chat-primary { height: 100%; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto auto; gap: 10px !important; max-width: 1100px; margin: 0 auto; }
-.chat-page #panel-voice { height: 100%; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto auto auto; align-content: stretch; gap: 10px; max-width: 1100px; margin: 0 auto; padding: 12px 18px; overflow: hidden; }
+.chat-page #panel-voice { height: 100%; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto auto auto auto; align-content: stretch; gap: 10px; max-width: 1100px; margin: 0 auto; padding: 12px 18px; overflow: hidden; }
 .chat-page #panel-voice .voice__stage { min-height: 0; justify-content: center; gap: 6px; }
 .chat-page #panel-voice .vorb { width: 190px; height: 190px; }
 .chat-page #panel-voice .vorb__core { width: 122px; height: 122px; }
