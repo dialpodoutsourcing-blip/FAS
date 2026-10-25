@@ -1,0 +1,20 @@
+(function(root,factory){var api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root){root.FAS=root.FAS||{};root.FAS.artifacts=api;}})(typeof window!=='undefined'?window:null,function(){
+ 'use strict';
+ var specs={
+  anchor:{type:'trusted_expert_statement',title:'Trusted Expert Blueprint',sections:['Authority arena','Trusted Expert Statement','Evidence','Position boundaries','30-day activation']},
+  extract:{type:'expertise_map',title:'Expertise Map',sections:['Origin story','Expertise pillars','Signature moves','Proof bank','Point of view','Story bank','Boundaries','Open gaps']},
+  radar:{type:'buyer_intelligence_brief',title:'Buyer Intelligence Brief',sections:['Priority buyer','Current reality','Desired reality','Decision dynamics','Message map','Offer implications','Validation plan','Confidence panel']},
+  forge:{type:'brand_identity_brief',title:'Brand Identity Brief',sections:['Name system','Promise','Category','Voice','Message pillars','Visual direction','Usage examples','Screening record']},
+  architect:{type:'curriculum_map',title:'Program Curriculum Master',sections:['Program one-sheet','Transformation map','Curriculum map','Delivery map','Asset inventory','Production backlog']},
+  voice:{type:'copy_pack',title:'Master Copy Suite',sections:['Message brief','Landing page','Email sequence','Social copy','Direct conversation','Voice kit','Claims review']},
+  launch:{type:'rollout_plan',title:'Million Dollar Rollout Plan',sections:['Launch map','Calendar','Owner map','Sales tracker','Readiness dashboard','Post-launch review']}
+ };
+ function clone(value){return JSON.parse(JSON.stringify(value));}
+ function build(agentKey,project){var spec=specs[agentKey]||specs.extract,answers=clone(project&&project.answers||[]),sources=answers.filter(function(answer){return answer.text||answer.value;}).map(function(answer,index){return{id:answer.id||('source-'+(index+1)),field:answer.field||answer.field_path||'unknown',text:String(answer.text||answer.value),basis:answer.basis||'user',permissionStatus:answer.permissionStatus||answer.permission_status||'not_required'};}),warnings=[];
+  sources.forEach(function(source){if(source.permissionStatus==='pending')warnings.push('Public-use permission is still pending for '+source.field+'.');});
+  var sections=spec.sections.map(function(title){var tokens=title.toLowerCase().replace(/[^a-z]+/g,'_').split('_').filter(Boolean),matching=sources.filter(function(source){var field=source.field.toLowerCase();return tokens.some(function(token){return token.length>3&&field.indexOf(token)>=0;});});if(!matching.length&&title!=='Open gaps')matching=sources.slice(0,2);return{title:title,blocks:matching.length?matching.map(function(source){return{kind:'evidence',text:source.text,sourceId:source.id};}):[{kind:'gap',text:'No approved source has been captured for this section.'}]};});
+  return{schemaVersion:1,id:spec.type+'-'+(project&&project.id||'local'),agentKey:agentKey,type:spec.type,title:spec.title,version:Number(project&&project.version)||1,status:'draft',generatedAt:new Date().toISOString(),sections:sections,sources:sources,warnings:warnings};
+ }
+ function validate(artifact){var errors=[];if(!artifact||!artifact.title||!artifact.type)errors.push('Artifact identity is incomplete.');var sourceIds=new Set((artifact&&artifact.sources||[]).map(function(source){return source.id;}));(artifact&&artifact.sections||[]).forEach(function(section){(section.blocks||[]).forEach(function(block){if(block.kind==='claim'&&!block.sourceId)errors.push('Every factual claim requires a source.');if(block.sourceId&&!sourceIds.has(block.sourceId))errors.push('A section cites an unknown source.');});});return{valid:errors.length===0,errors:errors};}
+ return{build:build,validate:validate,specs:clone(specs)};
+});
