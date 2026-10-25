@@ -43,6 +43,19 @@ test('premium Anchor renders a distinct five-page PDF in every approved theme',a
  assert.notDeepEqual(buffers[0],buffers[1]);assert.notDeepEqual(buffers[1],buffers[2]);
 });
 
+test('premium Anchor embeds the approved material artwork and closes with a recommendation instead of a question',async()=>{
+ const service=require('../lib/export-service.js');
+ const {buildFinalDecision}=require('../lib/anchor-report-renderer.js');
+ const anchor=premiumAnchor();
+ anchor.premiumReport.finalDecision={recommendation:'Proceed with a controlled validation cycle before scaling.',rationale:'The position is credible, but the evidence base still needs direct market validation.',scaleTrigger:'Scale only after qualified buyer response confirms the positioning.',sourceIds:['answer-evidence','answer-activation']};
+ const decision=buildFinalDecision(anchor.premiumReport);
+ assert.deepEqual(decision,{recommendation:'Proceed with a controlled validation cycle before scaling.',rationale:'The position is credible, but the evidence base still needs direct market validation.',scaleTrigger:'Scale only after qualified buyer response confirms the positioning.'});
+ assert.doesNotMatch(Object.values(decision).join(' '),/\?/);
+ const pdf=await service.renderPdf(anchor,{theme:'editorial-strategy'}),document=await PDFDocument.load(pdf);
+ const imageObjects=document.context.enumerateIndirectObjects().filter(([,object])=>/\/Subtype\s*\/Image/.test(object.toString()));
+ assert.ok(imageObjects.length>=1,'the approved realistic Anchor artwork must be embedded in the PDF');
+});
+
 test('export request normalizes unknown branding while preserving premium report data',()=>{
  const service=require('../lib/export-service.js'),artifact=premiumAnchor(),request=service.assertExportRequest({format:'pdf',theme:'malicious-theme',artifact});
  assert.equal(request.theme,'editorial-strategy');assert.deepEqual(request.artifact.premiumReport,artifact.premiumReport);assert.equal(request.artifact.sources.length,6);
