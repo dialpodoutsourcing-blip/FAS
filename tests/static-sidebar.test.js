@@ -12,9 +12,22 @@ for (const page of pages) {
   assert.equal((sidebar.match(/class="[^"]*\bnav-link\b[^"]*"[^>]*>[\s\S]*?<svg/g) || []).length, 5, `${page} keeps all five navigation icons`);
   assert.equal((sidebar.match(/<use href="#em-(?:anchor|extract|radar|forge|architect|voice|launch)"/g) || []).length, 7, `${page} keeps all seven specialist emblems`);
   assert.match(sidebar, /class="user__name"[^>]*>Mike Gonzalez</, `${page} shows the expert name`);
-  assert.match(sidebar, /class="user__sub">Freedom Builderz Coaching</, `${page} shows the business name`);
-  assert.match(sidebar, /class="user__settings"[^>]*aria-label="Open settings"/, `${page} includes an accessible settings control`);
+  assert.match(sidebar, /class="user__sub"[^>]*>Freedom Builderz Coaching</, `${page} shows the business name`);
+  assert.match(sidebar, /data-account-name/, `${page} exposes the authenticated account name`);
+  assert.match(sidebar, /data-account-business/, `${page} exposes the authenticated business name`);
+  assert.match(sidebar, /data-account-signout/, `${page} exposes sign out`);
+  assert.match(sidebar, /class="user__settings"[^>]*data-account-signout[^>]*aria-label="Sign out"/, `${page} includes an accessible sign-out control`);
   assert.match(sidebar, /user__settings[\s\S]*?<svg[^>]*>[\s\S]*?<path[^>]+M12 15\.5/s, `${page} settings control uses the shared gear icon`);
+}
+
+for (const page of pages) {
+  const html = fs.readFileSync(path.join(root, page), 'utf8');
+  const runtime = html.indexOf('assets/js/runtime-config.js');
+  const auth = html.indexOf('assets/js/auth-client.js');
+  const context = html.indexOf('assets/js/account-context.js');
+  const guard = html.indexOf('assets/js/auth-guard.js');
+  const nav = html.indexOf('assets/js/nav.js');
+  assert.ok(runtime >= 0 && runtime < auth && auth < context && context < guard && guard < nav, `${page} resolves authentication before navigation and controllers`);
 }
 
 const vault = fs.readFileSync(path.join(root, 'vault.html'), 'utf8');

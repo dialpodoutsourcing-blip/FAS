@@ -261,11 +261,8 @@
   var query = new URLSearchParams(window.location.search);
   var agentKey = query.get('agent');
   FAS.agent.render(agentKey);
-  var projectId = query.get('project') || 'local-default';
-  var config = window.FAS_CONFIG || {};
-  var storedSession = null;
-  try { storedSession = JSON.parse(localStorage.getItem('fas.supabase.session') || 'null'); } catch (_) {}
-  var projectStore = FAS.projectStore && FAS.projectStore.create({ projectId:projectId, supabaseUrl:config.supabaseUrl, anonKey:config.supabaseAnonKey, accessToken:storedSession&&storedSession.access_token, userId:storedSession&&storedSession.user&&storedSession.user.id, sessionId:query.get('session') });
+  var projectId = 'local-default';
+  var projectStore = null;
   var restartAgent = query.get('restart') === '1' ? (agentKey || 'anchor') : null;
   var interview = null;
   var conversationHistory = [];
@@ -277,18 +274,22 @@
       if (visible) visible.textContent = question.question;
     }
   }
-  var restartReady = restartAgent && projectStore ? projectStore.resetAgent(restartAgent).then(function(){query.delete('restart');var cleanUrl=window.location.pathname+(query.toString()?'?'+query.toString():'')+window.location.hash;window.history.replaceState({},'',cleanUrl);}) : Promise.resolve();
-  if (projectStore && FAS.interview) restartReady.then(function(){return projectStore.loadAgentCatalog();}).then(function(catalog){
-    if (catalog.length && FAS.agents && FAS.agents.applyCatalog) {
-      FAS.agents.applyCatalog(catalog);
-      FAS.agent.render(agentKey);
-    }
-    return projectStore.loadProject();
-  }).then(function(project){
-    interview=FAS.interview.create({agent:FAS.agent.current,state:project&&project.checkpoints&&project.checkpoints[FAS.agent.current.key]});
-    renderCurrentQuestion(interview.currentQuestion());
-    (project&&project.answers||[]).filter(function(answer){return answer.agentKey===FAS.agent.current.key||answer.agent_key===FAS.agent.current.key;}).forEach(function(answer){var savedText=answer.text||answer.value;FAS.chat.addMessage({role:'user',text:savedText,tag:'SAVED'});conversationHistory.push({role:'user',content:savedText});});
-  }).catch(function(){if(FAS.interview){interview=FAS.interview.create({agent:FAS.agent.current});renderCurrentQuestion(interview.currentQuestion());}});
+  function initializePersistence(authState) {
+    if (authState && authState.mode === 'redirect') return;
+    var config = window.FAS_CONFIG || {}, storedSession = authState && authState.session, account = authState && authState.context;
+    projectId = account && account.projectId || query.get('project') || 'local-default';
+    projectStore = FAS.projectStore && FAS.projectStore.create({projectId:projectId,supabaseUrl:config.supabaseUrl,anonKey:config.supabasePublishableKey||config.supabaseAnonKey,accessToken:storedSession&&storedSession.accessToken,userId:storedSession&&storedSession.user&&storedSession.user.id,sessionId:account&&account.sessions&&account.sessions[agentKey]||query.get('session')});
+    var restartReady = restartAgent && projectStore ? projectStore.resetAgent(restartAgent).then(function(){query.delete('restart');var cleanUrl=window.location.pathname+(query.toString()?'?'+query.toString():'')+window.location.hash;window.history.replaceState({},'',cleanUrl);}) : Promise.resolve();
+    if (projectStore && FAS.interview) return restartReady.then(function(){return projectStore.loadAgentCatalog();}).then(function(catalog){
+      if (catalog.length && FAS.agents && FAS.agents.applyCatalog) {FAS.agents.applyCatalog(catalog);FAS.agent.render(agentKey);}
+      return projectStore.loadProject();
+    }).then(function(project){
+      interview=FAS.interview.create({agent:FAS.agent.current,state:project&&project.checkpoints&&project.checkpoints[FAS.agent.current.key]});
+      renderCurrentQuestion(interview.currentQuestion());
+      (project&&project.answers||[]).filter(function(answer){return answer.agentKey===FAS.agent.current.key||answer.agent_key===FAS.agent.current.key;}).forEach(function(answer){var savedText=answer.text||answer.value;FAS.chat.addMessage({role:'user',text:savedText,tag:'SAVED'});conversationHistory.push({role:'user',content:savedText});});
+    }).catch(function(){if(FAS.interview){interview=FAS.interview.create({agent:FAS.agent.current});renderCurrentQuestion(interview.currentQuestion());}});
+  }
+  (FAS.authReady||Promise.resolve({mode:'local'})).then(initializePersistence);
 
   function closeDrawers() {
     $$('[data-chat-history-drawer], [data-chat-saved-drawer], [data-chat-trust-drawer]').forEach(function (drawer) { drawer.hidden = true; });

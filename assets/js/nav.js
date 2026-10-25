@@ -3,8 +3,23 @@
    Handles: active menu link, mobile menu drawer, tabs,
    and on/off view switches. No app logic, no data.
    ========================================================== */
-(function () {
+(function(root,factory){var api=factory(root);if(typeof module==='object'&&module.exports)module.exports=api;if(root){root.FAS=root.FAS||{};root.FAS.nav=api;}})(typeof window!=='undefined'?window:null,function(root){
   'use strict';
+
+  function applyAccountContext(context,doc,currentHref) {
+    if (!context || !context.projectId || !context.sessions || !doc) return;
+    Array.prototype.forEach.call(doc.querySelectorAll('[data-agent-link]'), function (link) {
+      var key = link.getAttribute('data-agent-link'), sessionId = context.sessions[key];
+      if (!sessionId) return;
+      var url = new URL(link.href, currentHref || 'https://fas.local/index.html');
+      url.searchParams.set('project', context.projectId);
+      url.searchParams.set('session', sessionId);
+      link.href = url.pathname.replace(/^\//, '') + url.search + url.hash;
+    });
+  }
+
+  if (!root || !root.document) return { applyAccountContext: applyAccountContext };
+  var window = root, document = root.document;
 
   /* 1. Highlight the current page in the menu.
         Each page sets <body data-page="...">.
@@ -229,4 +244,6 @@
       requestAnimationFrame(advance);
     });
   });
-})();
+  if (window.FAS && window.FAS.authReady) window.FAS.authReady.then(function(result){if(result&&result.mode==='supabase')applyAccountContext(result.context,document,window.location.href);});
+  return { applyAccountContext: applyAccountContext };
+});

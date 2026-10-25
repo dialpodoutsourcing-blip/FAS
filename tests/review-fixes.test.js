@@ -62,11 +62,12 @@ test('review page wires the upgrade module before the controller and includes co
  assert.match(css,/\.artifact-upgrade-state\s*\{/);assert.match(css,/\.artifact-upgrade-state\.is-error\s*\{/);
 });
 
-test('review controller creates an authenticated Supabase store from runtime configuration',()=>{
+test('review controller creates an authenticated Supabase store after the protected context resolves',async()=>{
  const source=fs.readFileSync(path.join(__dirname,'..','assets','js','artifact-ui.js'),'utf8');let received;
- const pending=new Promise(()=>{}),body={hasAttribute:name=>name==='data-artifact-review'};
- const context={window:{FAS_CONFIG:{supabaseUrl:'https://example.supabase.co',supabaseAnonKey:'anon-public'},FAS:{projectStore:{create:options=>{received=options;return{loadProject:()=>pending};}}},fetch:async()=>{}},document:{body},location:{search:'?asset=anchor&project=project-id&session=session-id'},localStorage:{getItem:key=>key==='fas.supabase.session'?JSON.stringify({access_token:'user-token',user:{id:'user-id'}}):null},URLSearchParams,setTimeout,Promise};
+ const pending=new Promise(()=>{}),body={hasAttribute:name=>name==='data-artifact-review'},authState={mode:'supabase',session:{accessToken:'user-token',user:{id:'user-id'}},context:{projectId:'project-id',sessions:{anchor:'session-id'}}};
+ const context={window:{FAS_CONFIG:{supabaseUrl:'https://example.supabase.co',supabasePublishableKey:'anon-public'},FAS:{authReady:Promise.resolve(authState),projectStore:{create:options=>{received=options;return{loadProject:()=>pending};}}},fetch:async()=>{}},document:{body},location:{search:'?asset=anchor'},URLSearchParams,setTimeout,Promise};
  vm.runInNewContext(source,context);
+ await Promise.resolve();
  assert.deepEqual({...received},{projectId:'project-id',supabaseUrl:'https://example.supabase.co',anonKey:'anon-public',accessToken:'user-token',userId:'user-id',sessionId:'session-id'});
 });
 
