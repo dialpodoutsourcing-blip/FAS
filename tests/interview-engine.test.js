@@ -80,9 +80,14 @@ test('uncertain or negative ordering follow-ups remain visible gaps', () => {
     'Not sure of the exact order; maybe assessment, planning, delivery.',
     'There is no exact order: assessment, planning, delivery.',
     'Unsure.',
+    'I am unsure.',
+    'I am not certain.',
+    'Probably assessment, planning, delivery.',
     'I might start with assessment, then planning, then delivery.',
     'I cannot give an exact order.',
-    'It could be assessment, planning, delivery.'
+    'It could be assessment, planning, delivery.',
+    'Assessment, planning, delivery.',
+    'Assessment, planning, delivery, but I am unsure.'
   ]) {
     const interview=interviews.create({agent:agents.get('anchor')});
     interview.acceptAnswer({text:'We always do assessment, planning, delivery.'});
