@@ -115,3 +115,54 @@ test('Supabase store hydrates saved artifact content and project-scopes persiste
   assert.deepEqual(JSON.parse(patch.init.body),{export_theme:'luxury-editorial'});
 });
 
+test('local project store appends a premium draft without mutating the approved legacy version', async () => {
+  const stores=require('../assets/js/project-store.js'),storage=memoryStorage();
+  const store=stores.create({storage,projectId:'anchor-upgrade'});
+  await store.saveArtifact({id:'anchor-map',agentKey:'anchor',type:'trusted_expert_statement',title:'Trusted Expert Blueprint',sections:[{title:'Legacy',blocks:[{text:'Old summary.'}]}]});
+  await store.approveArtifact('anchor-map');
+
+  await store.saveArtifactVersion('anchor-map',1,{id:'rebuilt-content-id',agentKey:'anchor',type:'trusted_expert_statement',title:'Trusted Expert Blueprint',sections:[{title:'Premium',blocks:[{text:'New report.'}]}],premiumReport:{executiveBrief:{opportunity:'Premium opportunity.'}},sources:[{id:'answer-1'}]});
+  const project=await store.loadProject();
+
+  assert.equal(project.artifacts.length,1);
+  assert.equal(project.artifacts[0].id,'anchor-map');
+  assert.equal(project.artifacts[0].currentVersion,2);
+  assert.equal(project.artifacts[0].status,'draft');
+  assert.equal(project.artifactVersions.length,2);
+  assert.equal(project.artifactVersions[0].status,'user_approved');
+  assert.equal(project.artifactVersions[0].premiumReport,undefined);
+  assert.equal(project.artifactVersions[1].version,2);
+  assert.equal(project.artifactVersions[1].status,'draft');
+  assert.equal(project.artifactVersions[1].premiumReport.executiveBrief.opportunity,'Premium opportunity.');
+
+  await assert.rejects(()=>store.saveArtifactVersion('anchor-map',1,{agentKey:'anchor',sections:[]}),/changed|stale/i);
+  assert.equal((await store.loadProject()).artifactVersions.length,2);
+});
+
+test('Supabase project store appends version 2 to the existing artifact row', async () => {
+  const stores=require('../assets/js/project-store.js'),calls=[];
+  const projectId='11111111-1111-4111-8111-111111111111',artifactId='22222222-2222-4222-8222-222222222222';
+  const fetchImpl=async(url,init={})=>{
+    calls.push({url,init});
+    if(init.method==='PATCH')return{ok:true,json:async()=>[{id:artifactId,agent_key:'anchor',current_version:2,status:'draft',export_theme:'luxury-editorial'}]};
+    return{ok:true,json:async()=>[{id:'version-two'}]};
+  };
+  const store=stores.create({supabaseUrl:'https://example.supabase.co',anonKey:'anon-public',accessToken:'user-token',projectId,userId:'33333333-3333-4333-8333-333333333333',sessionId:'44444444-4444-4444-8444-444444444444',fetchImpl});
+  const artifact={id:'content-id',agentKey:'anchor',type:'trusted_expert_statement',title:'Trusted Expert Blueprint',exportTheme:'luxury-editorial',sections:[{title:'Premium',blocks:[{text:'New report.'}]}],premiumReport:{executiveBrief:{opportunity:'Premium opportunity.'}},sources:[{id:'answer-1'}]};
+
+  const saved=await store.saveArtifactVersion(artifactId,1,artifact);
+
+  assert.equal(saved.current_version,2);
+  assert.equal(calls.length,2);
+  assert.match(calls[0].url,new RegExp('artifacts\\?id=eq\\.'+artifactId+'.*project_id=eq\\.'+projectId+'.*current_version=eq\\.1'));
+  assert.equal(calls[0].init.method,'PATCH');
+  assert.deepEqual(JSON.parse(calls[0].init.body),{title:'Trusted Expert Blueprint',current_version:2,status:'draft',export_theme:'luxury-editorial'});
+  assert.match(calls[1].url,/artifact_versions$/);
+  assert.equal(calls[1].init.method,'POST');
+  assert.deepEqual(JSON.parse(calls[1].init.body),{artifact_id:artifactId,version:2,content:artifact,input_snapshot:{source_ids:['answer-1']},status:'draft',created_by:'33333333-3333-4333-8333-333333333333'});
+  assert.equal(calls.some(call=>/\/artifacts$/.test(call.url)&&call.init.method==='POST'),false);
+
+  const stale=stores.create({supabaseUrl:'https://example.supabase.co',anonKey:'anon-public',accessToken:'user-token',projectId,userId:'33333333-3333-4333-8333-333333333333',sessionId:'44444444-4444-4444-8444-444444444444',fetchImpl:async()=>({ok:true,json:async()=>[]})});
+  await assert.rejects(()=>stale.saveArtifactVersion(artifactId,1,artifact),/changed|stale/i);
+});
+
