@@ -43,6 +43,7 @@ function validatePremiumSynthesis(report,request){
  return Array.isArray(report.recommendations)&&report.recommendations.length>=3&&report.recommendations.length<=5&&report.recommendations.every(item=>Number.isInteger(item.priority)&&item.priority>=1&&item.priority<=5&&validSources(item.sourceIds)&&['title','rationale','nextStep'].every(key=>nonEmpty(item[key])))&&validSources(report.finalDecision.sourceIds)&&['recommendation','rationale','scaleTrigger'].every(key=>nonEmpty(report.finalDecision[key]));
 }
 function buildRealtimeSessionConfig(){return{type:'realtime',model:'gpt-realtime-2.1',instructions:"You are ADAM, the warm, intelligent guide inside FAS. Speak naturally and conversationally, with grounded confidence, varied pacing, and brief human pauses. Deliver only the requested tutorial narration. Preserve its meaning, add no facts, greetings, questions, or closing remarks, and never sound theatrical.",tools:[],tool_choice:'none',audio:{input:{turn_detection:null},output:{voice:'cedar',speed:1}}};}
+function buildRealtimeInterviewSessionConfig(){return{type:'realtime',model:'gpt-realtime-2.1',instructions:"You are the speech transport for ADAM's guided FAS interview. Speak only the application-supplied copy in each response request, exactly in meaning and without adding facts, questions, advice, greetings, or closing remarks. Never generate an independent response to the user's speech. Use a warm, concise, professional interviewer delivery.",tools:[],tool_choice:'none',audio:{input:{transcription:{model:'gpt-4o-mini-transcribe'},turn_detection:{type:'semantic_vad',eagerness:'low',create_response:false,interrupt_response:true}},output:{voice:'cedar',speed:1}}};}
 function createApp({fetchImpl=globalThis.fetch,apiKey=process.env.OPENAI_API_KEY,chatModel=process.env.OPENAI_CHAT_MODEL||'gpt-5.4-mini',allowedOrigin=process.env.FAS_ORIGIN||'http://127.0.0.1:4173',runtimeEnv=process.env}={}){
  const app=express();
  const publicConfig=buildRuntimeConfig(runtimeEnv),paidUsage=new Map();
@@ -77,6 +78,13 @@ function createApp({fetchImpl=globalThis.fetch,apiKey=process.env.OPENAI_API_KEY
   if(!apiKey)return res.status(503).json({error:'Narration unavailable.'});
   try{for(const model of ['gpt-realtime-2.1','gpt-realtime-1.5']){const form=new FormData();form.set('sdp',sdp);form.set('session',JSON.stringify({...buildRealtimeSessionConfig(),model:model}));const upstream=await fetchImpl(REALTIME_URL,{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'OpenAI-Safety-Identifier':'local-fas-tutorial'},body:form});if(upstream.ok){const answer=await upstream.text();if(answer.trim())return res.type('application/sdp').send(answer);return res.status(502).json({error:'Narration unavailable.'});}if(![502,503,504].includes(upstream.status))return res.status(502).json({error:'Narration unavailable.'});}return res.status(502).json({error:'Narration unavailable.'});}catch(_){return res.status(502).json({error:'Narration unavailable.'});}
  });
+ app.post('/api/realtime-interview-session',express.text({type:'application/sdp',limit:'16kb'}),async(req,res)=>{
+  const origin=req.get('origin'),forwardedHost=req.get('x-forwarded-host'),requestHost=forwardedHost||req.get('host'),requestProtocol=req.get('x-forwarded-proto')||req.protocol,sameOrigin=requestHost?`${requestProtocol}://${requestHost}`:'';if(origin&&origin!==allowedOrigin&&origin!==sameOrigin)return res.status(403).json({error:'Origin not allowed.'});
+  const sdp=req.body;if(typeof sdp!=='string'||!sdp.trim()||sdp.length>MAX_SDP_LENGTH||!/^v=0(?:\r?\n)/.test(sdp)||!/(?:^|\r?\n)m=audio\s/m.test(sdp))return res.status(400).json({error:'A valid audio SDP offer is required.'});
+  if(!await authorizePaidRequest(req,res))return;
+  if(!apiKey)return res.status(503).json({error:'Voice interview unavailable.'});
+  try{for(const model of ['gpt-realtime-2.1','gpt-realtime-1.5']){const form=new FormData();form.set('sdp',sdp);form.set('session',JSON.stringify({...buildRealtimeInterviewSessionConfig(),model:model}));const upstream=await fetchImpl(REALTIME_URL,{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'OpenAI-Safety-Identifier':'fas-guided-voice-interview'},body:form});if(upstream.ok){const answer=await upstream.text();if(answer.trim())return res.type('application/sdp').send(answer);return res.status(502).json({error:'Voice interview unavailable.'});}if(![502,503,504].includes(upstream.status))return res.status(502).json({error:'Voice interview unavailable.'});}return res.status(502).json({error:'Voice interview unavailable.'});}catch(_){return res.status(502).json({error:'Voice interview unavailable.'});}
+ });
  app.use((error,req,res,next)=>{if(error&&error.type==='entity.too.large')return res.status(400).json({error:'A valid audio SDP offer is required.'});return next(error);});
  app.get('/',(req,res)=>res.redirect('/index.html'));
  app.use(express.static(path.resolve(__dirname),{setHeaders:function(res,filePath){if(filePath.endsWith('.html'))res.setHeader('Cache-Control','no-store');}}));return app;
@@ -86,6 +94,7 @@ if(require.main===module){const port=Number(process.env.PORT)||4173;app.listen(p
 module.exports=app;
 module.exports.createApp=createApp;
 module.exports.buildRealtimeSessionConfig=buildRealtimeSessionConfig;
+module.exports.buildRealtimeInterviewSessionConfig=buildRealtimeInterviewSessionConfig;
 module.exports.buildChatPayload=buildChatPayload;
 module.exports.normalizeChatRequest=normalizeChatRequest;
 module.exports.buildSynthesisPayload=buildSynthesisPayload;
