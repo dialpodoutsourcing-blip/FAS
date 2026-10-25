@@ -134,7 +134,7 @@
         '<section class="agent-loader__identity">' +
           '<div class="agent-loader__brand-row"><img class="agent-loader__brand" src="assets/images/fas-monogram.svg" alt="FAS"><span>ADAM SPECIALIST SYSTEM</span></div>' +
           '<span class="em agent-loader__emblem"><svg viewBox="0 0 64 64" aria-hidden="true"><use data-loader-icon></use></svg></span>' +
-          '<div class="agent-loader__identity-copy"><span class="agent-loader__eyebrow">SPECIALIST · STEP <b data-loader-step></b> OF 7</span>' +
+          '<div class="agent-loader__identity-copy"><span class="agent-loader__eyebrow">SPECIALIST · STEP <b data-loader-step></b> OF <b data-agent-total>2</b></span>' +
           '<h2 id="agent-loader-title" class="agent-loader__title" data-loader-title>LOADING ADAM</h2><p class="agent-loader__role" data-loader-role></p></div>' +
         '</section>' +
         '<section class="agent-loader__hud">' +
