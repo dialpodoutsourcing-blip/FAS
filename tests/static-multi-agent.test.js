@@ -49,7 +49,8 @@ assert.match(adam, /FAS\.agents\.get/, 'chat controller resolves registry conten
 assert.match(adam, /typingIcon\.setAttribute\('href', '#' \+ agent\.symbol\)/, 'typing state inherits the selected specialist icon');
 assert.match(adam, /data-drawer-target/);
 assert.match(adam, /data-drawer-close/);
-assert.match(adam, /Answer saved to History/);
+assert.match(adam, /Answer saved\./);
+assert.match(adam, /Save failed\./);
 assert.match(adam, /new Blob\(\[content\],\s*\{\s*type:\s*'text\/plain;charset=utf-8'\s*\}\)/, 'saved work export creates a plain-text file');
 assert.match(adam, /FAS-.*-saved-work\.txt/, 'saved work export uses an agent-specific filename');
 assert.match(adam, /URL\.createObjectURL/, 'saved work export creates a local download URL');
@@ -145,6 +146,7 @@ assert.match(styles, /prefers-reduced-motion[\s\S]*\.agent-loader__grid[\s\S]*\.
 const readme = read('README.md');
 for (const key of keys) assert.ok(readme.includes(`chat.html?agent=${key}`), `README documents ${key} preview`);
 assert.match(readme, /local static preview/i);
-assert.match(readme, /does not call a backend or generate automatic replies/i);
+assert.match(readme, /shared guided-interview engine/i);
+assert.match(readme, /matching PDF and DOCX/i);
 
 console.log('Static multi-agent shell checks passed.');

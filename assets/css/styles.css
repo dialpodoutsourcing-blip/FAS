@@ -689,7 +689,12 @@ body.src-off .part__src { display: none; }
 }
 
 /* Specialist motion — additive to the original SVG artwork -------- */
-.em[data-agent-motion] svg { transform-box: fill-box; transform-origin: center; will-change: transform, opacity, filter; }
+.em[data-agent-motion] svg { transform-box: fill-box; transform-origin: center; animation-play-state: paused; }
+.em[data-agent-motion]:hover svg,
+.em[data-agent-motion]:focus-within svg,
+.em[data-agent-motion].is-active svg,
+.is-active > .em[data-agent-motion] svg,
+.agent-loader__emblem[data-agent-motion] svg { animation-play-state: running; will-change: transform, opacity, filter; }
 .em[data-agent-motion="anchor"] svg { animation: anchorSettle 3.8s cubic-bezier(.22,.8,.3,1) infinite; }
 .em[data-agent-motion="extract"] svg { animation: extractFacet 4.2s ease-in-out infinite; }
 .em[data-agent-motion="radar"] svg { animation: radarSweep 3.6s linear infinite; }

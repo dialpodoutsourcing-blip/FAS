@@ -261,9 +261,22 @@
   var query = new URLSearchParams(window.location.search);
   FAS.agent.render(query.get('agent'));
   var projectId = query.get('project') || 'local-default';
-  var projectStore = FAS.projectStore && FAS.projectStore.create({ projectId: projectId });
-  var interview = FAS.interview && FAS.interview.create({ agent: FAS.agent.current });
-  if (interview && interview.currentQuestion()) setText('[data-agent-question]', interview.currentQuestion().question);
+  var config = window.FAS_CONFIG || {};
+  var storedSession = null;
+  try { storedSession = JSON.parse(localStorage.getItem('fas.supabase.session') || 'null'); } catch (_) {}
+  var projectStore = FAS.projectStore && FAS.projectStore.create({ projectId:projectId, supabaseUrl:config.supabaseUrl, anonKey:config.supabaseAnonKey, accessToken:storedSession&&storedSession.access_token, userId:storedSession&&storedSession.user&&storedSession.user.id, sessionId:query.get('session') });
+  var interview = null;
+  function renderCurrentQuestion(question) {
+    if (!question) return;
+    setText('[data-agent-question]', question.question);
+    var visible = $('.bubble__text--q', thread);
+    if (visible) visible.textContent = question.question;
+  }
+  if (projectStore && FAS.interview) projectStore.loadProject().then(function(project){
+    interview=FAS.interview.create({agent:FAS.agent.current,state:project&&project.checkpoints&&project.checkpoints[FAS.agent.current.key]});
+    renderCurrentQuestion(interview.currentQuestion());
+    (project&&project.answers||[]).filter(function(answer){return answer.agentKey===FAS.agent.current.key||answer.agent_key===FAS.agent.current.key;}).forEach(function(answer){FAS.chat.addMessage({role:'user',text:answer.text||answer.value,tag:'SAVED'});});
+  }).catch(function(){if(FAS.interview){interview=FAS.interview.create({agent:FAS.agent.current});renderCurrentQuestion(interview.currentQuestion());}});
 
   function closeDrawers() {
     $$('[data-chat-history-drawer], [data-chat-saved-drawer], [data-chat-trust-drawer]').forEach(function (drawer) { drawer.hidden = true; });
@@ -323,7 +336,7 @@
   function exportArtifact(format) {
     if (!projectStore || !FAS.artifacts) return;
     projectStore.loadProject().then(function (project) {
-      var artifact = FAS.artifacts.build(FAS.agent.current.key, project);
+      var versions=(project.artifactVersions||[]).filter(function(version){return version.agentKey===FAS.agent.current.key||version.artifactId&&version.artifactId.indexOf(FAS.agent.current.key)>=0;}),artifact=versions.filter(function(version){return version.status==='user_approved';}).pop()||versions.pop()||FAS.artifacts.build(FAS.agent.current.key, project);
       return fetch('/api/exports', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({format:format,artifact:artifact}) });
     }).then(function (response) {
       if (!response.ok) throw new Error('Export failed');
@@ -359,22 +372,23 @@
     input.value = '';
     input.focus();
     var status = $('[data-answer-status]');
-    if (status) status.textContent = 'Answer saved to History.';
+    if (status) status.textContent = 'Saving answer…';
     emit('fas:send', { text: text });
-    if (!interview || !projectStore) return;
+    if (!interview || !projectStore) { if(status)status.textContent='Interview is still loading. Your answer is still in this page history.'; return; }
     var result = interview.acceptAnswer({ text: text });
-    projectStore.saveAnswer(Object.assign({ agentKey: FAS.agent.current.key }, result.answer)).then(function (saved) {
+    Promise.resolve().then(function(){return projectStore.saveAnswer(Object.assign({ agentKey: FAS.agent.current.key }, result.answer));}).then(function (saved) {
+      if(status)status.textContent='Answer saved.';
       emit('fas:answer-saved', { answer: saved });
       return projectStore.saveCheckpoint(Object.assign({ agentKey: FAS.agent.current.key }, interview.checkpoint()));
     }).then(function (checkpoint) {
       emit('fas:checkpoint', { checkpoint: checkpoint });
-      if (result.followUps.length) FAS.chat.addMessage({ role: 'agent', text: result.followUps[0].question });
-      else if (result.nextQuestion) { setText('[data-agent-question]', result.nextQuestion.question); FAS.chat.addMessage({ role: 'agent', text: result.nextQuestion.question }); }
+      if (result.followUps.length) { renderCurrentQuestion({question:result.followUps[0].question});FAS.chat.addMessage({ role: 'agent', text: result.followUps[0].question }); }
+      else if (result.nextQuestion) { renderCurrentQuestion(result.nextQuestion); FAS.chat.addMessage({ role: 'agent', text: result.nextQuestion.question }); }
       if (result.summary) FAS.chat.addMessage({ role: 'note', text: 'Checkpoint saved. Review the last three answers and correct anything that is off.', tag: 'CHECKPOINT' });
       var completion = interview.completion();
       if (completion.gaps.length) emit('fas:interview-gap', { gaps: completion.gaps });
       if (completion.complete) return projectStore.loadProject().then(function (project) { var artifact=FAS.artifacts.build(FAS.agent.current.key,project);emit('fas:artifact-ready',{artifact:artifact});return projectStore.saveArtifact(artifact); });
-    }).catch(function () { if (status) status.textContent = 'Saved locally when connection returns.'; });
+    }).catch(function () { if (status) status.textContent = 'Save failed. Copy your answer and retry; it has not been stored.';if(input&&!input.value)input.value=text; });
   }
 
   if (form) form.addEventListener('submit', function (e) { e.preventDefault(); send(); });
