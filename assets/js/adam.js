@@ -266,10 +266,18 @@
   var projectStore = null;
   var restartAgent = query.get('restart') === '1' ? (agentKey || 'anchor') : null;
   var interview = null;
+  var interviewCoordinator = null;
   var artifactRetryPending = false;
   var completionAnnounced = false;
   var blueprintPromise = null;
   var conversationHistory = [];
+  var turnSequence = 0;
+  function createTurnId(source){turnSequence+=1;return(source||'type')+'-'+Date.now()+'-'+turnSequence;}
+  function initializeInterviewCoordinator(){
+    if(!interview||!projectStore||!FAS.createInterviewCoordinator)return null;
+    interviewCoordinator=FAS.createInterviewCoordinator({interview:interview,projectStore:projectStore,agentKey:FAS.agent.current.key,requestReply:requestConversationalReply});
+    return interviewCoordinator;
+  }
   function getCompletionUrl(){var params=new URLSearchParams();params.set('asset',FAS.agent.current.key);if(projectId!=='local-default')params.set('project',projectId);if(sessionId)params.set('session',sessionId);return'review.html?'+params.toString();}
   function renderCurrentQuestion(question, preserveThread) {
     if (!question) return;
@@ -291,11 +299,12 @@
       return projectStore.loadProject();
     }).then(function(project){
       interview=FAS.interview.create({agent:FAS.agent.current,state:project&&project.checkpoints&&project.checkpoints[FAS.agent.current.key]});
+      initializeInterviewCoordinator();
       renderCurrentQuestion(interview.currentQuestion());
       (project&&project.answers||[]).filter(function(answer){return answer.agentKey===FAS.agent.current.key||answer.agent_key===FAS.agent.current.key;}).forEach(function(answer){var savedText=answer.text||answer.value;FAS.chat.addMessage({role:'user',text:savedText,tag:'SAVED'});conversationHistory.push({role:'user',content:savedText});});
       var hasArtifact=(project&&project.artifacts||[]).some(function(artifact){return artifact.agentKey===FAS.agent.current.key||artifact.agent_key===FAS.agent.current.key;});
       if(!interview.currentQuestion()&&!hasArtifact){var restoredStatus=$('[data-answer-status]'),restoredButton=form&&form.querySelector('[type="submit"]');if(interview.completion().complete){announceCompletion();if(restoredStatus)restoredStatus.textContent='Generating your blueprint…';generateBlueprint(getCompletionUrl(),restoredStatus).catch(function(){artifactRetryPending=true;if(form)form.removeAttribute('aria-busy');if(restoredStatus)restoredStatus.textContent='Your answers are saved, but the blueprint could not be prepared. Retry blueprint.';if(restoredButton){restoredButton.disabled=false;restoredButton.textContent='Retry blueprint';}});}else{artifactRetryPending=true;if(restoredButton)restoredButton.textContent='Retry blueprint';if(restoredStatus)restoredStatus.textContent='Your answers are saved. Retry blueprint generation.';}}
-    }).catch(function(){if(FAS.interview){interview=FAS.interview.create({agent:FAS.agent.current});renderCurrentQuestion(interview.currentQuestion());}});
+    }).catch(function(){if(FAS.interview){interview=FAS.interview.create({agent:FAS.agent.current});initializeInterviewCoordinator();renderCurrentQuestion(interview.currentQuestion());}});
   }
   (FAS.authReady||Promise.resolve({mode:'local'})).then(initializePersistence);
 
@@ -421,29 +430,21 @@
     var status = $('[data-answer-status]');
     if (status) status.textContent = 'Saving answer…';
     emit('fas:send', { text: text });
-    if (!interview || !projectStore) { if(status)status.textContent='Interview is still loading. Your answer is still in this page history.'; return; }
+    if (!interview || !projectStore || !interviewCoordinator) { if(status)status.textContent='Interview is still loading. Your answer is still in this page history.'; return; }
     var submitButton=form&&form.querySelector('[type="submit"]');
     if(form)form.setAttribute('aria-busy','true');if(submitButton)submitButton.disabled=true;
-    var previousCheckpoint=interview.checkpoint();
     var durableSaved=false;
-    var result = interview.acceptAnswer({ text: text });
-    Promise.resolve().then(function(){return projectStore.saveAnswerCheckpoint(Object.assign({ agentKey: FAS.agent.current.key }, result.answer),Object.assign({ agentKey: FAS.agent.current.key }, interview.checkpoint()));}).then(function (saved) {
-      interview.reconcileAnswer(result.answer.id,saved);
-      if(status)status.textContent='Answer saved.';
-      emit('fas:answer-saved', { answer: saved });
-      return interview.checkpoint();
-    }).then(function (checkpoint) {
+    interviewCoordinator.submit({text:text,source:'type',turnId:createTurnId('type')}).then(function (result) {
       durableSaved=true;
-      emit('fas:checkpoint', { checkpoint: checkpoint });
-      var nextQuestion=result.followUps.length?result.followUps[0].question:result.nextQuestion&&result.nextQuestion.question;
-      if(nextQuestion){return requestConversationalReply(text,nextQuestion).then(function(message){FAS.chat.addMessage({role:'agent',text:message});renderCurrentQuestion({question:nextQuestion},true);return checkpoint;});}
-      return checkpoint;
-    }).then(function () {
+      if(status)status.textContent='Answer saved.';
+      emit('fas:answer-saved', { answer: result.saved });
+      emit('fas:checkpoint', { checkpoint: result.checkpoint });
+      if(result.nextQuestion){FAS.chat.addMessage({role:'agent',text:result.message});renderCurrentQuestion({question:result.nextQuestion},true);}
       if (result.summary) FAS.chat.addMessage({ role: 'note', text: 'Checkpoint saved · Review recent answers anytime in History.', tag: 'CHECKPOINT', variant: 'checkpoint' });
-      var completion = interview.completion();
+      var completion = result.completion;
       if (completion.gaps.length) emit('fas:interview-gap', { gaps: completion.gaps });
       if (completion.complete) {announceCompletion();if(status)status.textContent='Generating your blueprint…';return generateBlueprint(completionUrl,status);}
-    }).catch(function () {if(!durableSaved){interview.restore(previousCheckpoint);if (status) status.textContent = 'Save failed. Your answer is ready to retry and has not been stored.';if(input&&!input.value)input.value=text;}else{artifactRetryPending=true;if(status)status.textContent='Your answers are saved, but the blueprint could not be prepared. Retry blueprint.';if(submitButton)submitButton.textContent='Retry blueprint';}}).finally(function(){if(!blueprintPromise){if(form)form.removeAttribute('aria-busy');if(submitButton)submitButton.disabled=false;}});
+    }).catch(function () {if(!durableSaved){if (status) status.textContent = 'Save failed. Your answer is ready to retry and has not been stored.';if(input&&!input.value)input.value=text;}else{artifactRetryPending=true;if(status)status.textContent='Your answers are saved, but the blueprint could not be prepared. Retry blueprint.';if(submitButton)submitButton.textContent='Retry blueprint';}}).finally(function(){if(!blueprintPromise){if(form)form.removeAttribute('aria-busy');if(submitButton)submitButton.disabled=false;}});
   }
 
   if (form) form.addEventListener('submit', function (e) { e.preventDefault(); send(); });

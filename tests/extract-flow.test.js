@@ -1,22 +1,23 @@
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');
-const html=fs.readFileSync(path.join(__dirname,'..','chat.html'),'utf8');const adam=fs.readFileSync(path.join(__dirname,'..','assets','js','adam.js'),'utf8');const projectStore=fs.readFileSync(path.join(__dirname,'..','assets','js','project-store.js'),'utf8');
+const html=fs.readFileSync(path.join(__dirname,'..','chat.html'),'utf8');const adam=fs.readFileSync(path.join(__dirname,'..','assets','js','adam.js'),'utf8');const coordinator=fs.readFileSync(path.join(__dirname,'..','assets','js','interview-coordinator.js'),'utf8');const projectStore=fs.readFileSync(path.join(__dirname,'..','assets','js','project-store.js'),'utf8');
 test('chat loads production domain modules before its controller',()=>{
- for(const file of ['project-store.js','interview-engine.js','artifacts.js'])assert.match(html,new RegExp(`<script src="assets/js/${file.replace('.','\\.')}"`));
- assert.ok(html.indexOf('project-store.js')<html.indexOf('adam.js'));
+ for(const file of ['project-store.js','interview-engine.js','interview-coordinator.js','artifacts.js'])assert.match(html,new RegExp(`<script src="assets/js/${file.replace('.','\\.')}"`));
+ assert.ok(html.indexOf('interview-coordinator.js')<html.indexOf('adam.js'));
 });
 test('chat controller saves answers, checkpoints, gaps, and ready artifacts',()=>{
- for(const token of ['FAS.projectStore.create','FAS.interview.create','saveAnswerCheckpoint','fas:answer-saved','fas:checkpoint','fas:artifact-ready','fas:interview-gap'])assert.ok(adam.includes(token),token);
+ for(const token of ['FAS.projectStore.create','FAS.interview.create','FAS.createInterviewCoordinator','fas:answer-saved','fas:checkpoint','fas:artifact-ready','fas:interview-gap'])assert.ok(adam.includes(token),token);
+ for(const token of ['acceptAnswer','saveAnswerCheckpoint','reconcileAnswer'])assert.ok(coordinator.includes(token),token);
 });
 test('chat keeps failed durable answers retryable without advancing the interview',()=>{
- assert.match(adam,/var previousCheckpoint=interview\.checkpoint\(\)/);
- assert.match(adam,/interview\.restore\(previousCheckpoint\)/);
- assert.match(adam,/saveAnswerCheckpoint/);
+ assert.match(coordinator,/var previousCheckpoint = interview\.checkpoint\(\)/);
+ assert.match(coordinator,/interview\.restore\(previousCheckpoint\)/);
+ assert.match(coordinator,/saveAnswerCheckpoint/);
  assert.match(adam,/submitButton\.disabled=true/);
  assert.match(adam,/input\.value=text/);
 });
 test('chat saves answer and checkpoint atomically and exposes blueprint retry',()=>{
- assert.match(adam,/saveAnswerCheckpoint/);assert.match(adam,/reconcileAnswer/);assert.match(adam,/artifactRetryPending/);assert.match(adam,/Retry blueprint/);
+ assert.match(coordinator,/saveAnswerCheckpoint/);assert.match(coordinator,/reconcileAnswer/);assert.match(adam,/artifactRetryPending/);assert.match(adam,/Retry blueprint/);
 });
 test('completed Anchor interviews request structured synthesis before saving the artifact',()=>{
  assert.match(adam,/apiFetch\('\/api\/artifact-synthesis'/);
@@ -57,9 +58,9 @@ test('chat controller requests an AI acknowledgement while preserving the engine
 test('AI acknowledgements render in the visible thread before advancing the question display',()=>{
  assert.match(adam,/var target = thread;/, 'new messages target the visible conversation');
  assert.match(adam,/history\.appendChild\(node\.cloneNode\(true\)\)/, 'visible messages are also copied to History');
- const requestIndex=adam.indexOf('requestConversationalReply(text,nextQuestion)');
- const visibleReplyIndex=adam.indexOf("FAS.chat.addMessage({role:'agent',text:message}",requestIndex);
- const advanceIndex=adam.indexOf('renderCurrentQuestion({question:nextQuestion}',requestIndex);
+ const requestIndex=adam.indexOf("interviewCoordinator.submit({text:text,source:'type'");
+ const visibleReplyIndex=adam.indexOf("FAS.chat.addMessage({role:'agent',text:result.message}",requestIndex);
+ const advanceIndex=adam.indexOf('renderCurrentQuestion({question:result.nextQuestion}',requestIndex);
  assert.ok(requestIndex>=0&&visibleReplyIndex>requestIndex&&advanceIndex>visibleReplyIndex, 'acknowledgement appears before the question display advances');
 });
 test('checkpoint confirmations use a dedicated compact text treatment',()=>{
