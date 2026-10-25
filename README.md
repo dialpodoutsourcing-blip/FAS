@@ -27,11 +27,15 @@ This is a local static preview. All seven specialists are temporarily accessible
 - `chat.html?agent=voice`
 - `chat.html?agent=launch`
 
-The interface appends submitted messages locally and emits the documented FAS browser events. It does not call a backend or generate automatic replies. Customer progress, saved conversations, and production access locks are not implemented in this preview.
+The interface now runs the shared guided-interview engine, saves checkpoints through the project-store adapter, and can generate the selected artifact as matching PDF and DOCX files through the local Express server. Without an authenticated Supabase session it intentionally uses browser local storage; production isolation comes from the included Supabase schema and Row Level Security policies.
 
 ## Supabase project data
 
 The production schema is in `supabase/migrations/202610250001_fas_production.sql`. Run it in the Supabase SQL editor, then configure `SUPABASE_URL` and `SUPABASE_ANON_KEY` in the deployment environment. The browser adapter requires the signed-in user's access token and never accepts a service-role key. Without Supabase configuration, the same project shapes use local storage for demo continuity.
+
+Version 1 accepts pasted evidence and source metadata. Binary uploads, OCR, transcription, account-management screens, automated retention jobs, and the two parked bonus assets are intentionally outside this release until their operating rules are approved.
+
+Generated artifacts are semantic records first. `POST /api/exports` renders both PDF and DOCX from the same version and content fingerprint, with a 1 MB request ceiling and same-origin enforcement.
 
 Run the complete checks with:
 
