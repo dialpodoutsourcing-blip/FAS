@@ -4,6 +4,7 @@ node_modules/
 *.wav
 *.pcm
 .superpowers/
+.worktrees/
 
 .vercel
 .env*
