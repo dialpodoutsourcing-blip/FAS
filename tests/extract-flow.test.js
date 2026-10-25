@@ -14,4 +14,12 @@ test('chat controller requests an AI acknowledgement while preserving the engine
  assert.match(adam,/conversationHistory/);
  assert.match(adam,/renderCurrentQuestion/);
 });
+test('AI acknowledgements render in the visible thread before advancing the question display',()=>{
+ assert.match(adam,/var target = thread;/, 'new messages target the visible conversation');
+ assert.match(adam,/history\.appendChild\(node\.cloneNode\(true\)\)/, 'visible messages are also copied to History');
+ const requestIndex=adam.indexOf('requestConversationalReply(text,nextQuestion)');
+ const visibleReplyIndex=adam.indexOf("FAS.chat.addMessage({role:'agent',text:message}",requestIndex);
+ const advanceIndex=adam.indexOf('renderCurrentQuestion({question:nextQuestion}',requestIndex);
+ assert.ok(requestIndex>=0&&visibleReplyIndex>requestIndex&&advanceIndex>visibleReplyIndex, 'acknowledgement appears before the question display advances');
+});
 

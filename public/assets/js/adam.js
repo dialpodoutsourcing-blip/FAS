@@ -268,11 +268,13 @@
   var projectStore = FAS.projectStore && FAS.projectStore.create({ projectId:projectId, supabaseUrl:config.supabaseUrl, anonKey:config.supabaseAnonKey, accessToken:storedSession&&storedSession.access_token, userId:storedSession&&storedSession.user&&storedSession.user.id, sessionId:query.get('session') });
   var interview = null;
   var conversationHistory = [];
-  function renderCurrentQuestion(question) {
+  function renderCurrentQuestion(question, preserveThread) {
     if (!question) return;
-    setText('[data-agent-question]', question.question);
-    var visible = $('.bubble__text--q', thread);
-    if (visible) visible.textContent = question.question;
+    $$('[data-agent-question]').forEach(function(node){node.textContent=question.question;});
+    if (!preserveThread) {
+      var visible = $('.bubble__text--q', thread);
+      if (visible) visible.textContent = question.question;
+    }
   }
   if (projectStore && FAS.interview) projectStore.loadAgentCatalog().then(function(catalog){
     if (catalog.length && FAS.agents && FAS.agents.applyCatalog) {
@@ -358,12 +360,15 @@
 
   FAS.chat = {
     addMessage: function (opts) {
-      var target = $('[data-chat-history]') || thread;
+      var target = thread;
       if (!target) return null;
       var o = opts || {};
       var node = build(o.role || 'agent', o.text || '', o.tag);
       if (!node) return null;
       target.appendChild(node);
+      var history = $('[data-chat-history]');
+      if (history) history.appendChild(node.cloneNode(true));
+      target.scrollTop = target.scrollHeight;
       return node;
     },
     setTyping: function (on) {
@@ -398,7 +403,7 @@
     }).then(function (checkpoint) {
       emit('fas:checkpoint', { checkpoint: checkpoint });
       var nextQuestion=result.followUps.length?result.followUps[0].question:result.nextQuestion&&result.nextQuestion.question;
-      if(nextQuestion){renderCurrentQuestion({question:nextQuestion});return requestConversationalReply(text,nextQuestion).then(function(message){FAS.chat.addMessage({role:'agent',text:message});return checkpoint;});}
+      if(nextQuestion){return requestConversationalReply(text,nextQuestion).then(function(message){FAS.chat.addMessage({role:'agent',text:message});renderCurrentQuestion({question:nextQuestion},true);return checkpoint;});}
       return checkpoint;
     }).then(function () {
       if (result.summary) FAS.chat.addMessage({ role: 'note', text: 'Checkpoint saved. Review the last three answers and correct anything that is off.', tag: 'CHECKPOINT' });
