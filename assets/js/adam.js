@@ -262,6 +262,7 @@
   var agentKey = query.get('agent');
   FAS.agent.render(agentKey);
   var projectId = 'local-default';
+  var sessionId = query.get('session');
   var projectStore = null;
   var restartAgent = query.get('restart') === '1' ? (agentKey || 'anchor') : null;
   var interview = null;
@@ -269,7 +270,7 @@
   var completionAnnounced = false;
   var blueprintPromise = null;
   var conversationHistory = [];
-  function getCompletionUrl(){return'review.html?asset='+encodeURIComponent(FAS.agent.current.key)+(projectId!=='local-default'?'&project='+encodeURIComponent(projectId):'');}
+  function getCompletionUrl(){var params=new URLSearchParams();params.set('asset',FAS.agent.current.key);if(projectId!=='local-default')params.set('project',projectId);if(sessionId)params.set('session',sessionId);return'review.html?'+params.toString();}
   function renderCurrentQuestion(question, preserveThread) {
     if (!question) return;
     $$('[data-agent-question]').forEach(function(node){node.textContent=question.question;});
@@ -282,7 +283,8 @@
     if (authState && authState.mode === 'redirect') return;
     var config = window.FAS_CONFIG || {}, account = authState && authState.context;
     projectId = account && account.projectId || query.get('project') || 'local-default';
-    projectStore = FAS.projectStore && FAS.projectStore.create({configured:config.configured===true,config:config,authState:authState,auth:FAS.auth,agentKey:agentKey,projectId:projectId,sessionId:account&&account.sessions&&account.sessions[agentKey]||query.get('session'),onAuthFailure:function(){window.location.assign('account.html?return='+encodeURIComponent(window.location.pathname+window.location.search));}});
+    sessionId = account&&account.sessions&&account.sessions[agentKey]||query.get('session');
+    projectStore = FAS.projectStore && FAS.projectStore.create({configured:config.configured===true,config:config,authState:authState,auth:FAS.auth,agentKey:agentKey,projectId:projectId,sessionId:sessionId,onAuthFailure:function(){window.location.assign('account.html?return='+encodeURIComponent(window.location.pathname+window.location.search));}});
     var restartReady = restartAgent && projectStore ? projectStore.resetAgent(restartAgent).then(function(){query.delete('restart');var cleanUrl=window.location.pathname+(query.toString()?'?'+query.toString():'')+window.location.hash;window.history.replaceState({},'',cleanUrl);}) : Promise.resolve();
     if (projectStore && FAS.interview) return restartReady.then(function(){return projectStore.loadAgentCatalog();}).then(function(catalog){
       if (catalog.length && FAS.agents && FAS.agents.applyCatalog) {FAS.agents.applyCatalog(catalog);FAS.agent.render(agentKey);}

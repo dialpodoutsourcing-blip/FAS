@@ -72,13 +72,19 @@ test('review controller creates an authenticated Supabase store after the protec
  assert.equal(received.configured,true);assert.equal(received.config,config);assert.equal(received.authState,authState);assert.equal(received.agentKey,'anchor');assert.equal(received.projectId,'project-id');assert.equal(received.sessionId,'session-id');
 });
 
-test('review back link targets the current agent before an artifact exists and preserves its session',async()=>{
+test('review back link targets the current agent synchronously and preserves its session',()=>{
  const source=fs.readFileSync(path.join(__dirname,'..','assets','js','artifact-ui.js'),'utf8'),back={href:'chat.html'},pending=new Promise(()=>{});
- const body={hasAttribute:name=>name==='data-artifact-review'},authState={mode:'supabase',session:{accessToken:'user-token',user:{id:'user-id'}},context:{projectId:'project-id',sessions:{anchor:'anchor-session'}}};
+ const body={hasAttribute:name=>name==='data-artifact-review'};
  const document={body,querySelector:selector=>selector==='.toolbar a.btn'?back:null};
- const context={window:{FAS_CONFIG:{configured:true,supabaseUrl:'https://example.supabase.co',supabasePublishableKey:'public-key'},FAS:{authReady:Promise.resolve(authState),projectStore:{create:()=>({loadProject:()=>pending})}}},document,location:{search:'?asset=anchor&project=project-id&session=anchor-session'},URLSearchParams,setTimeout,Promise};
- vm.runInNewContext(source,context);await Promise.resolve();await Promise.resolve();
+ const context={window:{FAS_CONFIG:{configured:true,supabaseUrl:'https://example.supabase.co',supabasePublishableKey:'public-key'},FAS:{authReady:pending,projectStore:{create:()=>({loadProject:()=>pending})}}},document,location:{search:'?asset=anchor&project=project-id&session=anchor-session'},URLSearchParams,setTimeout,Promise};
+ vm.runInNewContext(source,context);
  assert.equal(back.href,'chat.html?agent=anchor&project=project-id&session=anchor-session');
+});
+
+test('completed chat includes its agent session in the review redirect',()=>{
+ const chat=fs.readFileSync(path.join(__dirname,'..','assets','js','adam.js'),'utf8');
+ assert.match(chat,/function getCompletionUrl\(\)[^{]*\{[^}]*sessionId/);
+ assert.match(chat,/params\.set\('session',sessionId\)/);
 });
 
 test('live artifact review replaces the static preview and reflects the selected specialist',()=>{
