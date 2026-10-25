@@ -14,3 +14,22 @@ test('production dependencies have no high or critical advisories',()=>{
  const lock=JSON.parse(fs.readFileSync(path.join(__dirname,'..','package-lock.json'),'utf8'));assert.ok(lock.packages['node_modules/body-parser'].version>='2.4.0');
 });
 
+test('runtime configuration is public-safe while HTML is never cached',async()=>withServer(async base=>{
+ const config=await fetch(base+'/api/runtime-config');assert.equal(config.status,200);assert.match(config.headers.get('cache-control'),/no-store/);assert.deepEqual(Object.keys(await config.json()).sort(),['configured','supabasePublishableKey','supabaseUrl']);
+ const html=await fetch(base+'/account.html');assert.equal(html.status,200);assert.match(html.headers.get('cache-control'),/no-store/);
+}));
+
+test('built browser tree contains onboarding modules and no environment or service credentials',()=>{
+ const publicRoot=path.join(__dirname,'..','public');
+ for(const file of ['account.html','assets/js/runtime-config.js','assets/js/auth-client.js','assets/js/account-context.js','assets/js/auth-guard.js','assets/js/local-import.js'])assert.ok(fs.existsSync(path.join(publicRoot,file)),file);
+ assert.equal(fs.existsSync(path.join(publicRoot,'.env')),false);
+ const files=[];function walk(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){const full=path.join(dir,entry.name);if(entry.isDirectory())walk(full);else if(/\.(?:html|js|css|json)$/i.test(entry.name))files.push(full);}}walk(publicRoot);
+ for(const file of files)assert.doesNotMatch(fs.readFileSync(file,'utf8'),/service_role|SUPABASE_SERVICE|sb_secret_/i,path.relative(publicRoot,file));
+});
+
+test('operator documentation covers authenticated Supabase onboarding without requesting secrets',()=>{
+ const readme=fs.readFileSync(path.join(__dirname,'..','README.md'),'utf8'),example=fs.readFileSync(path.join(__dirname,'..','.env.example'),'utf8');
+ for(const token of ['202610250002_fas_auth_onboarding.sql','SUPABASE_PUBLISHABLE_KEY','account.html','confirm','recover','seven','Retry saved-work import'])assert.match(readme,new RegExp(token,'i'),token);
+ assert.match(example,/SUPABASE_PUBLISHABLE_KEY=/);assert.match(example,/SUPABASE_ANON_KEY=/);assert.doesNotMatch(readme+example,/SUPABASE_SERVICE|service.role|sb_secret_/i);
+});
+

@@ -3,7 +3,7 @@
   function clone(value){return JSON.parse(JSON.stringify(value));}
   var exportThemes=['editorial-strategy','luxury-editorial','boardroom-consultancy'];
   function normalizeExportTheme(value){return exportThemes.indexOf(value)>=0?value:'editorial-strategy';}
-  function hydrateArtifact(row){var artifact=Object.assign({},row);artifact.agentKey=artifact.agentKey||artifact.agent_key;artifact.exportTheme=normalizeExportTheme(artifact.exportTheme||artifact.export_theme);return artifact;}
+  function hydrateArtifact(row){var artifact=Object.assign({},row);artifact.agentKey=artifact.agentKey||artifact.agent_key;artifact.currentVersion=artifact.currentVersion||artifact.current_version;artifact.exportTheme=normalizeExportTheme(artifact.exportTheme||artifact.export_theme);return artifact;}
   function blank(id){return{id:id,answers:[],checkpoints:{},artifacts:[],artifactVersions:[],facts:[],gaps:[],conflicts:[]};}
   function localStore(options){
     var storage=options.storage||(typeof localStorage!=='undefined'?localStorage:null),key='fas.project.'+options.projectId,state=blank(options.projectId);
@@ -41,13 +41,28 @@
       resetAgent:function(agentKey){requireContext();return Promise.all([request('answers?project_id=eq.'+encodeURIComponent(options.projectId)+'&agent_key=eq.'+encodeURIComponent(agentKey),{method:'DELETE'}),request('artifacts?project_id=eq.'+encodeURIComponent(options.projectId)+'&agent_key=eq.'+encodeURIComponent(agentKey),{method:'DELETE'}),request('interview_sessions?id=eq.'+encodeURIComponent(options.sessionId),{method:'PATCH',body:JSON.stringify({checkpoint:{},state:{}})})]).then(function(){});},
       saveAnswer:function(answer){requireContext();var row={session_id:options.sessionId,project_id:options.projectId,agent_key:answer.agentKey,field_path:answer.field,value:{text:answer.text},basis:answer.basis||'user',permission_status:answer.permissionStatus||'not_required',supersedes_id:answer.supersedesId||null,created_by:options.userId};return request('answers',{method:'POST',body:JSON.stringify(row)}).then(function(rows){return hydrateAnswer(rows[0]);});},
       saveCheckpoint:function(checkpoint){requireContext();return request('interview_sessions?id=eq.'+encodeURIComponent(options.sessionId),{method:'PATCH',body:JSON.stringify({checkpoint:checkpoint,state:checkpoint})}).then(function(){return checkpoint;});},
-      saveArtifact:function(artifact){requireContext();var row={project_id:options.projectId,agent_key:artifact.agentKey,artifact_type:artifact.type,title:artifact.title,current_version:artifact.version||1,status:'draft',export_theme:normalizeExportTheme(artifact.exportTheme),created_by:options.userId};return request('artifacts',{method:'POST',body:JSON.stringify(row)}).then(function(rows){var saved=hydrateArtifact(rows[0]);return request('artifact_versions',{method:'POST',body:JSON.stringify({artifact_id:saved.id,version:saved.current_version,content:artifact,input_snapshot:{source_ids:(artifact.sources||[]).map(function(source){return source.id;})},status:'draft',created_by:options.userId})}).then(function(){return saved;});});},
-      saveArtifactVersion:function(artifactId,expectedVersion,artifact){requireContext();var version=Number(expectedVersion)+1,path='artifacts?id=eq.'+encodeURIComponent(artifactId)+'&project_id=eq.'+encodeURIComponent(options.projectId)+'&current_version=eq.'+encodeURIComponent(expectedVersion),update={title:artifact.title,current_version:version,status:'draft',export_theme:normalizeExportTheme(artifact.exportTheme)};return request(path,{method:'PATCH',body:JSON.stringify(update)}).then(function(rows){if(!rows[0])throw new Error('Artifact version changed; reload and try again.');var saved=hydrateArtifact(rows[0]);return request('artifact_versions',{method:'POST',body:JSON.stringify({artifact_id:artifactId,version:version,content:artifact,input_snapshot:{source_ids:(artifact.sources||[]).map(function(source){return source.id;})},status:'draft',created_by:options.userId})}).then(function(){return saved;});});},
+      saveArtifact:function(artifact){requireContext();return request('rpc/save_fas_artifact',{method:'POST',body:JSON.stringify({p_project_id:options.projectId,p_agent_key:artifact.agentKey,p_content:artifact,p_expected_version:null})}).then(hydrateArtifact);},
+      saveArtifactVersion:function(artifactId,expectedVersion,artifact){requireContext();return request('rpc/save_fas_artifact',{method:'POST',body:JSON.stringify({p_project_id:options.projectId,p_agent_key:artifact.agentKey,p_content:artifact,p_expected_version:Number(expectedVersion)})}).then(hydrateArtifact);},
       saveExportTheme:function(id,theme){var normalized=normalizeExportTheme(theme);return request('artifacts?id=eq.'+encodeURIComponent(id)+'&project_id=eq.'+encodeURIComponent(options.projectId),{method:'PATCH',body:JSON.stringify({export_theme:normalized})}).then(function(rows){if(!rows[0])throw new Error('Artifact not found');return hydrateArtifact(rows[0]);});},
-      approveArtifact:function(id){return request('artifacts?id=eq.'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify({status:'user_approved'})}).then(function(rows){return rows[0];});},
+      approveArtifact:function(id){requireContext();return request('rpc/approve_fas_artifact',{method:'POST',body:JSON.stringify({p_artifact_id:id})}).then(hydrateArtifact);},
       listArtifacts:function(){return request('artifacts?project_id=eq.'+encodeURIComponent(options.projectId)+'&select=*').then(function(rows){return rows.map(hydrateArtifact);});}
     };
   }
-  function create(options){options=options||{};if(!options.projectId)throw new Error('projectId is required');return options.supabaseUrl&&options.anonKey&&options.accessToken?supabaseStore(options):localStore(options);}
+  function create(options){
+    options=options||{};
+    if(options.configured===false){if(!options.projectId)throw new Error('projectId is required');return localStore(options);}
+    if(options.configured!==true)throw new Error('Persistence mode must be explicitly configured.');
+    var config=options.config||{},authState=options.authState||{},session=authState.session||{},context=authState.context||{},agentKey=options.agentKey;
+    var resolved=Object.assign({},options,{
+      supabaseUrl:options.supabaseUrl||config.supabaseUrl,
+      anonKey:options.anonKey||config.supabasePublishableKey||config.supabaseAnonKey,
+      accessToken:options.accessToken||session.accessToken,
+      userId:options.userId||(session.user&&session.user.id),
+      projectId:options.projectId||context.projectId,
+      sessionId:options.sessionId||(agentKey&&context.sessions&&context.sessions[agentKey])
+    });
+    if(!resolved.supabaseUrl||!resolved.anonKey||!resolved.accessToken||!resolved.userId||!resolved.projectId||!resolved.sessionId)throw new Error('Complete authenticated context is required for configured persistence.');
+    return supabaseStore(resolved);
+  }
   return{create:create,normalizeExportTheme:normalizeExportTheme};
 });
