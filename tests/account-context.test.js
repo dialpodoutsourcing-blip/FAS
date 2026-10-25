@@ -5,6 +5,7 @@ const assert=require('node:assert/strict');
 function optionalRequire(path){try{return require(path);}catch(error){if(error&&error.code==='MODULE_NOT_FOUND')return null;throw error;}}
 function memoryStorage(seed={}){const values=new Map(Object.entries(seed));return{getItem:key=>values.has(key)?values.get(key):null,setItem:(key,value)=>values.set(key,String(value)),removeItem:key=>values.delete(key)};}
 const sessions={anchor:'anchor-session',extract:'extract-session',radar:'radar-session',forge:'forge-session',architect:'architect-session',voice:'voice-session',launch:'launch-session'};
+const includedSessions={anchor:'anchor-session',extract:'extract-session'};
 const auth={supabaseUrl:'https://example.supabase.co',publishableKey:'sb_publishable_test',requireSession:async()=>({accessToken:'access-1',user:{id:'user-1'}})};
 
 test('bootstrap persists only validated project routing context',async()=>{
@@ -19,10 +20,18 @@ test('bootstrap persists only validated project routing context',async()=>{
   assert.deepEqual(JSON.parse(calls[0].init.body),{p_display_name:'Mike',p_project_name:'My Authority Project'});
 });
 
-test('bootstrap rejects incomplete session maps without persisting them',async()=>{
+test('bootstrap accepts the two included specialist sessions without requiring paid products',async()=>{
+  const api=optionalRequire('../assets/js/account-context.js');assert.ok(api,'account context exists');
+  const storage=memoryStorage(),context=api.create({auth,storage,fetchImpl:async()=>({ok:true,status:200,json:async()=>({workspaceId:'workspace-1',projectId:'project-1',sessions:includedSessions})})});
+  const saved=await context.bootstrap({displayName:'Mike',projectName:'FAS'});
+  assert.deepEqual(saved,{workspaceId:'workspace-1',projectId:'project-1',sessions:includedSessions});
+  assert.deepEqual(JSON.parse(storage.getItem('fas.supabase.context')),saved);
+});
+
+test('bootstrap rejects contexts missing either included specialist session',async()=>{
   const api=optionalRequire('../assets/js/account-context.js');assert.ok(api,'account context exists');
   const storage=memoryStorage(),context=api.create({auth,storage,fetchImpl:async()=>({ok:true,status:200,json:async()=>({workspaceId:'workspace-1',projectId:'project-1',sessions:{anchor:'only-one'}})})});
-  await assert.rejects(()=>context.bootstrap({displayName:'Mike',projectName:'FAS'}),/seven agent sessions/i);
+  await assert.rejects(()=>context.bootstrap({displayName:'Mike',projectName:'FAS'}),/Anchor and Extract sessions/i);
   assert.equal(storage.getItem('fas.supabase.context'),null);
 });
 
