@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const migrationPath = path.join(__dirname, '..', 'supabase', 'migrations', '202610250001_fas_production.sql');
+const repairMigrationPath = path.join(__dirname, '..', 'supabase', 'migrations', '202610250003_artifact_export_theme_repair.sql');
 
 test('production migration defines the canonical project record and security policies', () => {
   const sql = fs.readFileSync(migrationPath, 'utf8');
@@ -25,5 +26,13 @@ test('production migration defines the canonical project record and security pol
   assert.match(sql, /agent_questions_read/i, 'authenticated users can read active questions');
   assert.match(sql, /export_theme\s+text\s+not null\s+default\s+'editorial-strategy'/i);
   assert.match(sql, /export_theme\s+in\s*\('editorial-strategy',\s*'luxury-editorial',\s*'boardroom-consultancy'\)/i);
+});
+
+test('artifact persistence repair adds the export theme column for existing databases', () => {
+  const sql = fs.readFileSync(repairMigrationPath, 'utf8');
+  assert.match(sql, /alter table public\.artifacts\s+add column if not exists export_theme/i);
+  assert.match(sql, /alter column export_theme set default 'editorial-strategy'/i);
+  assert.match(sql, /alter column export_theme set not null/i);
+  assert.match(sql, /artifacts_export_theme_check/i);
 });
 

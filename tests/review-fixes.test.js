@@ -66,10 +66,19 @@ test('review controller creates an authenticated Supabase store after the protec
  const source=fs.readFileSync(path.join(__dirname,'..','assets','js','artifact-ui.js'),'utf8');let received;
  const pending=new Promise(()=>{}),body={hasAttribute:name=>name==='data-artifact-review'},authState={mode:'supabase',session:{accessToken:'user-token',user:{id:'user-id'}},context:{projectId:'project-id',sessions:{anchor:'session-id'}}};
  const config={configured:true,supabaseUrl:'https://example.supabase.co',supabasePublishableKey:'anon-public'};
- const context={window:{FAS_CONFIG:config,FAS:{authReady:Promise.resolve(authState),projectStore:{create:options=>{received=options;return{loadProject:()=>pending};}}},fetch:async()=>{}},document:{body},location:{search:'?asset=anchor'},URLSearchParams,setTimeout,Promise};
+ const context={window:{FAS_CONFIG:config,FAS:{authReady:Promise.resolve(authState),projectStore:{create:options=>{received=options;return{loadProject:()=>pending};}}},fetch:async()=>{}},document:{body,querySelector:()=>null},location:{search:'?asset=anchor'},URLSearchParams,setTimeout,Promise};
  vm.runInNewContext(source,context);
  await Promise.resolve();
  assert.equal(received.configured,true);assert.equal(received.config,config);assert.equal(received.authState,authState);assert.equal(received.agentKey,'anchor');assert.equal(received.projectId,'project-id');assert.equal(received.sessionId,'session-id');
+});
+
+test('review back link targets the current agent before an artifact exists and preserves its session',async()=>{
+ const source=fs.readFileSync(path.join(__dirname,'..','assets','js','artifact-ui.js'),'utf8'),back={href:'chat.html'},pending=new Promise(()=>{});
+ const body={hasAttribute:name=>name==='data-artifact-review'},authState={mode:'supabase',session:{accessToken:'user-token',user:{id:'user-id'}},context:{projectId:'project-id',sessions:{anchor:'anchor-session'}}};
+ const document={body,querySelector:selector=>selector==='.toolbar a.btn'?back:null};
+ const context={window:{FAS_CONFIG:{configured:true,supabaseUrl:'https://example.supabase.co',supabasePublishableKey:'public-key'},FAS:{authReady:Promise.resolve(authState),projectStore:{create:()=>({loadProject:()=>pending})}}},document,location:{search:'?asset=anchor&project=project-id&session=anchor-session'},URLSearchParams,setTimeout,Promise};
+ vm.runInNewContext(source,context);await Promise.resolve();await Promise.resolve();
+ assert.equal(back.href,'chat.html?agent=anchor&project=project-id&session=anchor-session');
 });
 
 test('live artifact review replaces the static preview and reflects the selected specialist',()=>{

@@ -4,8 +4,10 @@
   if(!FAS.projectStore||(!body.hasAttribute('data-artifact-review')&&!body.hasAttribute('data-artifact-vault')))return;
   function initialize(authState){
   if(authState&&authState.mode==='redirect')return;
-  var query=new URLSearchParams(location.search),agentKey=query.get('agent')||query.get('asset')||'extract',config=window.FAS_CONFIG||{},account=authState&&authState.context,projectId=account&&account.projectId||query.get('project')||'local-default';
-  var store=FAS.projectStore.create({configured:config.configured===true,config:config,authState:authState,auth:FAS.auth,agentKey:agentKey,projectId:projectId,sessionId:account&&account.sessions&&account.sessions[agentKey]||query.get('session'),onAuthFailure:function(){location.assign('account.html?return='+encodeURIComponent(location.pathname+location.search));}});
+  var query=new URLSearchParams(location.search),agentKey=query.get('agent')||query.get('asset')||'extract',config=window.FAS_CONFIG||{},account=authState&&authState.context,projectId=account&&account.projectId||query.get('project')||'local-default',sessionId=account&&account.sessions&&account.sessions[agentKey]||query.get('session');
+  function chatUrl(){var params=new URLSearchParams();params.set('agent',agentKey);if(projectId!=='local-default')params.set('project',projectId);if(sessionId)params.set('session',sessionId);return'chat.html?'+params.toString();}
+  var reviewBack=document.querySelector('.toolbar a.btn');if(reviewBack){reviewBack.href=chatUrl();reviewBack.title='Back to chat — '+agentKey.toUpperCase();}
+  var store=FAS.projectStore.create({configured:config.configured===true,config:config,authState:authState,auth:FAS.auth,agentKey:agentKey,projectId:projectId,sessionId:sessionId,onAuthFailure:function(){location.assign('account.html?return='+encodeURIComponent(location.pathname+location.search));}});
   function apiFetch(url,init){if(!config.configured||!FAS.auth||!FAS.auth.requireSession)return fetch(url,init);return FAS.auth.requireSession().then(function(session){return fetch(url,Object.assign({},init,{headers:Object.assign({},init&&init.headers||{},{Authorization:'Bearer '+session.accessToken})}));});}
   function download(artifact,format,theme){return apiFetch('/api/exports',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({format:format,theme:theme,artifact:artifact})}).then(function(response){if(!response.ok)throw new Error('Export failed');return Promise.all([response.blob(),response.headers.get('Content-Disposition')]);}).then(function(result){return result[0].slice(0,5).text().then(function(signature){if(format==='pdf'&&signature!=='%PDF-')throw new Error('The server did not return a valid PDF.');if(format==='docx'&&signature.slice(0,2)!=='PK')throw new Error('The server did not return a valid DOCX.');return result;});}).then(function(result){var url=URL.createObjectURL(result[0]),link=document.createElement('a'),match=(result[1]||'').match(/filename="([^"]+)"/),filename=match?match[1]:('FAS-artifact.'+format);link.href=url;link.download=filename;document.body.appendChild(link);link.click();link.remove();setTimeout(function(){URL.revokeObjectURL(url);},30000);return filename;});}
   function setReviewIdentity(agent,selected){
@@ -16,7 +18,7 @@
     if(use)use.setAttribute('href','#'+(agent&&agent.symbol||('em-'+agentKey)));
     if(label)label.textContent=(agent&&agent.name||agentKey.toUpperCase())+' · STEP '+(agent&&agent.step||'')+' OF 7';
     if(title)title.textContent=selected.title;
-    if(back){back.href='chat.html?agent='+encodeURIComponent(agentKey)+(projectId!=='local-default'?'&project='+encodeURIComponent(projectId):'');back.title='Back to chat';}
+    if(back){back.href=chatUrl();back.title='Back to chat — '+agentKey.toUpperCase();}
   }
   function buildReview(selected,versions){
     var shell=document.createElement('section'),sections=document.createElement('div'),summary=document.createElement('aside'),sourceMap={};
