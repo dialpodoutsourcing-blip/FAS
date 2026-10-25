@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');
-const html=fs.readFileSync(path.join(__dirname,'..','chat.html'),'utf8');const adam=fs.readFileSync(path.join(__dirname,'..','assets','js','adam.js'),'utf8');
+const html=fs.readFileSync(path.join(__dirname,'..','chat.html'),'utf8');const adam=fs.readFileSync(path.join(__dirname,'..','assets','js','adam.js'),'utf8');const projectStore=fs.readFileSync(path.join(__dirname,'..','assets','js','project-store.js'),'utf8');
 test('chat loads production domain modules before its controller',()=>{
  for(const file of ['project-store.js','interview-engine.js','artifacts.js'])assert.match(html,new RegExp(`<script src="assets/js/${file.replace('.','\\.')}"`));
  assert.ok(html.indexOf('project-store.js')<html.indexOf('adam.js'));
@@ -28,5 +28,11 @@ test('checkpoint confirmations use a dedicated compact text treatment',()=>{
  assert.match(adam,/classList\.add\('msg--' \+ o\.variant\)/);
  assert.match(css,/\.msg--checkpoint\s*\{[^}]*font-size:\s*11px/s);
  assert.match(css,/\.msg--checkpoint \.bubble\s*\{[^}]*background:\s*transparent/s);
+});
+test('a one-time restart clears only the selected agent from local project memory',()=>{
+ assert.match(adam,/query\.get\('restart'\) === '1'/);
+ assert.match(projectStore,/answer\.agentKey!==agentKey&&answer\.agent_key!==agentKey/);
+ assert.match(projectStore,/delete state\.checkpoints\[agentKey\]/);
+ assert.match(adam,/query\.delete\('restart'\)/);
 });
 

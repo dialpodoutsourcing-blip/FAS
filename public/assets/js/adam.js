@@ -266,6 +266,7 @@
   var storedSession = null;
   try { storedSession = JSON.parse(localStorage.getItem('fas.supabase.session') || 'null'); } catch (_) {}
   var projectStore = FAS.projectStore && FAS.projectStore.create({ projectId:projectId, supabaseUrl:config.supabaseUrl, anonKey:config.supabaseAnonKey, accessToken:storedSession&&storedSession.access_token, userId:storedSession&&storedSession.user&&storedSession.user.id, sessionId:query.get('session') });
+  var restartAgent = query.get('restart') === '1' ? (agentKey || 'anchor') : null;
   var interview = null;
   var conversationHistory = [];
   function renderCurrentQuestion(question, preserveThread) {
@@ -276,7 +277,8 @@
       if (visible) visible.textContent = question.question;
     }
   }
-  if (projectStore && FAS.interview) projectStore.loadAgentCatalog().then(function(catalog){
+  var restartReady = restartAgent && projectStore ? projectStore.resetAgent(restartAgent).then(function(){query.delete('restart');var cleanUrl=window.location.pathname+(query.toString()?'?'+query.toString():'')+window.location.hash;window.history.replaceState({},'',cleanUrl);}) : Promise.resolve();
+  if (projectStore && FAS.interview) restartReady.then(function(){return projectStore.loadAgentCatalog();}).then(function(catalog){
     if (catalog.length && FAS.agents && FAS.agents.applyCatalog) {
       FAS.agents.applyCatalog(catalog);
       FAS.agent.render(agentKey);
