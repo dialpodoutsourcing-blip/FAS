@@ -242,7 +242,7 @@
       $$('.em').forEach(function (emblem) { if (emblem.querySelector('[data-agent-symbol], [data-agent-voice-icon], [data-agent-template-icon]')) emblem.setAttribute('data-agent-motion', agent.key); });
       setText('[data-agent-name]', agent.name);
       setText('[data-agent-title]', agent.title);
-      setText('[data-agent-step]', 'Step ' + agent.step + ' of 7');
+      setText('[data-agent-step]', 'Step ' + agent.step + ' of ' + (FAS.agentAccess&&FAS.agentAccess.getAccess?FAS.agentAccess.getAccess().length:2));
       setText('[data-agent-stage-summary]', 'Stage ' + (agent.activeStage + 1) + ' of ' + agent.stages.length + ' · ' + agent.stages[agent.activeStage]);
       setText('[data-agent-voice-name]', agent.name);
       setText('[data-agent-question]', agent.question);
@@ -317,7 +317,7 @@
       if(!interview.currentQuestion()&&!hasArtifact){var restoredStatus=$('[data-answer-status]'),restoredButton=form&&form.querySelector('[type="submit"]');if(interview.completion().complete){announceCompletion();if(restoredStatus)restoredStatus.textContent='Generating your blueprint…';generateBlueprint(getCompletionUrl(),restoredStatus).catch(function(){artifactRetryPending=true;if(form)form.removeAttribute('aria-busy');if(restoredStatus)restoredStatus.textContent='Your answers are saved, but the blueprint could not be prepared. Retry blueprint.';if(restoredButton){restoredButton.disabled=false;restoredButton.textContent='Retry blueprint';}});}else{artifactRetryPending=true;if(restoredButton)restoredButton.textContent='Retry blueprint';if(restoredStatus)restoredStatus.textContent='Your answers are saved. Retry blueprint generation.';}}
     }).catch(function(){if(FAS.interview){interview=FAS.interview.create({agent:FAS.agent.current});initializeInterviewCoordinator();renderCurrentQuestion(interview.currentQuestion());}});
   }
-  var persistenceReady=(FAS.authReady||Promise.resolve({mode:'local'})).then(initializePersistence).finally(function(){if(micBtn)micBtn.disabled=false;setVoiceStatus('Voice is ready when you are.',false);});
+  var persistenceReady=Promise.all([FAS.authReady||Promise.resolve({mode:'local'}),FAS.agentAccessReady||Promise.resolve({allowed:true})]).then(function(results){if(results[1]&&results[1].allowed===false)return;return initializePersistence(results[0]);}).finally(function(){if(micBtn)micBtn.disabled=false;setVoiceStatus('Voice is ready when you are.',false);});
 
   function apiFetch(url,init){var config=window.FAS_CONFIG||{};if(!config.configured||!FAS.auth||!FAS.auth.requireSession)return fetch(url,init);return FAS.auth.requireSession().then(function(session){var next=Object.assign({},init||{}, {headers:Object.assign({},init&&init.headers||{},{Authorization:'Bearer '+session.accessToken})});return fetch(url,next);});}
 
@@ -574,7 +574,7 @@
     if (!agent || !feed) return;
     var lines = [
       'FAS Saved Work',
-      agent.name + ' — Step ' + agent.step + ' of 7',
+      agent.name + ' — Step ' + agent.step + ' of ' + (FAS.agentAccess&&FAS.agentAccess.getAccess?FAS.agentAccess.getAccess().length:2),
       'Downloaded: ' + new Date().toLocaleDateString(),
       ''
     ];

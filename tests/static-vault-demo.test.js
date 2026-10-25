@@ -8,7 +8,7 @@ const styles = fs.readFileSync(path.join(root, 'assets/css/styles.css'), 'utf8')
 const generator = fs.readFileSync(path.join(root, 'tools/generate_demo_pdfs.py'), 'utf8');
 const agents = ['anchor', 'extract', 'radar', 'forge', 'architect', 'voice', 'launch'];
 
-assert.match(vault, /Demo vault complete/, 'vault announces the completed demo state');
+assert.match(vault, /Available vault complete/, 'vault announces the completed available-product state');
 assert.doesNotMatch(vault, /status--empty|status--draft/, 'demo vault contains no unfinished assets');
 assert.doesNotMatch(vault, /\[(?:Name|Years|Buyer|Current state|Desired state|Objections|Promise|Tone|Outcome|Phases|Core claim|Copy packs|Milestones)\]/, 'demo content has no legacy placeholders');
 

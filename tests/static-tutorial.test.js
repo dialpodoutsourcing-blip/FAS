@@ -14,6 +14,7 @@ for (const page of pages) {
   assert.equal((html.match(/assets\/js\/tutorial\.js/g) || []).length, 1, `${page} loads tutorial.js once`);
   assert.equal((html.match(/assets\/js\/realtime-narrator\.js/g) || []).length, 1, `${page} loads realtime narrator once`);
   assert.equal((html.match(/assets\/js\/tutorial-frame\.js/g) || []).length, 1, `${page} loads tutorial-frame.js once`);
+  assert.equal((html.match(/assets\/js\/agent-access\.js/g) || []).length, 1, `${page} loads agent access once`);
   assert.match(html, /assets\/js\/nav\.js[\s\S]*assets\/js\/tutorial\.js/s, `${page} loads tutorial after nav`);
   assert.match(html, /assets\/js\/realtime-narrator\.js[\s\S]*assets\/js\/tutorial\.js/s, `${page} loads narrator before tutorial`);
   assert.match(html, /assets\/js\/nav\.js[\s\S]*assets\/js\/tutorial-frame\.js/s, `${page} loads frame bridge after nav`);
@@ -43,6 +44,7 @@ assert.match(script, /function open\([^)]*\)[\s\S]*?muteButton\.textContent='Mut
 assert.match(script, /data\.type==='target-ready'[\s\S]*?narrator\.speak\(state\.current\(\)\.speech\)/, 'automatic narration waits for the real target');
 assert.match(script, /data-tour-voice-status aria-live="polite"/, 'Realtime narration status is announced');
 assert.doesNotMatch(script, /speechSynthesis|SpeechSynthesisUtterance|\/api\/narration|createCedarNarrator/, 'robotic fallback and Speech API path are removed');
+assert.doesNotMatch(script,/seven specialist|Seven specialist/,'tutorial does not advertise unavailable paid products');
 assert.match(script, /function cleanupAndRestore\([^)]*\)[\s\S]*?narrator\.cancel\(\)/, 'closing the tutorial cancels narration');
 assert.match(script, /beforeunload[^\n]*narrator\.cancel\(\)/, 'unloading cancels narration');
 

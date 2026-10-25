@@ -36,10 +36,12 @@ assert.match(chat, /data-voice-type-instead[^>]*>Type instead</, 'voice recovery
 assert.match(chat, /cannot guarantee business results/, 'trust drawer includes a credible results disclaimer');
 
 const agentsScript = chat.indexOf('<script src="assets/js/agents.js"></script>');
+const accessScript = chat.indexOf('<script src="assets/js/agent-access.js"></script>');
 const adamScript = chat.indexOf('<script src="assets/js/adam.js"></script>');
 const coordinatorScript = chat.indexOf('<script src="assets/js/interview-coordinator.js"></script>');
 const interviewerScript = chat.indexOf('<script src="assets/js/realtime-interviewer.js"></script>');
 assert.ok(agentsScript >= 0, 'chat loads the specialist registry');
+assert.ok(accessScript >= 0 && accessScript < adamScript, 'chat resolves product access before the chat controller');
 assert.ok(adamScript > agentsScript, 'specialist registry loads before the chat controller');
 assert.ok(coordinatorScript > agentsScript && coordinatorScript < adamScript, 'durable coordinator loads before the chat controller');
 assert.ok(interviewerScript > coordinatorScript && interviewerScript < adamScript, 'Realtime interviewer loads before the chat controller');
@@ -69,7 +71,8 @@ assert.match(adam, /--wave-floor/, 'voice ticker receives varied minimum pulse s
 assert.match(adam, /tab-voice[\s\S]*activateVoiceMode/, 'selecting Talk starts or resumes the hands-free interview');
 
 const pages = ['chat.html', 'review.html', 'vault.html', 'launch.html'];
-const keys = ['anchor', 'extract', 'radar', 'forge', 'architect', 'voice', 'launch'];
+const keys = ['anchor', 'extract'];
+const paidKeys = ['radar', 'forge', 'architect', 'voice', 'launch'];
 for (const page of pages) {
   const html = read(page);
   const registryPosition = html.indexOf('<script src="assets/js/agents.js"></script>');
@@ -80,6 +83,7 @@ for (const page of pages) {
     assert.ok(html.includes(route), `${page} routes ${key} to its chat`);
     assert.match(html, new RegExp(`data-agent-link="${key}"`), `${page} identifies the ${key} specialist link`);
   }
+  for (const key of paidKeys) assert.match(html,new RegExp(`data-agent-link="${key}"`),`${page} keeps unlockable ${key} markup`);
   assert.doesNotMatch(html, /step-link is-locked/, `${page} has no locked specialist links`);
 }
 
@@ -88,6 +92,9 @@ assert.match(dashboard, /class="[^"]*resume-cta[^"]*" href="chat\.html\?agent=ex
 for (const key of keys) {
   assert.match(dashboard, new RegExp(`class="spec[^"]*" href="chat\\.html\\?agent=${key}"`), `dashboard card opens ${key}`);
 }
+for (const key of paidKeys) assert.match(dashboard,new RegExp(`class="spec[^"]*" href="chat\\.html\\?agent=${key}"`),`dashboard keeps unlockable ${key} markup`);
+assert.match(dashboard,/Your <span data-access-count>2<\/span>-step roadmap/,'dashboard starts with the two included products');
+assert.match(dashboard,/aria-label="Step 2 of 2"[^>]+aria-valuemax="2"/,'dashboard progress starts with two available steps');
 assert.doesNotMatch(dashboard, /class="spec is-locked"/, 'dashboard cards are not visually locked');
 assert.doesNotMatch(dashboard, />Locked<\//, 'dashboard cards do not announce a locked state');
 
@@ -157,6 +164,7 @@ assert.match(styles, /@keyframes loaderHudScan/, 'briefing HUD includes an anima
 assert.match(styles, /\.agent-loader__grid\s*\{[^}]*opacity:\s*\.2[5-9]/s, 'background tile grid is clearer');
 assert.match(styles, /@keyframes loaderSweep/, 'agent loader includes a gold sweep animation');
 assert.match(styles, /prefers-reduced-motion[\s\S]*\.agent-loader__grid[\s\S]*\.agent-loader__sweep[\s\S]*\.agent-loader__emblem/s, 'agent loader respects reduced-motion preferences');
+assert.match(styles,/html:not\(\.fas-access-ready\)[\s\S]*data-agent-link="radar"[\s\S]*data-nav="launch"/s,'paid products are hidden before access resolves');
 
 const readme = read('README.md');
 for (const key of keys) assert.ok(readme.includes(`chat.html?agent=${key}`), `README documents ${key} preview`);

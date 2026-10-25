@@ -5,7 +5,8 @@
   var routeQuery=new URLSearchParams(location.search),routeAgentKey=routeQuery.get('agent')||routeQuery.get('asset')||'extract';
   function buildChatUrl(agentKey,projectId,sessionId){var params=new URLSearchParams();params.set('agent',agentKey);if(projectId&&projectId!=='local-default')params.set('project',projectId);if(sessionId)params.set('session',sessionId);return'chat.html?'+params.toString();}
   function applyReviewBack(agentKey,projectId,sessionId){if(!body.hasAttribute('data-artifact-review'))return;var back=document.querySelector('.toolbar a.btn');if(back){back.href=buildChatUrl(agentKey,projectId,sessionId);back.title='Back to chat — '+agentKey.toUpperCase();}}
-  function applyRouteIdentity(agentKey){if(!body.hasAttribute('data-artifact-review')||!FAS.agents||!FAS.agents.get)return;var agent=FAS.agents.get(agentKey),use=document.querySelector('.toolbar use'),label=document.querySelector('.toolbar .hero__agent'),title=document.querySelector('.toolbar .h-1');document.querySelectorAll('[data-agent-link]').forEach(function(link){var active=link.getAttribute('data-agent-link')===agent.key;link.classList.remove('is-preview');link.classList.toggle('is-active',active);if(active)link.setAttribute('aria-current','step');else link.removeAttribute('aria-current');var emblem=link.querySelector('.em');if(emblem){emblem.classList.toggle('is-active',active);if(active)emblem.classList.remove('is-done','is-locked');}});if(use)use.setAttribute('href','#'+agent.symbol);if(label)label.textContent=agent.name+' · STEP '+agent.step+' OF 7';if(title)title.textContent=agent.title;}
+  function agentTotal(){return FAS.agentAccess&&FAS.agentAccess.getAccess?FAS.agentAccess.getAccess().length:2;}
+  function applyRouteIdentity(agentKey){if(!body.hasAttribute('data-artifact-review')||!FAS.agents||!FAS.agents.get)return;var agent=FAS.agents.get(agentKey),use=document.querySelector('.toolbar use'),label=document.querySelector('.toolbar .hero__agent'),title=document.querySelector('.toolbar .h-1');document.querySelectorAll('[data-agent-link]').forEach(function(link){var active=link.getAttribute('data-agent-link')===agent.key;link.classList.remove('is-preview');link.classList.toggle('is-active',active);if(active)link.setAttribute('aria-current','step');else link.removeAttribute('aria-current');var emblem=link.querySelector('.em');if(emblem){emblem.classList.toggle('is-active',active);if(active)emblem.classList.remove('is-done','is-locked');}});if(use)use.setAttribute('href','#'+agent.symbol);if(label)label.textContent=agent.name+' · STEP '+agent.step+' OF '+agentTotal();if(title)title.textContent=agent.title;}
   applyReviewBack(routeAgentKey,routeQuery.get('project'),routeQuery.get('session'));
   applyRouteIdentity(routeAgentKey);
   function initialize(authState){
@@ -22,7 +23,7 @@
     if(approved&&nextKey){var nextLink=document.querySelector('[data-agent-link="'+nextKey+'"]');if(nextLink)nextLink.classList.add('is-preview');}
     var toolbar=document.querySelector('.toolbar'),use=toolbar&&toolbar.querySelector('use'),label=toolbar&&toolbar.querySelector('.hero__agent'),title=toolbar&&toolbar.querySelector('.h-1'),back=toolbar&&toolbar.querySelector('a.btn');
     if(use)use.setAttribute('href','#'+(agent&&agent.symbol||('em-'+agentKey)));
-    if(label)label.textContent=(agent&&agent.name||agentKey.toUpperCase())+' · STEP '+(agent&&agent.step||'')+' OF 7';
+    if(label)label.textContent=(agent&&agent.name||agentKey.toUpperCase())+' · STEP '+(agent&&agent.step||'')+' OF '+agentTotal();
     if(title)title.textContent=selected.title;
     if(back){back.href=chatUrl();back.title='Back to chat — '+agentKey.toUpperCase();}
   }
@@ -59,5 +60,5 @@
   if(FAS.anchorArtifactUpgrade){FAS.anchorArtifactUpgrade.loadReview({agentKey:agentKey,isReview:body.hasAttribute('data-artifact-review'),store:store,artifacts:FAS.artifacts,fetchImpl:apiFetch,onState:renderLoadState});}
   else store.loadProject().then(function(project){var versions=(project&&project.artifactVersions||[]).filter(function(version){return version.agentKey===agentKey||version.artifactId&&version.artifactId.indexOf(agentKey)>=0;});renderSelected(versions[versions.length-1],versions);});
   }
-  (FAS.authReady||Promise.resolve({mode:'local'})).then(initialize);
+  Promise.all([FAS.authReady||Promise.resolve({mode:'local'}),FAS.agentAccessReady||Promise.resolve({allowed:true})]).then(function(results){if(results[1]&&results[1].allowed===false)return;initialize(results[0]);});
 })();

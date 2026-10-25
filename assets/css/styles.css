@@ -1052,3 +1052,20 @@ body.src-off .part__src { display: none; }
   .chat-page #panel-voice .voice-hud { top: 12px; transform: scale(.78); }
   .chat-page #panel-voice .voice-hud--signal { right: 12px; left: auto; }
 }
+html:not(.fas-access-ready) [data-agent-link="radar"],
+html:not(.fas-access-ready) [data-agent-link="forge"],
+html:not(.fas-access-ready) [data-agent-link="architect"],
+html:not(.fas-access-ready) [data-agent-link="voice"],
+html:not(.fas-access-ready) [data-agent-link="launch"],
+html:not(.fas-access-ready) [data-nav="launch"],
+html:not(.fas-access-ready) #tab-radar,
+html:not(.fas-access-ready) #tab-forge,
+html:not(.fas-access-ready) #tab-architect,
+html:not(.fas-access-ready) #tab-voice,
+html:not(.fas-access-ready) #tab-launch,
+html:not(.fas-access-ready) #panel-radar,
+html:not(.fas-access-ready) #panel-forge,
+html:not(.fas-access-ready) #panel-architect,
+html:not(.fas-access-ready) #panel-voice,
+html:not(.fas-access-ready) #panel-launch { display: none !important; }
+

@@ -68,7 +68,7 @@ test('review controller creates an authenticated Supabase store after the protec
  const config={configured:true,supabaseUrl:'https://example.supabase.co',supabasePublishableKey:'anon-public'};
  const context={window:{FAS_CONFIG:config,FAS:{authReady:Promise.resolve(authState),projectStore:{create:options=>{received=options;return{loadProject:()=>pending};}}},fetch:async()=>{}},document:{body,querySelector:()=>null},location:{search:'?asset=anchor'},URLSearchParams,setTimeout,Promise};
  vm.runInNewContext(source,context);
- await Promise.resolve();
+ await Promise.resolve();await Promise.resolve();await Promise.resolve();
  assert.equal(received.configured,true);assert.equal(received.config,config);assert.equal(received.authState,authState);assert.equal(received.agentKey,'anchor');assert.equal(received.projectId,'project-id');assert.equal(received.sessionId,'session-id');
 });
 
@@ -85,12 +85,12 @@ test('review route shows the requested specialist before artifact loading finish
  const source=fs.readFileSync(path.join(__dirname,'..','assets','js','artifact-ui.js'),'utf8'),pending=new Promise(()=>{});
  function classes(initial){const values=new Set(initial||[]);return{add:value=>values.add(value),remove:value=>values.delete(value),toggle:(value,on)=>on?values.add(value):values.delete(value),contains:value=>values.has(value)};}
  function link(key,initial){return{attrs:{'data-agent-link':key},classList:classes(initial),setAttribute(name,value){this.attrs[name]=value;},removeAttribute(name){delete this.attrs[name];},getAttribute(name){return this.attrs[name];},querySelector(){return null;}};}
- const anchor=link('anchor',['is-preview']),extract=link('extract',['is-active']),label={textContent:'EXTRACT · STEP 2 OF 7'},title={textContent:'Your Expertise Map'},icon={href:'',setAttribute(name,value){this[name]=value;}},back={href:'chat.html'},body={hasAttribute:name=>name==='data-artifact-review'};
+ const anchor=link('anchor',['is-preview']),extract=link('extract',['is-active']),label={textContent:'EXTRACT · STEP 2 OF 2'},title={textContent:'Your Expertise Map'},icon={href:'',setAttribute(name,value){this[name]=value;}},back={href:'chat.html'},body={hasAttribute:name=>name==='data-artifact-review'};
  const document={body,querySelector(selector){return{'.toolbar a.btn':back,'.toolbar use':icon,'.toolbar .hero__agent':label,'.toolbar .h-1':title}[selector]||null;},querySelectorAll:selector=>selector==='[data-agent-link]'?[anchor,extract]:[]};
  const agents={get:key=>key==='anchor'?{key:'anchor',name:'ANCHOR',step:1,title:'Trusted Expert Blueprint',symbol:'em-anchor'}:null};
  const context={window:{FAS_CONFIG:{configured:true},FAS:{agents,authReady:pending,projectStore:{create:()=>({loadProject:()=>pending})}}},document,location:{search:'?asset=anchor&project=project-id&session=anchor-session'},URLSearchParams,setTimeout,Promise};
  vm.runInNewContext(source,context);
- assert.equal(label.textContent,'ANCHOR · STEP 1 OF 7');
+ assert.equal(label.textContent,'ANCHOR · STEP 1 OF 2');
  assert.equal(title.textContent,'Trusted Expert Blueprint');
  assert.equal(icon.href,'#em-anchor');
  assert.equal(anchor.classList.contains('is-active'),true);
