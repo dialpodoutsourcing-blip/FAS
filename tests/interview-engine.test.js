@@ -58,6 +58,16 @@ test('summaries occur after accepted answer intervals and checkpoint resumes', (
   assert.equal(interview.checkpoint().answers.length, 3);
 });
 
+test('restore returns an interview to the exact checkpoint before a rejected durable write', () => {
+  const interview=interviews.create({agent:agents.get('anchor')});
+  const before=interview.checkpoint();
+  interview.acceptAnswer({text:'Independent consultants already ask for my help.'});
+  assert.notDeepEqual(interview.checkpoint(),before);
+  interview.restore(before);
+  assert.deepEqual(interview.checkpoint(),before);
+  assert.equal(interview.currentQuestion().field,'anchor.authority');
+});
+
 test('contradictions and public-use permission stay unresolved until confirmed', () => {
   const interview = interviews.create({ agent: agents.get('extract') });
   interview.acceptAnswer({ field:'offer.price', text:'The price is $997.' });

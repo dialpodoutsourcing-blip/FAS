@@ -8,6 +8,13 @@ test('chat loads production domain modules before its controller',()=>{
 test('chat controller saves answers, checkpoints, gaps, and ready artifacts',()=>{
  for(const token of ['FAS.projectStore.create','FAS.interview.create','saveAnswer','saveCheckpoint','fas:answer-saved','fas:checkpoint','fas:artifact-ready','fas:interview-gap'])assert.ok(adam.includes(token),token);
 });
+test('chat keeps failed durable answers retryable without advancing the interview',()=>{
+ assert.match(adam,/var previousCheckpoint=interview\.checkpoint\(\)/);
+ assert.match(adam,/interview\.restore\(previousCheckpoint\)/);
+ assert.ok(adam.indexOf('saveAnswer')<adam.indexOf('saveCheckpoint'));
+ assert.match(adam,/submitButton\.disabled=true/);
+ assert.match(adam,/input\.value=text/);
+});
 test('completed Anchor interviews request structured synthesis before saving the artifact',()=>{
  assert.match(adam,/fetch\('\/api\/artifact-synthesis'/);
  assert.match(adam,/FAS\.artifacts\.applySynthesis/);

@@ -276,9 +276,9 @@
   }
   function initializePersistence(authState) {
     if (authState && authState.mode === 'redirect') return;
-    var config = window.FAS_CONFIG || {}, storedSession = authState && authState.session, account = authState && authState.context;
+    var config = window.FAS_CONFIG || {}, account = authState && authState.context;
     projectId = account && account.projectId || query.get('project') || 'local-default';
-    projectStore = FAS.projectStore && FAS.projectStore.create({projectId:projectId,supabaseUrl:config.supabaseUrl,anonKey:config.supabasePublishableKey||config.supabaseAnonKey,accessToken:storedSession&&storedSession.accessToken,userId:storedSession&&storedSession.user&&storedSession.user.id,sessionId:account&&account.sessions&&account.sessions[agentKey]||query.get('session')});
+    projectStore = FAS.projectStore && FAS.projectStore.create({configured:config.configured===true,config:config,authState:authState,agentKey:agentKey,projectId:projectId,sessionId:account&&account.sessions&&account.sessions[agentKey]||query.get('session')});
     var restartReady = restartAgent && projectStore ? projectStore.resetAgent(restartAgent).then(function(){query.delete('restart');var cleanUrl=window.location.pathname+(query.toString()?'?'+query.toString():'')+window.location.hash;window.history.replaceState({},'',cleanUrl);}) : Promise.resolve();
     if (projectStore && FAS.interview) return restartReady.then(function(){return projectStore.loadAgentCatalog();}).then(function(catalog){
       if (catalog.length && FAS.agents && FAS.agents.applyCatalog) {FAS.agents.applyCatalog(catalog);FAS.agent.render(agentKey);}
@@ -395,6 +395,7 @@
 
   function send() {
     if (!input) return;
+    if(form&&form.getAttribute('aria-busy')==='true')return;
     var completionUrl='review.html?asset='+encodeURIComponent(FAS.agent.current.key)+(projectId!=='local-default'?'&project='+encodeURIComponent(projectId):'');
     if (interview && !interview.currentQuestion()) { window.location.assign(completionUrl); return; }
     var text = input.value.trim();
@@ -407,12 +408,17 @@
     if (status) status.textContent = 'Saving answer…';
     emit('fas:send', { text: text });
     if (!interview || !projectStore) { if(status)status.textContent='Interview is still loading. Your answer is still in this page history.'; return; }
+    var submitButton=form&&form.querySelector('[type="submit"]');
+    if(form)form.setAttribute('aria-busy','true');if(submitButton)submitButton.disabled=true;
+    var previousCheckpoint=interview.checkpoint();
+    var durableSaved=false;
     var result = interview.acceptAnswer({ text: text });
     Promise.resolve().then(function(){return projectStore.saveAnswer(Object.assign({ agentKey: FAS.agent.current.key }, result.answer));}).then(function (saved) {
       if(status)status.textContent='Answer saved.';
       emit('fas:answer-saved', { answer: saved });
       return projectStore.saveCheckpoint(Object.assign({ agentKey: FAS.agent.current.key }, interview.checkpoint()));
     }).then(function (checkpoint) {
+      durableSaved=true;
       emit('fas:checkpoint', { checkpoint: checkpoint });
       var nextQuestion=result.followUps.length?result.followUps[0].question:result.nextQuestion&&result.nextQuestion.question;
       if(nextQuestion){return requestConversationalReply(text,nextQuestion).then(function(message){FAS.chat.addMessage({role:'agent',text:message});renderCurrentQuestion({question:nextQuestion},true);return checkpoint;});}
@@ -422,7 +428,7 @@
       var completion = interview.completion();
       if (completion.gaps.length) emit('fas:interview-gap', { gaps: completion.gaps });
       if (completion.complete) {if(status)status.textContent='Building your blueprint…';return projectStore.loadProject().then(function (project) { var artifact=FAS.artifacts.build(FAS.agent.current.key,project);return synthesizeCompletedArtifact(project,artifact);}).then(function(artifact){emit('fas:artifact-ready',{artifact:artifact});return projectStore.saveArtifact(artifact);}).then(function(saved){if(status)status.textContent='Blueprint ready.';window.location.assign(completionUrl);return saved;});}
-    }).catch(function () { if (status) status.textContent = 'Save failed. Copy your answer and retry; it has not been stored.';if(input&&!input.value)input.value=text; });
+    }).catch(function () {if(!durableSaved){interview.restore(previousCheckpoint);if (status) status.textContent = 'Save failed. Your answer is ready to retry and has not been stored.';if(input&&!input.value)input.value=text;}else if(status)status.textContent='Your answers are saved, but the blueprint could not be prepared. Please retry.';}).finally(function(){if(form)form.removeAttribute('aria-busy');if(submitButton)submitButton.disabled=false;});
   }
 
   if (form) form.addEventListener('submit', function (e) { e.preventDefault(); send(); });
