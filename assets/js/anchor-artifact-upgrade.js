@@ -32,18 +32,20 @@
     });
   }
 
+  async function rebuild(options){
+    var answers=collectAnswers(options.project);if(!answers)throw new Error('Six complete Anchor answers are required.');
+    var artifact=options.artifacts.build('anchor',Object.assign({},options.project,{answers:answers}));
+    try{var payload=await requestSynthesis(answers,options.fetchImpl);artifact=options.artifacts.applySynthesis(artifact,payload.sections);}
+    catch(error){if(options.strictSynthesis)throw error;}
+    return artifact;
+  }
+
   async function upgrade(options){
     var agentKey=options.agentKey,project=options.project,selected=options.selected;
     if(!needsUpgrade(agentKey,selected,project))return{upgraded:false,artifact:selected,reason:'not-eligible'};
-    var answers=collectAnswers(project),buildProject=Object.assign({},project,{answers:answers}),artifact=options.artifacts.build('anchor',buildProject);
+    var artifact=await rebuild({project:project,artifacts:options.artifacts,fetchImpl:options.fetchImpl});
     artifact.id=selected.id||artifact.id;
     artifact.exportTheme=selected.exportTheme;
-    try{
-      var payload=await requestSynthesis(answers,options.fetchImpl);
-      artifact=options.artifacts.applySynthesis(artifact,payload.sections);
-    }catch(_){
-      // The grounded deterministic report produced by artifacts.build is the safe fallback.
-    }
     await options.saveVersion(selected.artifactId||selected.id,Number(selected.version)||1,artifact);
     return{upgraded:true,artifact:artifact,reason:'saved'};
   }
@@ -68,5 +70,5 @@
     var ready=Object.assign({status:'ready'},current);notify(ready);return ready;
   }
 
-  return{requiredFields:requiredFields.slice(),collectAnswers:collectAnswers,needsUpgrade:needsUpgrade,requestSynthesis:requestSynthesis,upgrade:upgrade,selectLatest:selectLatest,loadReview:loadReview};
+  return{requiredFields:requiredFields.slice(),collectAnswers:collectAnswers,needsUpgrade:needsUpgrade,requestSynthesis:requestSynthesis,rebuild:rebuild,upgrade:upgrade,selectLatest:selectLatest,loadReview:loadReview};
 });

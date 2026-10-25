@@ -10,7 +10,7 @@ function optionalRequire(file){try{return require(file);}catch(error){if(error&&
 test('account page is accessible, complete, and contains no credentials',()=>{
   const html=fs.existsSync(accountPath)?fs.readFileSync(accountPath,'utf8'):'';
   for(const id of ['auth-name','auth-business','auth-email','auth-password','auth-confirmation'])assert.match(html,new RegExp(`<label[^>]*for="${id}"`,'i'),id);
-  for(const mode of ['signup','signin','confirm','recover','reset','migrating','error'])assert.match(html,new RegExp(`data-auth-view="${mode}"`,'i'),mode);
+  for(const mode of ['signup','signin','confirm','recover','reset','migrating','migration-skip','error'])assert.match(html,new RegExp(`data-auth-view="${mode}"`,'i'),mode);
   assert.match(html,/aria-live="polite"/i);assert.match(html,/data-auth-resend/i);assert.match(html,/data-auth-submit[^>]*type="submit"/i);
   assert.match(html,/assets\/css\/(tokens|styles)\.css/i);
   assert.doesNotMatch(html,/sb_(publishable|secret)|service.role|access_token|refresh_token/i);
@@ -18,7 +18,7 @@ test('account page is accessible, complete, and contains no credentials',()=>{
 
 test('account dependencies load in order before the controller',()=>{
   const html=fs.existsSync(accountPath)?fs.readFileSync(accountPath,'utf8'):'';
-  const scripts=['runtime-config.js','auth-client.js','account-context.js','account.js'].map(name=>html.indexOf(name));
+  const scripts=['runtime-config.js','auth-client.js','account-context.js','artifacts.js','anchor-artifact-upgrade.js','local-import.js','account.js'].map(name=>html.indexOf(name));
   assert.ok(scripts.every(index=>index>=0),'all account scripts exist');assert.deepEqual(scripts,scripts.slice().sort((a,b)=>a-b));
 });
 
@@ -68,4 +68,20 @@ test('invalid credentials render a generic account error',async()=>{
   const controller=api.create({auth:{signIn:async()=>{const error=new Error('secret upstream detail');error.code='invalid_credentials';throw error;}},context:{},location:{href:'https://app.example/account.html',search:'',assign(){}}});
   const result=await controller.submitSignin({email:'person@example.com',password:'wrong'});
   assert.equal(result.ok,false);assert.equal(controller.getState().message,'Unable to sign in with those credentials.');assert.doesNotMatch(controller.getState().message,/secret|person@example/i);
+});
+
+test('successful authentication imports recoverable local work before navigation',async()=>{
+  const api=optionalRequire('../assets/js/account.js'),events=[],assigned=[];
+  const controller=api.create({auth:{signIn:async()=>({user:{user_metadata:{}}})},context:{bootstrap:async()=>({projectId:'project-1'}),safeReturnPath:()=> 'index.html'},localImport:()=>({inspect:async()=>({checksum:'abc'}),run:async()=>{events.push('import');return{status:'complete'};}}),location:{href:'https://app.example/account.html',search:'',assign:value=>{events.push('navigate');assigned.push(value);}}});
+  const result=await controller.submitSignin({email:'person@example.com',password:'long-password'});
+  assert.equal(result.ok,true);assert.deepEqual(events,['import','navigate']);assert.deepEqual(assigned,['index.html']);
+});
+
+test('existing cloud work is not overwritten and a failed import can be retried',async()=>{
+  const api=optionalRequire('../assets/js/account.js');let runs=0,navigations=0;
+  const base={auth:{signIn:async()=>({user:{user_metadata:{}}})},context:{bootstrap:async()=>({projectId:'project-1'}),safeReturnPath:()=> 'index.html'},location:{href:'https://app.example/account.html',search:'',assign:()=>{navigations++;}}};
+  const skipped=api.create({...base,localImport:()=>({inspect:async()=>({}),run:async()=>({status:'skipped',reason:'cloud_has_answers'})})});
+  assert.equal((await skipped.submitSignin({})).skipped,true);assert.equal(skipped.getState().mode,'migration-skip');assert.equal(navigations,0);
+  const retry=api.create({...base,localImport:()=>({inspect:async()=>({}),run:async()=>{runs++;if(runs===1)throw new Error('offline');return{status:'complete'};}})});
+  assert.equal((await retry.submitSignin({})).code,'import_failed');assert.equal(retry.getState().canRetryImport,true);assert.equal((await retry.retryLocalImport()).ok,true);assert.equal(runs,2);assert.equal(navigations,1);
 });

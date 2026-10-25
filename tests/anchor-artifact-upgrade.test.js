@@ -129,3 +129,9 @@ test('upgrade performs no work for ineligible artifacts', async () => {
   assert.deepEqual(result, { upgraded: false, artifact: selected, reason: 'not-eligible' });
   assert.equal(calls, 0);
 });
+
+test('strict migration rebuild requires successful premium synthesis', async () => {
+  await assert.rejects(()=>upgrade.rebuild({project:completeProject(),artifacts,strictSynthesis:true,fetchImpl:async()=>{throw new Error('offline');}}),/offline/);
+  const fallback=await upgrade.rebuild({project:completeProject(),artifacts,fetchImpl:async()=>{throw new Error('offline');}});
+  assert.ok(fallback.premiumReport,'normal review upgrades retain the grounded deterministic fallback');
+});

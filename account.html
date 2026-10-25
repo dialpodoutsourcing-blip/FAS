@@ -81,7 +81,8 @@
         </section>
 
         <section data-auth-view="migrating" hidden><div class="account-loader" aria-hidden="true"></div><h2>Preparing your workspace</h2><p class="account-intro">Creating your seven specialist sessions and checking for saved Anchor work.</p></section>
-        <section data-auth-view="error" hidden><p class="account-state-icon" aria-hidden="true">!</p><h2>We need your attention</h2><p class="account-intro">Your account request could not be completed.</p><a class="btn btn--outline account-submit" href="index.html">Continue in local preview</a><button class="account-text-button" type="button" data-auth-switch="signin">Try signing in again</button></section>
+        <section data-auth-view="migration-skip" hidden><p class="account-state-icon" aria-hidden="true">✓</p><h2>Your cloud workspace is already active</h2><p class="account-intro">We found existing cloud answers, so your local browser work was left untouched.</p><a class="btn btn--gold account-submit" href="index.html">Open my dashboard</a></section>
+        <section data-auth-view="error" hidden><p class="account-state-icon" aria-hidden="true">!</p><h2>We need your attention</h2><p class="account-intro">Your account request could not be completed.</p><button class="btn btn--gold account-submit" type="button" data-auth-import-retry hidden>Retry saved-work import</button><a class="btn btn--outline account-submit" href="index.html">Continue in local preview</a><button class="account-text-button" type="button" data-auth-switch="signin">Try signing in again</button></section>
         <p class="account-status" data-auth-status aria-live="polite"></p>
         <p class="account-privacy">Your password goes directly to Supabase Auth. FAS never stores it in your project data.</p>
       </div>
@@ -90,6 +91,9 @@
   <script src="assets/js/runtime-config.js"></script>
   <script src="assets/js/auth-client.js"></script>
   <script src="assets/js/account-context.js"></script>
+  <script src="assets/js/artifacts.js"></script>
+  <script src="assets/js/anchor-artifact-upgrade.js"></script>
+  <script src="assets/js/local-import.js"></script>
   <script src="assets/js/account.js"></script>
 </body>
 </html>
