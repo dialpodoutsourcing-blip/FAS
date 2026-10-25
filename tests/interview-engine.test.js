@@ -51,6 +51,16 @@ test('ordinary strategic prose is not mistaken for an unordered step list', () =
   assert.equal(interviews.classify(answer).trigger, null);
   assert.equal(interviews.classify('I serve coaches, consultants, and creators.').trigger, null);
   assert.equal(interviews.classify('We focus on strategy, systems, and support.').trigger, null);
+  assert.notEqual(interviews.classify('My approach serves coaches, consultants, and creators.').trigger, 'loose_steps');
+  assert.notEqual(interviews.classify('Our method supports strategy, systems, and support.').trigger, 'loose_steps');
+  assert.notEqual(interviews.classify('This framework applies to founders, coaches, and consultants.').trigger, 'loose_steps');
+});
+
+test('a bare list gets an ordering probe when the current question asks for a process', () => {
+  const agent={key:'test',chapters:[{id:'method',questions:[{field:'test.method',question:'What is your process?',required:true}]}]};
+  const interview=interviews.create({agent});
+  const result=interview.acceptAnswer({text:'Assessment, planning, delivery.'});
+  assert.equal(result.followUps[0].trigger,'loose_steps');
 });
 
 test('the requested follow-up resolves a probe even when its wording still matches the trigger', () => {
@@ -68,7 +78,11 @@ test('the requested follow-up resolves a probe even when its wording still match
 test('uncertain or negative ordering follow-ups remain visible gaps', () => {
   for (const clarification of [
     'Not sure of the exact order; maybe assessment, planning, delivery.',
-    'There is no exact order: assessment, planning, delivery.'
+    'There is no exact order: assessment, planning, delivery.',
+    'Unsure.',
+    'I might start with assessment, then planning, then delivery.',
+    'I cannot give an exact order.',
+    'It could be assessment, planning, delivery.'
   ]) {
     const interview=interviews.create({agent:agents.get('anchor')});
     interview.acceptAnswer({text:'We always do assessment, planning, delivery.'});
@@ -84,9 +98,9 @@ test('legacy same-trigger probe checkpoints reopen as complete instead of gettin
     questionIndex:1,
     answers:[
       {id:'answer-1',field:'test.sequence',text:'Assessment, planning, delivery.',incomplete:true,trigger:'loose_steps'},
-      {id:'answer-2',field:'test.sequence',text:'I organize it into 3 steps, in this exact order:\nAssess – Find the problem.\nPlan – Choose the route.\nDeliver – Complete the work.',incomplete:true,trigger:'loose_steps'}
+      {id:'answer-2',field:'test.sequence',text:'I organize it into 3 steps, in this exact order:\nAssess – Find the problem.\nPlan – Choose the route.\nDeliver – Complete the work.\nWe avoid claims we cannot prove.',incomplete:true,trigger:'loose_steps'}
     ],
-    conflicts:[{field:'test.sequence',values:['Assessment, planning, delivery.','I organize it into 3 steps, in this exact order:\nAssess – Find the problem.\nPlan – Choose the route.\nDeliver – Complete the work.'],status:'open'}],
+    conflicts:[{field:'test.sequence',values:['Assessment, planning, delivery.','I organize it into 3 steps, in this exact order:\nAssess – Find the problem.\nPlan – Choose the route.\nDeliver – Complete the work.\nWe avoid claims we cannot prove.'],status:'open'}],
     probeAttempts:{'test.sequence':1},
     insufficientFields:['test.sequence']
   }});
