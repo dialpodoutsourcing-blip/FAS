@@ -22,4 +22,11 @@ test('AI acknowledgements render in the visible thread before advancing the ques
  const advanceIndex=adam.indexOf('renderCurrentQuestion({question:nextQuestion}',requestIndex);
  assert.ok(requestIndex>=0&&visibleReplyIndex>requestIndex&&advanceIndex>visibleReplyIndex, 'acknowledgement appears before the question display advances');
 });
+test('checkpoint confirmations use a dedicated compact text treatment',()=>{
+ const css=fs.readFileSync(path.join(__dirname,'..','assets','css','styles.css'),'utf8');
+ assert.match(adam,/variant:\s*'checkpoint'/);
+ assert.match(adam,/classList\.add\('msg--' \+ o\.variant\)/);
+ assert.match(css,/\.msg--checkpoint\s*\{[^}]*font-size:\s*11px/s);
+ assert.match(css,/\.msg--checkpoint \.bubble\s*\{[^}]*background:\s*transparent/s);
+});
 

@@ -377,6 +377,10 @@ body.tour-frame [data-tutorial-trigger] { display: none !important; }
 .msg--user .bubble__tag { color: var(--crispy-ivory); }
 .bubble--note { background: var(--info-bg); border-color: rgba(229,217,203,.2); }
 .bubble--note .bubble__tag { color: var(--crispy-ivory); }
+.msg--checkpoint { justify-content: center; font-size: 11px; color: var(--muted); }
+.msg--checkpoint .em, .msg--checkpoint .bubble__tag { display: none; }
+.msg--checkpoint .bubble { max-width: none; padding: 2px 8px; border: 0; background: transparent; box-shadow: none; }
+.msg--checkpoint .bubble__text { font-size: inherit; line-height: 1.35; letter-spacing: .25px; }
 .bubble--typing { flex-direction: row; align-items: center; gap: 6px; padding: 18px; }
 .bubble--typing span { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); animation: typing 1.2s ease-in-out infinite; }
 .bubble--typing span:nth-child(2) { animation-delay: .15s; }

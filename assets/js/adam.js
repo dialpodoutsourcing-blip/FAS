@@ -365,6 +365,7 @@
       var o = opts || {};
       var node = build(o.role || 'agent', o.text || '', o.tag);
       if (!node) return null;
+      if (o.variant) node.classList.add('msg--' + o.variant);
       target.appendChild(node);
       var history = $('[data-chat-history]');
       if (history) history.appendChild(node.cloneNode(true));
@@ -406,7 +407,7 @@
       if(nextQuestion){return requestConversationalReply(text,nextQuestion).then(function(message){FAS.chat.addMessage({role:'agent',text:message});renderCurrentQuestion({question:nextQuestion},true);return checkpoint;});}
       return checkpoint;
     }).then(function () {
-      if (result.summary) FAS.chat.addMessage({ role: 'note', text: 'Checkpoint saved. Review the last three answers and correct anything that is off.', tag: 'CHECKPOINT' });
+      if (result.summary) FAS.chat.addMessage({ role: 'note', text: 'Checkpoint saved · Review recent answers anytime in History.', tag: 'CHECKPOINT', variant: 'checkpoint' });
       var completion = interview.completion();
       if (completion.gaps.length) emit('fas:interview-gap', { gaps: completion.gaps });
       if (completion.complete) return projectStore.loadProject().then(function (project) { var artifact=FAS.artifacts.build(FAS.agent.current.key,project);emit('fas:artifact-ready',{artifact:artifact});return projectStore.saveArtifact(artifact); });
