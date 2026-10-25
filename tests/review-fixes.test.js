@@ -30,6 +30,28 @@ test('production UI includes connected artifact controller and runtime config bo
  assert.match(chat,/loadProject\(\)[\s\S]*FAS\.interview\.create/);assert.match(chat,/window\.FAS_CONFIG/);assert.match(review,/assets\/js\/artifact-ui\.js/);assert.match(vault,/assets\/js\/artifact-ui\.js/);
 });
 
+test('live artifact review replaces the static preview and reflects the selected specialist',()=>{
+ const ui=fs.readFileSync(path.join(__dirname,'..','assets','js','artifact-ui.js'),'utf8');
+ assert.match(ui,/querySelector\('\.main__body'\)/);
+ assert.match(ui,/mainBody\.replaceChildren\(shell\)/);
+ assert.doesNotMatch(ui,/querySelector\('main'\)\.prepend\(shell\)/);
+ assert.match(ui,/getAttribute\('data-agent-link'\)===agentKey/);
+ assert.match(ui,/classList\.toggle\('is-active'/);
+ assert.match(ui,/chat\.html\?agent=/);
+});
+
+test('live artifact review has a dedicated readable document layout',()=>{
+ const css=fs.readFileSync(path.join(__dirname,'..','assets','css','styles.css'),'utf8');
+ assert.match(css,/\.artifact-live__layout\s*\{[^}]*grid-template-columns/s);
+ assert.match(css,/\.artifact-live__section\s*\{[^}]*padding/s);
+ assert.match(css,/\.artifact-live__body\s*\{[^}]*line-height:\s*1\.7/s);
+});
+
+test('shared navigation uses the reviewed artifact agent when selecting a specialist',()=>{
+ const nav=fs.readFileSync(path.join(__dirname,'..','assets','js','nav.js'),'utf8');
+ assert.match(nav,/query\.get\('agent'\)\s*\|\|\s*query\.get\('asset'\)/);
+});
+
 test('chat applies the database interview catalog before creating the interview',()=>{
  const chat=fs.readFileSync(path.join(__dirname,'..','assets','js','adam.js'),'utf8');
  assert.match(chat,/loadAgentCatalog\(\)/);

@@ -19,7 +19,8 @@
 
   /* The shared chat page highlights the specialist selected in its query string. */
   if (page === 'chat' && window.FAS && window.FAS.agents) {
-    var agentKey = window.FAS.agents.resolveKey(new URLSearchParams(window.location.search).get('agent'));
+    var query = new URLSearchParams(window.location.search);
+    var agentKey = window.FAS.agents.resolveKey(query.get('agent') || query.get('asset'));
     document.querySelectorAll('[data-agent-link]').forEach(function (link) {
       var active = link.getAttribute('data-agent-link') === agentKey;
       link.classList.toggle('is-active', active);
