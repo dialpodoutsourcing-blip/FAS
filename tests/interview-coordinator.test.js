@@ -54,6 +54,7 @@ test('typed and spoken turns share the same durable submission result shape', as
   assert.equal(first.calls[0][0], 'accept');
   assert.equal(first.calls[1][0], 'save');
   assert.equal(first.calls[1][1].agentKey, 'anchor');
+  assert.equal(first.calls[1][1].clientRef, 'interview:typed-1');
   assert.equal(first.calls[2][0], 'reconcile');
   assert.equal(first.calls[3][0], 'reply');
   assert.deepEqual(Object.keys(typed).sort(), ['checkpoint', 'completion', 'message', 'nextQuestion', 'saved', 'source', 'summary'].sort());

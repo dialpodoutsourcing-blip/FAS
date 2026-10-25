@@ -45,6 +45,7 @@ function harness(overrides) {
   const partials = [];
   const finals = [];
   const errors = [];
+  const captures = [];
   const lifecycle = new LifecycleTarget();
   const options = Object.assign({
     peerFactory: () => peer,
@@ -56,10 +57,13 @@ function harness(overrides) {
     onState: value => states.push(value),
     onPartialTranscript: value => partials.push(value),
     onFinalTranscript: value => { finals.push(value); },
-    onError: error => errors.push(error)
+    onError: error => errors.push(error),
+    onCaptureChange: active => captures.push(active)
   }, overrides || {});
-  return { peer, track, stream, mediaCalls, mediaDevices, audio, requests, states, partials, finals, errors, lifecycle, options };
+  return { peer, track, stream, mediaCalls, mediaDevices, audio, requests, states, partials, finals, errors, captures, lifecycle, options };
 }
+
+function deferred() { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; }
 
 test('unsupported capability fails before microphone or network traffic', async () => {
   const { createRealtimeInterviewer } = load();
@@ -84,6 +88,7 @@ test('start unlocks playback, captures enhanced audio, negotiates send-receive S
   assert.equal(h.requests[0].url, '/api/realtime-interview-session');
   assert.equal(h.requests[0].init.headers.Authorization, 'Bearer access-token');
   assert.equal(h.peer.remote.sdp, 'v=0\r\nanswer');
+  assert.equal(h.captures.at(-1), true);
   h.peer.ontrack({ streams: ['remote-stream'] });
   assert.equal(h.audio.srcObject, 'remote-stream');
   h.peer.channel.readyState = 'open'; h.peer.channel.emit('open');
@@ -129,9 +134,11 @@ test('speech interruption, explicit pause/resume, and background lifecycle contr
   assert.ok(h.audio.pauses > 0);
   controller.pause();
   assert.equal(h.track.enabled, false);
+  assert.equal(h.captures.at(-1), false);
   assert.equal(controller.state(), 'paused');
   controller.resume();
   assert.equal(h.track.enabled, true);
+  assert.equal(h.captures.at(-1), true);
   assert.equal(controller.state(), 'listening');
   h.lifecycle.hidden = true; h.lifecycle.emit('visibilitychange');
   assert.equal(h.track.enabled, false);
@@ -186,4 +193,56 @@ test('stop preserves partial text, never finalizes it, waits for finalized work,
   assert.equal(h.peer.connectionState, 'closed');
   assert.equal(h.audio.srcObject, null);
   assert.equal(controller.state(), 'stopped');
+});
+
+test('pause and stop remain authoritative when microphone permission resolves late', async () => {
+  const { createRealtimeInterviewer } = load();
+  const permission = deferred();
+  const pausedHarness = harness({ mediaDevices: { getUserMedia: () => permission.promise } });
+  const paused = createRealtimeInterviewer(pausedHarness.options);
+  const starting = paused.start(); paused.pause(); permission.resolve(pausedHarness.stream); await starting;
+  assert.equal(pausedHarness.track.enabled, false, 'late permission cannot override pause');
+
+  const stopPermission = deferred(); let fetched = 0;
+  const stoppedHarness = harness({ mediaDevices: { getUserMedia: () => stopPermission.promise }, fetchImpl: async () => { fetched += 1; } });
+  const stopped = createRealtimeInterviewer(stoppedHarness.options);
+  const lateStart = stopped.start().catch(() => false);
+  const stopping = stopped.stop();
+  stopPermission.resolve(stoppedHarness.stream);
+  await Promise.all([lateStart, stopping]);
+  assert.equal(stoppedHarness.track.stops, 1);
+  assert.equal(fetched, 0);
+  assert.equal(stopped.state(), 'stopped');
+});
+
+test('failed negotiation and runtime terminal events disable capture and release resources', async () => {
+  const { createRealtimeInterviewer } = load();
+  const failed = harness({ fetchImpl: async () => new Response('unavailable', { status: 502 }) });
+  const failedController = createRealtimeInterviewer(failed.options);
+  await assert.rejects(failedController.start());
+  assert.equal(failed.track.stops, 1);
+  assert.equal(failed.peer.connectionState, 'closed');
+
+  for (const terminal of [
+    { type: 'conversation.item.input_audio_transcription.failed' },
+    { type: 'error' }
+  ]) {
+    const h = harness(); const controller = createRealtimeInterviewer(h.options);
+    await controller.start(); h.peer.channel.readyState = 'open'; h.peer.channel.emit('open');
+    h.peer.channel.emit('message', terminal);
+    await Promise.resolve();
+    assert.equal(h.track.enabled, false);
+    assert.equal(h.track.stops, 1);
+    assert.equal(h.peer.connectionState, 'closed');
+    assert.equal(controller.state(), 'error');
+  }
+});
+
+test('final transcript without a stable item id is rejected instead of inventing a duplicate-prone turn', async () => {
+  const { createRealtimeInterviewer } = load();
+  const h = harness(); const controller = createRealtimeInterviewer(h.options);
+  await controller.start(); h.peer.channel.readyState = 'open'; h.peer.channel.emit('open');
+  h.peer.channel.emit('message', { type: 'conversation.item.input_audio_transcription.completed', transcript: 'No stable identity' });
+  assert.equal(h.finals.length, 0);
+  assert.equal(h.errors.at(-1).code, 'voice_transcript_identity_missing');
 });

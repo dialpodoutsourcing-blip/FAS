@@ -435,6 +435,7 @@ body.tour-frame [data-tutorial-trigger] { display: none !important; }
 .vorb__agent { position: absolute; right: 10px; bottom: 10px; z-index: 3; }
 .voice__state { font-family: var(--font-heading); font-size: 34px; letter-spacing: .6px; text-transform: uppercase; text-align: center; }
 .voice__status { margin: -4px 0 0; color: var(--gold-soft); font-size: 11px; line-height: 1.35; text-align: center; }
+.voice__privacy { display: block; margin-top: 2px; color: var(--text-2); font-size: 10px; }
 .voice__recovery { display: flex; align-items: center; justify-content: center; gap: 8px; }
 .voice__recovery[hidden] { display: none; }
 .wave { display: flex; align-items: center; justify-content: center; gap: 3px; width: 100%; max-width: 310px; height: 48px; }
@@ -978,6 +979,7 @@ body.src-off .part__src { display: none; }
 .chat-page #panel-voice .voice__controls { gap: 10px; padding: 0; }
 .chat-page #panel-voice .vbtn { width: 42px; height: 42px; }
 .chat-page #panel-voice .vbtn--mic { width: 58px; height: 58px; }
+.chat-page #panel-voice .vbtn:disabled { opacity: .45; cursor: wait; }
 .chat-page #panel-voice .transcript { padding: 6px 10px; }
 .chat-page #panel-voice .transcript__label { font-size: 11px; }
 .chat-page #panel-voice .transcript__text { min-height: 18px; margin-top: 2px; font-size: 12px; line-height: 1.35; }

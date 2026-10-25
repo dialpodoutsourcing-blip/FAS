@@ -1,17 +1,17 @@
 # FAS · ADAM Member Area (v5.1)
 
 Premium member area for the Fitness Authority System, styled to the
-Winfuel Authority Ventures brand board. Chat ready, voice orb ready, and
-guided tutorial narration available through the Cedar voice.
+Winfuel Authority Ventures brand board. ADAM supports durable Type and
+hands-free Talk interviews plus guided tutorial narration in the Cedar voice.
 
 ## Run it with Cedar narration
 
 1. Install dependencies once with `npm install`.
-2. Copy `.env.example` to `.env`, provide `OPENAI_API_KEY`, and add the public Supabase values described below.
+2. Copy `.env.example` to `.env`, provide `OPENAI_API_KEY`, and add the public Supabase values described below. For an intentionally local-only preview without Supabase, set `FAS_ALLOW_LOCAL_PAID_AI=1`; never set that flag in Vercel or another network deployment.
 3. Run `npm start`.
 4. Open `http://127.0.0.1:4173`.
 
-The API key is loaded only by the local Node server and is never sent to browser JavaScript. `.env` is ignored by source control. Tutorial narration uses an output-only OpenAI Realtime connection with the Cedar voice; it never requests microphone permission. The visible captions remain authoritative. If Cedar is unavailable, the tutorial stays usable and clearly reports that captions are still available instead of switching to a robotic browser voice.
+The API key is loaded only by the local Node server and is never sent to browser JavaScript. `.env` is ignored by source control. Tutorial narration uses an output-only OpenAI Realtime connection with the Cedar voice; it never requests microphone permission. Talk mode sends microphone audio to OpenAI for live transcription and Cedar speech under the account's standard API data controls. FAS persists the finalized transcript—not raw microphone audio—through the same durable answer/checkpoint path as Type. If voice is unavailable, the interview stays usable through Type and exposes explicit retry/fallback controls.
 
 You can still double-click `index.html` for the static visual preview. Because a `file://` page cannot reach the local Realtime endpoint, narration requires `npm start`.
 
@@ -102,20 +102,24 @@ Sizes: `em--xs` 36, `em--sm` 44, `em--md` 64, `em--lg` 88. States: `is-active`, 
 `index.html` Dashboard · `chat.html` Talk to ADAM (Type / Talk) · `review.html` Expertise Map ·
 `vault.html` My vault · `launch.html` Launch plan
 
-## Chat and voice hooks (for the developer)
-Full API is at the top of `assets/js/adam.js`.
+## Chat and voice architecture
+
+`assets/js/interview-coordinator.js` is the single durable submission path for Type and Talk. `assets/js/realtime-interviewer.js` owns microphone/WebRTC lifecycle, transcription events, interruption, and cleanup. `assets/js/adam.js` renders the shared result and controls completion.
+
+Public controller methods:
+
 ```js
-document.addEventListener('fas:send', async (e) => {
-  FAS.chat.setTyping(true);
-  const reply = await yourApi(e.detail.text);
-  FAS.chat.setTyping(false);
-  FAS.chat.addMessage({ role: 'agent', text: reply });
-});
-document.addEventListener('fas:mic', (e) => { /* start or stop recording */ });
-FAS.orb.setState('idle' | 'listening' | 'thinking' | 'speaking');
-FAS.voice.setTranscript('words so far');
+const coordinator = FAS.createInterviewCoordinator(options);
+await coordinator.submit({ text, source: 'type' | 'talk', turnId });
+
+const voice = FAS.createRealtimeInterviewer(options);
+await voice.start();
+voice.pause();
+voice.resume();
+await voice.stop({ waitFor: pendingDurableSave });
 ```
-Delete the "Preview states (build team only)" row before launch.
+
+See `docs/voice-interview-acceptance.md` for the browser/device and recovery checklist.
 
 ## To finish before launch
 - Replace the static FAS wordmark with the final production brand asset if one is supplied.

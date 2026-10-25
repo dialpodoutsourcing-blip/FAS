@@ -277,6 +277,11 @@
   var voiceStart = null;
   var voiceTurnPromise = null;
   var voiceOrientationSpoken = false;
+  var voiceIntent = 'idle';
+  var voiceGeneration = 0;
+  var voiceSaving = false;
+  var voiceCompletionPromise = null;
+  var lastCaptureActive = false;
   var turnSequence = 0;
   function createTurnId(source){turnSequence+=1;return(source||'type')+'-'+Date.now()+'-'+turnSequence;}
   function initializeInterviewCoordinator(){
@@ -312,7 +317,7 @@
       if(!interview.currentQuestion()&&!hasArtifact){var restoredStatus=$('[data-answer-status]'),restoredButton=form&&form.querySelector('[type="submit"]');if(interview.completion().complete){announceCompletion();if(restoredStatus)restoredStatus.textContent='Generating your blueprint…';generateBlueprint(getCompletionUrl(),restoredStatus).catch(function(){artifactRetryPending=true;if(form)form.removeAttribute('aria-busy');if(restoredStatus)restoredStatus.textContent='Your answers are saved, but the blueprint could not be prepared. Retry blueprint.';if(restoredButton){restoredButton.disabled=false;restoredButton.textContent='Retry blueprint';}});}else{artifactRetryPending=true;if(restoredButton)restoredButton.textContent='Retry blueprint';if(restoredStatus)restoredStatus.textContent='Your answers are saved. Retry blueprint generation.';}}
     }).catch(function(){if(FAS.interview){interview=FAS.interview.create({agent:FAS.agent.current});initializeInterviewCoordinator();renderCurrentQuestion(interview.currentQuestion());}});
   }
-  var persistenceReady=(FAS.authReady||Promise.resolve({mode:'local'})).then(initializePersistence);
+  var persistenceReady=(FAS.authReady||Promise.resolve({mode:'local'})).then(initializePersistence).finally(function(){if(micBtn)micBtn.disabled=false;setVoiceStatus('Voice is ready when you are.',false);});
 
   function apiFetch(url,init){var config=window.FAS_CONFIG||{};if(!config.configured||!FAS.auth||!FAS.auth.requireSession)return fetch(url,init);return FAS.auth.requireSession().then(function(session){var next=Object.assign({},init||{}, {headers:Object.assign({},init&&init.headers||{},{Authorization:'Bearer '+session.accessToken})});return fetch(url,next);});}
 
@@ -320,6 +325,17 @@
     var status=$('[data-voice-status]'),recovery=$('[data-voice-recovery]');
     if(status)status.textContent=message||'';
     if(recovery)recovery.hidden=!showRecovery;
+  }
+
+  function syncVoiceCaptureControl(){
+    var active=Boolean(voiceInterviewer&&voiceInterviewer.captureActive&&voiceInterviewer.captureActive());
+    if(micBtn){micBtn.setAttribute('aria-pressed',String(active));micBtn.setAttribute('aria-label',active?'Pause microphone':'Start or resume microphone');}
+    if(active!==lastCaptureActive){lastCaptureActive=active;emit('fas:mic',{listening:active});}
+  }
+
+  function preserveVoiceDraft(text){
+    var draft=String(text||'').trim();if(!draft||!input)return;
+    input.value=input.value?input.value.trim()+'\n\n'+draft:draft;
   }
 
   function getVoiceAccessToken(){
@@ -330,13 +346,16 @@
 
   function voiceStateChanged(state){
     if(LABELS[state])FAS.orb.setState(state);
-    var copy={connecting:'Connecting your private voice session…',listening:'Listening. Answer naturally when you are ready.',thinking:'Saving your answer and preparing the next question…',speaking:'ADAM is responding. You can interrupt at any time.',paused:'Voice is paused. Press the mic to resume.',stopped:'Voice session ended. Continue with Type whenever you like.',error:'The voice connection needs attention.',unsupported:'Voice is unavailable in this browser. Type mode is still ready.'};
+    if(state==='paused'&&!voiceSaving&&voiceIntent!=='type'&&voiceIntent!=='ended'&&voiceIntent!=='completing')voiceIntent='paused';
+    var copy={connecting:'Connecting your voice session…',listening:'Listening. Answer naturally when you are ready.',thinking:'Saving your answer and preparing the next question…',speaking:'ADAM is responding. You can interrupt at any time.',paused:'Voice is paused. Press the mic to resume.',stopped:'Voice session ended. Continue with Type whenever you like.',error:'The voice connection needs attention.',unsupported:'Voice is unavailable in this browser. Type mode is still ready.'};
     if(copy[state])setVoiceStatus(copy[state],state==='error'||state==='unsupported');
+    syncVoiceCaptureControl();
   }
 
   function voiceFailed(error){
     var message=error&&error.code==='voice_unsupported'?'Voice is not supported by this browser. Continue with Type.':'Microphone access or the voice connection failed. Check browser permission, then Retry voice or use Type instead.';
     setVoiceStatus(message,true);
+    syncVoiceCaptureControl();
   }
 
   function buildVoiceInterviewer(){
@@ -344,6 +363,7 @@
     return FAS.createRealtimeInterviewer({
       getAccessToken:getVoiceAccessToken,
       onState:voiceStateChanged,
+      onCaptureChange:syncVoiceCaptureControl,
       onPartialTranscript:function(partial){FAS.voice.setTranscript(partial.text);},
       onFinalTranscript:handleVoiceTurn,
       onError:voiceFailed
@@ -352,12 +372,14 @@
 
   function startVoiceInterview(){
     var recovery=$('[data-voice-recovery]');if(recovery)recovery.hidden=true;
+    voiceIntent='talk';voiceGeneration+=1;var generation=voiceGeneration;
     if(!voiceInterviewer)voiceInterviewer=buildVoiceInterviewer();
     if(!voiceInterviewer){voiceFailed({code:'voice_unsupported'});return Promise.reject(new Error('Voice unsupported'));}
-    if(voiceInterviewer.state()==='paused'){voiceInterviewer.resume();return Promise.resolve(true);}
+    if(voiceInterviewer.state()==='paused'){voiceInterviewer.resume();syncVoiceCaptureControl();return Promise.resolve(true);}
     if(voiceStart)return voiceStart;
     voiceStart=voiceInterviewer.start();
     Promise.all([voiceStart,persistenceReady]).then(function(){
+      if(generation!==voiceGeneration||voiceIntent!=='talk')return;
       if(!interview||!interview.currentQuestion())throw new Error('Interview is not ready');
       if(voiceOrientationSpoken)return;
       voiceOrientationSpoken=true;
@@ -365,8 +387,7 @@
       var exactQuestion=interview.currentQuestion().question;
       voiceInterviewer.speak(orientation+exactQuestion);
       setVoiceStatus('Hands-free interview started. ADAM will listen after the question.',false);
-    }).catch(function(){voiceFailed({code:'voice_connection_failed'});});
-    emit('fas:mic',{listening:true});
+    }).catch(function(){if(generation===voiceGeneration&&voiceIntent==='talk')voiceFailed({code:'voice_connection_failed'});});
     return voiceStart;
   }
 
@@ -383,10 +404,10 @@
     if(!voiceInterviewer)return Promise.resolve();
     if(command==='repeat'){
       var question=interview&&interview.currentQuestion();
-      if(question)voiceInterviewer.speak(question.question);
+      if(question&&voiceIntent==='talk')voiceInterviewer.speak(question.question);
       setVoiceStatus('Repeating the current question.',false);
     }else if(command==='pause'){
-      voiceInterviewer.pause();setVoiceStatus('Voice is paused. Press the mic to resume.',false);
+      voiceIntent='paused';voiceInterviewer.pause();setVoiceStatus('Voice is paused. Press the mic to resume.',false);
     }else if(command==='switch_to_type'){
       switchToTyping();
     }else if(command==='end'){
@@ -395,13 +416,48 @@
     return Promise.resolve();
   }
 
+  function restoreBlueprintRetry(status){
+    artifactRetryPending=true;
+    if(form)form.removeAttribute('aria-busy');
+    var button=form&&form.querySelector('[type="submit"]');
+    if(button){button.disabled=false;button.textContent='Retry blueprint';}
+    if(status)status.textContent='Your answers are saved, but the blueprint could not be prepared. Retry blueprint.';
+  }
+
+  function runVoiceCompletion(completionUrl,status){
+    if(voiceCompletionPromise)return voiceCompletionPromise;
+    var shouldSpeak=voiceIntent==='talk';
+    voiceIntent='completing';voiceGeneration+=1;voiceSaving=false;
+    var completionMessage=voiceCompletionCopy();
+    announceCompletion();
+    if(status)status.textContent='Finishing the interview…';
+    setVoiceStatus('Interview complete. ADAM is closing the conversation before preparing your blueprint…',false);
+    var playback=Promise.resolve();
+    if(voiceInterviewer){voiceInterviewer.pause();syncVoiceCaptureControl();if(shouldSpeak)playback=Promise.resolve(voiceInterviewer.speak(completionMessage));}
+    var boundedPlayback=Promise.race([playback,new Promise(function(resolve){setTimeout(resolve,5000);})]);
+    voiceCompletionPromise=boundedPlayback.then(function(){return voiceInterviewer?voiceInterviewer.stop():null;}).then(function(){
+      if(status)status.textContent='Generating your blueprint…';
+      setVoiceStatus('Your answers are saved. Your blueprint is being prepared…',false);
+      return generateBlueprint(completionUrl,status);
+    }).catch(function(error){voiceCompletionPromise=null;restoreBlueprintRetry(status);throw error;});
+    return voiceCompletionPromise;
+  }
+
   function handleVoiceTurn(turn){
     var command=classifyVoiceCommand(turn.text);
     if(command)return handleVoiceCommand(command);
     FAS.voice.setTranscript(turn.text);
-    if(!interviewCoordinator){voiceFailed({code:'voice_not_ready'});return Promise.resolve();}
-    FAS.chat.addMessage({role:'user',text:turn.text,tag:'YOU'});
-    conversationHistory.push({role:'user',content:turn.text});
+    if(voiceIntent!=='talk'){preserveVoiceDraft(turn.text);return Promise.resolve();}
+    if(voiceTurnPromise){
+      if(voiceInterviewer)voiceInterviewer.pause();
+      preserveVoiceDraft(turn.text);
+      setVoiceStatus('I caught additional words while the prior answer was saving. They are waiting in Type for review.',true);
+      return voiceTurnPromise;
+    }
+    if(!interviewCoordinator){preserveVoiceDraft(turn.text);voiceFailed({code:'voice_not_ready'});return Promise.resolve();}
+    var generation=voiceGeneration;
+    voiceSaving=true;if(voiceInterviewer)voiceInterviewer.pause();syncVoiceCaptureControl();
+    conversationHistory.push({role:'user',content:turn.text,voiceTurnId:turn.turnId});
     FAS.orb.setState('thinking');
     setVoiceStatus('Saving your spoken answer…',false);
     var answerSaved=false,status=$('[data-answer-status]'),completionUrl=getCompletionUrl();
@@ -409,45 +465,40 @@
       answerSaved=true;
       if(status)status.textContent='Answer saved.';
       emit('fas:answer-saved',{answer:result.saved});emit('fas:checkpoint',{checkpoint:result.checkpoint});
+      if(result.saved)FAS.chat.addMessage({role:'user',text:turn.text,tag:'YOU'});
       if(result.nextQuestion){
         FAS.chat.addMessage({role:'agent',text:result.message});
         renderCurrentQuestion({question:result.nextQuestion},true);
         setVoiceStatus('Answer saved. ADAM is continuing the interview.',false);
-        voiceInterviewer.speak(result.message);
+        voiceSaving=false;
+        if(generation===voiceGeneration&&voiceIntent==='talk'&&voiceInterviewer){voiceInterviewer.resume();syncVoiceCaptureControl();voiceInterviewer.speak(result.message);}
       }
       if(result.summary)FAS.chat.addMessage({role:'note',text:'Checkpoint saved · Review recent answers anytime in History.',tag:'CHECKPOINT',variant:'checkpoint'});
       if(result.completion.gaps.length)emit('fas:interview-gap',{gaps:result.completion.gaps});
-      if(result.completion.complete){
-        var completionMessage=voiceCompletionCopy();
-        announceCompletion();
-        voiceInterviewer.pause();
-        voiceInterviewer.speak(completionMessage);
-        if(status)status.textContent='Generating your blueprint…';
-        setVoiceStatus('Interview complete. Your blueprint is being prepared…',false);
-        return generateBlueprint(completionUrl,status);
-      }
+      if(result.completion.complete)return runVoiceCompletion(completionUrl,status);
       return result;
     }).catch(function(){
       if(!answerSaved){
+        var latest=conversationHistory[conversationHistory.length-1];if(latest&&latest.voiceTurnId===turn.turnId)conversationHistory.pop();
         if(status)status.textContent='Save failed. Your spoken answer has not been stored.';
-        if(input&&!input.value)input.value=turn.text;
+        preserveVoiceDraft(turn.text);
         setVoiceStatus('Your spoken answer could not be saved. It is waiting in Type so you can retry safely.',true);
       }else{
-        artifactRetryPending=true;
-        if(status)status.textContent='Your answers are saved, but the blueprint could not be prepared. Retry blueprint.';
+        restoreBlueprintRetry(status);
         setVoiceStatus('Your interview is safely saved. Blueprint generation needs another try.',true);
       }
     });
-    var tracked=work.finally(function(){if(voiceTurnPromise===tracked)voiceTurnPromise=null;});
+    var tracked=work.finally(function(){voiceSaving=false;syncVoiceCaptureControl();if(voiceTurnPromise===tracked)voiceTurnPromise=null;});
     voiceTurnPromise=tracked;
     return tracked;
   }
 
   function switchToTyping(){
+    voiceIntent='type';voiceGeneration+=1;
     if(voiceInterviewer){
       var draft=voiceInterviewer.partialTranscript();
       voiceInterviewer.pause();
-      if(draft&&input&&!input.value)input.value=draft;
+      preserveVoiceDraft(draft);
     }
     FAS.mode('text');
     if(input)input.focus();
@@ -455,6 +506,7 @@
   }
 
   function endVoiceInterview(){
+    voiceIntent='ended';voiceGeneration+=1;
     emit('fas:voice-end');
     if(!voiceInterviewer){FAS.orb.setState('stopped');return Promise.resolve();}
     setVoiceStatus('Ending voice safely after any answer finishes saving…',false);
@@ -464,13 +516,14 @@
   function handleVoiceMicClick(){
     if(!voiceInterviewer)return startVoiceInterview();
     var state=voiceInterviewer.state();
-    if(state==='paused')return voiceInterviewer.resume();
+    if(state==='paused'){voiceIntent='talk';voiceGeneration+=1;var resumed=voiceInterviewer.resume();syncVoiceCaptureControl();return resumed;}
     if(state==='error'||state==='unsupported'||state==='stopped')return retryVoiceInterview();
-    if(state==='listening'||state==='thinking'||state==='speaking'){voiceInterviewer.pause();return;}
+    if(state==='listening'||state==='thinking'||state==='speaking'){voiceIntent='paused';voiceGeneration+=1;voiceInterviewer.pause();syncVoiceCaptureControl();return;}
     if(state==='idle')return startVoiceInterview();
   }
 
   function retryVoiceInterview(){
+    voiceIntent='ended';voiceGeneration+=1;
     var previous=voiceInterviewer;
     voiceInterviewer=null;voiceStart=null;voiceOrientationSpoken=false;
     var stopped=previous?previous.stop({waitFor:voiceTurnPromise}):Promise.resolve();

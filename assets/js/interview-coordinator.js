@@ -55,7 +55,7 @@
       var durablySaved = false;
       var promise = Promise.resolve().then(function () {
         accepted = interview.acceptAnswer({ text: text });
-        var answer = Object.assign({ agentKey: agentKey }, accepted.answer);
+        var answer = Object.assign({ agentKey: agentKey, clientRef: 'interview:' + turnId }, accepted.answer);
         var checkpoint = Object.assign({ agentKey: agentKey }, interview.checkpoint());
         return projectStore.saveAnswerCheckpoint(answer, checkpoint);
       }).then(function (saved) {
