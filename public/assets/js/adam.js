@@ -259,6 +259,10 @@
 
   var query = new URLSearchParams(window.location.search);
   FAS.agent.render(query.get('agent'));
+  var projectId = query.get('project') || 'local-default';
+  var projectStore = FAS.projectStore && FAS.projectStore.create({ projectId: projectId });
+  var interview = FAS.interview && FAS.interview.create({ agent: FAS.agent.current });
+  if (interview && interview.currentQuestion()) setText('[data-agent-question]', interview.currentQuestion().question);
 
   function closeDrawers() {
     $$('[data-chat-history-drawer], [data-chat-saved-drawer], [data-chat-trust-drawer]').forEach(function (drawer) { drawer.hidden = true; });
@@ -341,6 +345,20 @@
     var status = $('[data-answer-status]');
     if (status) status.textContent = 'Answer saved to History.';
     emit('fas:send', { text: text });
+    if (!interview || !projectStore) return;
+    var result = interview.acceptAnswer({ text: text });
+    projectStore.saveAnswer(Object.assign({ agentKey: FAS.agent.current.key }, result.answer)).then(function (saved) {
+      emit('fas:answer-saved', { answer: saved });
+      return projectStore.saveCheckpoint(Object.assign({ agentKey: FAS.agent.current.key }, interview.checkpoint()));
+    }).then(function (checkpoint) {
+      emit('fas:checkpoint', { checkpoint: checkpoint });
+      if (result.followUps.length) FAS.chat.addMessage({ role: 'agent', text: result.followUps[0].question });
+      else if (result.nextQuestion) { setText('[data-agent-question]', result.nextQuestion.question); FAS.chat.addMessage({ role: 'agent', text: result.nextQuestion.question }); }
+      if (result.summary) FAS.chat.addMessage({ role: 'note', text: 'Checkpoint saved. Review the last three answers and correct anything that is off.', tag: 'CHECKPOINT' });
+      var completion = interview.completion();
+      if (completion.gaps.length) emit('fas:interview-gap', { gaps: completion.gaps });
+      if (completion.complete) return projectStore.loadProject().then(function (project) { var artifact=FAS.artifacts.build(FAS.agent.current.key,project);emit('fas:artifact-ready',{artifact:artifact});return projectStore.saveArtifact(artifact); });
+    }).catch(function () { if (status) status.textContent = 'Saved locally when connection returns.'; });
   }
 
   if (form) form.addEventListener('submit', function (e) { e.preventDefault(); send(); });

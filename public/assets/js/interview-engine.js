@@ -1,0 +1,34 @@
+(function(root,factory){var api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root){root.FAS=root.FAS||{};root.FAS.interview=api;}})(typeof window!=='undefined'?window:null,function(){
+  'use strict';
+  function clone(value){return JSON.parse(JSON.stringify(value));}
+  var rules=[
+    ['sensitive_story',/\b(sensitive|private|confidential|trauma)\b/i,'May this be used publicly, kept private, or omitted?'],
+    ['hedging',/\b(all of the above|i defer|whatever you think|any of them)\b/i,'Which single option is your gut choice?'],
+    ['stuck',/\b(i don.?t know|no idea|not sure|blank)\b/i,'Would it help to react to two concrete examples?'],
+    ['ambiguous_number',/(?:\$|£|€)\s*[\d,.]+[^.!?]*(?:or|profit|revenue|top.?line|maybe)/i,'Is that revenue, profit, price, or another exact amount?'],
+    ['loose_steps',/(?:\b[\w-]+\b\s*,\s*){2,}\b[\w-]+\b|(?:\b[\w-]+\b\s+){2,}(?:and|then)\s+\b[\w-]+\b/i,'How many steps is that, and what is the exact order?'],
+    ['vague_quantity',/\b(a lot|many|tons|more money|too much|hundreds|some|often)\b/i,'What is the closest real number, amount, or time range?'],
+    ['abstract_principle',/\b(i believe|principle|philosophy|everything|always)\b/i,'Tell me one specific story that proves that principle.'],
+    ['tool_or_template',/\b(template|worksheet|scorecard|tool|checklist|script)\b/i,'Is that an existing deliverable, a bonus, or something we need to create?'],
+    ['expert_shorthand',/\b(?:emi|kpi|icp|loop|framework|mechanism)\b/i,'How would you explain that term to a complete beginner?'],
+    ['quotable',/[“”"]|\b(?:gold|quote me|never|always)\b/i,'That sounds quotable. Is this your exact language, and may we save it for copy?']
+  ];
+  function classify(input){var text=typeof input==='string'?input:String(input&&input.text||'');for(var i=0;i<rules.length;i++)if(rules[i][1].test(text))return{trigger:rules[i][0],question:rules[i][2]};return{trigger:null,question:null};}
+  function create(options){
+    options=options||{};var agent=clone(options.agent||{}),state=Object.assign({chapterIndex:0,questionIndex:0,answers:[],conflicts:[],summaries:[],phases:[]},clone(options.state||{}));
+    function flatQuestions(){var result=[];(agent.chapters||[]).forEach(function(chapter){chapter.questions.forEach(function(question){result.push(Object.assign({chapter:chapter.id},question));});});return result;}
+    function currentQuestion(){return flatQuestions()[state.questionIndex]||null;}
+    function acceptAnswer(input){input=typeof input==='string'?{text:input}:input||{};var question=currentQuestion()||{},field=input.field||question.field||('extra.'+state.answers.length),text=String(input.text||input.value||'').trim(),previous=state.answers.filter(function(a){return a.field===field;}).pop(),conflict=null;
+      if(previous&&previous.text!==text){conflict={field:field,values:[previous.text,text],status:'open'};state.conflicts.push(conflict);}
+      var detected=classify(text),answer={field:field,text:text,basis:input.basis||'user',permissionStatus:input.sensitive||detected.trigger==='sensitive_story'?'pending':(input.permissionStatus||'not_required'),createdAt:new Date().toISOString()};state.answers.push(answer);
+      var followUps=[];if(detected.trigger)followUps.push(detected);else state.questionIndex=Math.min(state.questionIndex+1,flatQuestions().length);
+      var summary=null;if(state.answers.length%3===0){summary={after:state.answers.length,items:state.answers.slice(-3).map(function(item){return{field:item.field,text:item.text};})};state.summaries.push(summary);}
+      return{answer:clone(answer),followUps:followUps.slice(0,1),summary:clone(summary),conflict:clone(conflict),nextQuestion:currentQuestion()};
+    }
+    function resolveConflict(choice){var conflict=state.conflicts.find(function(item){return item.field===choice.field&&item.status==='open';});if(conflict){conflict.status='resolved';conflict.value=choice.value;}return clone(conflict);}
+    function buildGapList(){var gaps=[];flatQuestions().forEach(function(question){if(question.required&&!state.answers.some(function(answer){return answer.field===question.field&&answer.text;}))gaps.push({field:question.field,question:question.question});});if(agent.key==='architect')(state.phases||[]).forEach(function(phase,index){['firstAction','benchmark','mistakeCost','proofStory','resource','doneDefinition'].forEach(function(field){if(!phase[field])gaps.push({field:'phases.'+index+'.'+field,question:'Complete '+field+' for '+(phase.name||('phase '+(index+1)))});});});return gaps;}
+    function completion(){return{complete:buildGapList().length===0&&!state.conflicts.some(function(item){return item.status==='open';}),gaps:buildGapList(),conflicts:clone(state.conflicts)};}
+    return{currentQuestion:currentQuestion,acceptAnswer:acceptAnswer,resolveConflict:resolveConflict,checkpoint:function(){return clone(state);},completion:completion,buildGapList:buildGapList};
+  }
+  return{create:create,classify:classify};
+});
