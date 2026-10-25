@@ -584,6 +584,11 @@ body.src-off .part__src { display: none; }
 .artifact-live__notice { min-height: 38px; margin-top: 12px; padding: 9px 10px; border-radius: var(--r-sm); background: rgba(211,181,124,.08); color: var(--gold); font-size: 11px; line-height: 1.45; text-align: center; }
 .artifact-live__notice:empty { visibility: hidden; }
 .artifact-live__notice.is-error { background: rgba(224,138,90,.1); color: #e7a176; }
+.artifact-upgrade-state { width: min(760px, 100%); margin: 24px auto; display: flex; align-items: center; gap: 18px; padding: 22px 24px; border: 1px solid var(--gold-line); border-radius: var(--r-lg); background: radial-gradient(circle at 0 0, rgba(211,181,124,.12), transparent 42%), var(--surface); }
+.artifact-upgrade-state h2 { margin-top: 3px; font-family: var(--font-sub); font-size: 20px; }
+.artifact-upgrade-state p:not(.eyebrow) { margin-top: 7px; color: var(--text-2); font-size: 13px; line-height: 1.55; }
+.artifact-upgrade-state.is-error { display: block; border-color: rgba(224,138,90,.48); background: rgba(224,138,90,.08); }
+.artifact-upgrade-state.is-error .btn { margin-top: 14px; }
 .export-theme-dialog { width: min(1080px, calc(100vw - 32px)); max-height: calc(100vh - 32px); padding: 0; border: 1px solid var(--gold-line); border-radius: 18px; background: #0b0b08; color: var(--text); box-shadow: 0 28px 90px rgba(0,0,0,.72); overflow: auto; }
 .export-theme-dialog::backdrop { background: rgba(0,0,0,.78); backdrop-filter: blur(8px); }
 .export-theme-dialog__panel { position: relative; padding: clamp(24px, 4vw, 42px); background: radial-gradient(circle at 88% 0, rgba(211,181,124,.12), transparent 35%), linear-gradient(145deg, rgba(255,255,255,.025), transparent 45%); }
