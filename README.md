@@ -29,6 +29,10 @@ This is a local static preview. All seven specialists are temporarily accessible
 
 The interface appends submitted messages locally and emits the documented FAS browser events. It does not call a backend or generate automatic replies. Customer progress, saved conversations, and production access locks are not implemented in this preview.
 
+## Supabase project data
+
+The production schema is in `supabase/migrations/202610250001_fas_production.sql`. Run it in the Supabase SQL editor, then configure `SUPABASE_URL` and `SUPABASE_ANON_KEY` in the deployment environment. The browser adapter requires the signed-in user's access token and never accepts a service-role key. Without Supabase configuration, the same project shapes use local storage for demo continuity.
+
 Run the complete checks with:
 
 ```powershell
