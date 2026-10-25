@@ -2,6 +2,7 @@
 const path=require('node:path');
 const express=require('express');
 const exportsService=require('./lib/export-service');
+const {buildRuntimeConfig}=require('./lib/runtime-config');
 require('dotenv').config();
 const REALTIME_URL='https://api.openai.com/v1/realtime/calls';
 const RESPONSES_URL='https://api.openai.com/v1/responses';
@@ -42,9 +43,10 @@ function validatePremiumSynthesis(report,request){
  return Array.isArray(report.recommendations)&&report.recommendations.length>=3&&report.recommendations.length<=5&&report.recommendations.every(item=>Number.isInteger(item.priority)&&item.priority>=1&&item.priority<=5&&validSources(item.sourceIds)&&['title','rationale','nextStep'].every(key=>nonEmpty(item[key])))&&validSources(report.finalDecision.sourceIds)&&['recommendation','rationale','scaleTrigger'].every(key=>nonEmpty(report.finalDecision[key]));
 }
 function buildRealtimeSessionConfig(){return{type:'realtime',model:'gpt-realtime-2.1',instructions:"You are ADAM, the warm, intelligent guide inside FAS. Speak naturally and conversationally, with grounded confidence, varied pacing, and brief human pauses. Deliver only the requested tutorial narration. Preserve its meaning, add no facts, greetings, questions, or closing remarks, and never sound theatrical.",tools:[],tool_choice:'none',audio:{input:{turn_detection:null},output:{voice:'cedar',speed:1}}};}
-function createApp({fetchImpl=globalThis.fetch,apiKey=process.env.OPENAI_API_KEY,chatModel=process.env.OPENAI_CHAT_MODEL||'gpt-5.4-mini',allowedOrigin=process.env.FAS_ORIGIN||'http://127.0.0.1:4173'}={}){
+function createApp({fetchImpl=globalThis.fetch,apiKey=process.env.OPENAI_API_KEY,chatModel=process.env.OPENAI_CHAT_MODEL||'gpt-5.4-mini',allowedOrigin=process.env.FAS_ORIGIN||'http://127.0.0.1:4173',runtimeEnv=process.env}={}){
  const app=express();
  app.use((req,res,next)=>{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','same-origin');next();});
+ app.get('/api/runtime-config',(req,res)=>{res.setHeader('Cache-Control','no-store');return res.json(buildRuntimeConfig(runtimeEnv));});
  app.post('/api/exports',express.json({limit:'1mb'}),async(req,res)=>{
   const origin=req.get('origin'),forwardedHost=req.get('x-forwarded-host'),requestHost=forwardedHost||req.get('host'),requestProtocol=req.get('x-forwarded-proto')||req.protocol,sameOrigin=requestHost?`${requestProtocol}://${requestHost}`:'';if(origin&&origin!==allowedOrigin&&origin!==sameOrigin)return res.status(403).json({error:'Origin not allowed.'});
   try{const request=exportsService.assertExportRequest(req.body),isPdf=request.format==='pdf',bytes=isPdf?await exportsService.renderPdf(request.artifact,{theme:request.theme}):await exportsService.renderDocx(request.artifact),mime=isPdf?'application/pdf':'application/vnd.openxmlformats-officedocument.wordprocessingml.document';res.setHeader('Content-Type',mime);res.setHeader('Content-Disposition',`attachment; filename="${exportsService.filename(request.artifact,request.format)}"`);res.setHeader('X-FAS-Artifact-Version',String(request.artifact.version));res.setHeader('X-FAS-Content-Fingerprint',request.artifact.contentFingerprint);return res.send(bytes);}catch(error){return res.status(400).json({error:error&&error.message||'Export failed.'});}
