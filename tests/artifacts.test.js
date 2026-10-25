@@ -29,6 +29,38 @@ test('ANCHOR applies a five-part AI synthesis without losing source provenance',
  assert.deepEqual(base.sections[0].blocks[0].text.startsWith('Authority focus:'),true,'base artifact remains unchanged');
 });
 
+test('ANCHOR attaches a complete premium report without mutating the grounded base artifact',()=>{
+ const base=artifacts.build('anchor',{id:'premium',answers:['authority','arena','evidence','position','boundaries','activation'].map((field,index)=>({id:'src-'+field,field:'anchor.'+field,text:'Grounded '+field+' answer '+(index+1)}))}),before=JSON.stringify(base);
+ const report={
+  executiveBrief:{opportunity:'Own the focused-program category.',credibility:'A documented client outcome supports the claim.',decision:'Lead with program clarity.',sourceIds:['src-authority','src-evidence']},
+  expertStatement:{external:'I help experienced independent consultants turn scattered expertise into a focused program with a measurable transformation, using a proof-led process grounded in documented client work.',thesis:'The defensible position is clarity before scale.',sourceIds:['src-authority','src-arena','src-evidence','src-position']},
+  authorityFoundation:{expertiseDomain:'Program positioning',distinctiveLens:'Clarity before scale',priorityBuyer:'Experienced independent consultants',costlyProblem:'Scattered expertise',transformation:'One focused program',boundaries:'No guaranteed commercial results',sourceIds:['src-authority','src-arena','src-position','src-boundaries']},
+  evidenceMatrix:[{claim:'Can focus scattered expertise',proof:'Grounded evidence answer 3',confidence:82,commercialRelevance:'Reduces buyer confusion',gap:'Add a permissioned case study',sourceIds:['src-evidence']}],
+  positioningMap:{xAxis:'Generic to specific',yAxis:'Theory to evidence',position:{x:82,y:76,label:'Proof-led program clarity',rationale:'Specific buyer and evidence.',sourceIds:['src-arena','src-evidence']},alternatives:[{label:'Generic business coach',x:25,y:35}]},
+  messagingArchitecture:{signatureBelief:'Clarity must precede scale.',valuePromise:'Turn expertise into a focused program.',pillars:[{title:'Focus',message:'Choose one transformation.',proof:'Documented client work.',sourceIds:['src-evidence']}],languageToUse:['focused','proof-led'],languageToAvoid:['guaranteed','effortless']},
+  risks:[{risk:'One proof point',impact:'The position may feel under-supported.',mitigation:'Capture another permissioned case.',sourceIds:['src-evidence']}],
+  activationPlan:[{week:1,objective:'Package proof',actions:['Draft one anonymized case analysis'],successIndicator:'One approved case analysis',sourceIds:['src-activation']}],
+  recommendations:[{priority:1,title:'Publish the proof',rationale:'Evidence makes the position credible.',nextStep:'Draft and approve the case analysis.',sourceIds:['src-evidence','src-activation']}]
+ };
+ const result=artifacts.applySynthesis(base,{premiumReport:report});
+ assert.equal(JSON.stringify(base),before,'base artifact remains immutable');
+ assert.deepEqual(result.premiumReport,report);
+ assert.equal(result.sections.length,5);
+ const known=new Set(result.sources.map(source=>source.id));
+ const cited=JSON.stringify(result.premiumReport).match(/src-[a-z]+/g)||[];
+ assert.ok(cited.length>8);assert.ok(cited.every(id=>known.has(id)));
+ assert.match(result.sections[1].blocks[0].text,/independent consultants/i);
+});
+
+test('ANCHOR deterministic premium fallback marks thin evidence as a gap without inventing proof',()=>{
+ const artifact=artifacts.build('anchor',{id:'thin',answers:['authority','arena','evidence','position','boundaries','activation'].map(field=>({id:'src-'+field,field:'anchor.'+field,text:field==='evidence'?'I am still gathering examples.':'My '+field+' answer.'}))});
+ assert.ok(artifact.premiumReport);
+ assert.equal(artifact.premiumReport.evidenceMatrix[0].confidence,35);
+ assert.match(artifact.premiumReport.evidenceMatrix[0].gap,/needs validation/i);
+ assert.doesNotMatch(JSON.stringify(artifact.premiumReport),/certified|million|guaranteed result|\d+ clients/i);
+ assert.ok(artifact.premiumReport.recommendations.length>=3);
+});
+
 test('EXTRACT artifact preserves evidence, exact language, permissions, and gaps',()=>{
  const artifact=artifacts.build('extract',{id:'project-1',answers:[
   {field:'extract.origin',text:'I started after my own setback.',basis:'user'},
