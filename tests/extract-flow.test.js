@@ -8,6 +8,11 @@ test('chat loads production domain modules before its controller',()=>{
 test('chat controller saves answers, checkpoints, gaps, and ready artifacts',()=>{
  for(const token of ['FAS.projectStore.create','FAS.interview.create','saveAnswer','saveCheckpoint','fas:answer-saved','fas:checkpoint','fas:artifact-ready','fas:interview-gap'])assert.ok(adam.includes(token),token);
 });
+test('completed Anchor interviews request structured synthesis before saving the artifact',()=>{
+ assert.match(adam,/fetch\('\/api\/artifact-synthesis'/);
+ assert.match(adam,/FAS\.artifacts\.applySynthesis/);
+ assert.ok(adam.indexOf("fetch('/api/artifact-synthesis'")<adam.indexOf('projectStore.saveArtifact',adam.indexOf("fetch('/api/artifact-synthesis'")));
+});
 test('chat controller requests an AI acknowledgement while preserving the engine-selected question',()=>{
  assert.match(adam,/fetch\('\/api\/chat-response'/);
  assert.match(adam,/nextQuestion/);

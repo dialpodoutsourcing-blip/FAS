@@ -2,6 +2,33 @@
 const test=require('node:test');const assert=require('node:assert/strict');
 const artifacts=require('../assets/js/artifacts.js');
 
+test('ANCHOR turns all six answers into five complete, grounded blueprint sections',()=>{
+ const project={id:'anchor-project',answers:[
+  {id:'a1',agentKey:'anchor',field:'anchor.authority',text:'Turn scattered expertise into one focused paid program.'},
+  {id:'a2',agentKey:'anchor',field:'anchor.arena',text:'Experienced solo consultants building their first group offer.'},
+  {id:'a3',agentKey:'anchor',field:'anchor.evidence',text:'18 completions from 22 enrollments plus three approved testimonials.'},
+  {id:'a4',agentKey:'anchor',field:'anchor.position',text:'A narrow promise beats an oversized content library.'},
+  {id:'a5',agentKey:'anchor',field:'anchor.boundaries',text:'No revenue guarantees or uncited performance claims.'},
+  {id:'a6',agentKey:'anchor',field:'anchor.activation',text:'Publish one case analysis and host a live workshop within 30 days.'}
+ ]};
+ const artifact=artifacts.build('anchor',project),copy=JSON.stringify(artifact.sections);
+ assert.equal(artifact.sections.length,5);
+ assert.ok(artifact.sections.every(section=>section.blocks.length&&section.blocks.every(block=>block.kind!=='gap')));
+ for(const phrase of ['solo consultants','18 completions','narrow promise','No revenue guarantees','within 30 days'])assert.match(copy,new RegExp(phrase,'i'));
+ const statement=artifact.sections.find(section=>section.title==='Trusted Expert Statement');
+ assert.match(statement.blocks[0].text,/I help/i);
+ assert.ok(statement.blocks[0].sourceIds.length>=4);
+});
+
+test('ANCHOR applies a five-part AI synthesis without losing source provenance',()=>{
+ const base=artifacts.build('anchor',{id:'p',answers:['authority','arena','evidence','position','boundaries','activation'].map((field,index)=>({id:'s'+index,field:'anchor.'+field,text:'Answer '+field}))});
+ const copy={authorityArena:'Focused arena.',trustedExpertStatement:'I help a defined audience achieve a grounded result.',evidence:'Strongest proof.',positionBoundaries:'Distinct position with responsible limits.',activation:'A focused 30-day action.'};
+ const result=artifacts.applySynthesis(base,copy);
+ assert.deepEqual(result.sections.map(section=>section.blocks[0].text),Object.values(copy));
+ assert.ok(result.sections.every(section=>section.blocks[0].sourceIds.length));
+ assert.deepEqual(base.sections[0].blocks[0].text.startsWith('Authority focus:'),true,'base artifact remains unchanged');
+});
+
 test('EXTRACT artifact preserves evidence, exact language, permissions, and gaps',()=>{
  const artifact=artifacts.build('extract',{id:'project-1',answers:[
   {field:'extract.origin',text:'I started after my own setback.',basis:'user'},

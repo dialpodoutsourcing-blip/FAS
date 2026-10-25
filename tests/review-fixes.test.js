@@ -46,6 +46,26 @@ test('live artifact review has a dedicated readable document layout',()=>{
  assert.match(css,/\.artifact-live__section\s*\{[^}]*padding/s);
  assert.match(css,/\.artifact-live__body\s*\{[^}]*line-height:\s*1\.7/s);
 });
+test('live synthesized sections display every contributing source field',()=>{
+ const ui=fs.readFileSync(path.join(__dirname,'..','assets','js','artifact-ui.js'),'utf8');
+ assert.match(ui,/block\.sourceIds\|\|\[block\.sourceId\]/);
+ assert.match(ui,/Sources · /);
+});
+test('review controls expose visible status and validate exported file signatures',()=>{
+ const ui=fs.readFileSync(path.join(__dirname,'..','assets','js','artifact-ui.js'),'utf8');
+ assert.match(ui,/data-live-notice/);
+ assert.match(ui,/%PDF-/);
+ assert.match(ui,/signature\.slice\(0,2\)!==['"]PK['"]/);
+ assert.match(ui,/Approved ✓/);
+ assert.match(ui,/setTimeout\(function\(\)\{URL\.revokeObjectURL/);
+});
+
+test('draft review suppresses the next-agent arrow until approval',()=>{
+ const ui=fs.readFileSync(path.join(__dirname,'..','assets','js','artifact-ui.js'),'utf8');
+ assert.match(ui,/link\.classList\.remove\('is-preview'\)/);
+ assert.match(ui,/selected\.status==='user_approved'/);
+ assert.match(ui,/nextLink\.classList\.add\('is-preview'\)/);
+});
 
 test('shared navigation uses the reviewed artifact agent when selecting a specialist',()=>{
  const nav=fs.readFileSync(path.join(__dirname,'..','assets','js','nav.js'),'utf8');

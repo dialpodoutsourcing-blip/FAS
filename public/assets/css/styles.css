@@ -98,6 +98,7 @@ table { width: 100%; border-collapse: collapse; }
 .step-link.is-preview .step-link__state::after { content: "↗"; color: var(--c); font-size: 15px; }
 .is-preview .em.is-locked svg { filter: none; }
 .step-link__state { color: var(--muted); }
+.step-link.is-active .step-link__state { color: var(--gold); font-size: 8px; font-weight: 800; letter-spacing: .6px; }
 .step-link.is-done .step-link__state { color: var(--gold); }
 
 .sidebar .em--xs { width: 29px; height: 29px; }
@@ -579,6 +580,9 @@ body.src-off .part__src { display: none; }
 .artifact-live__assurance, .artifact-live__approval-note { color: var(--muted); font-size: 12px; line-height: 1.55; }
 .artifact-live__summary .btn { margin-top: 20px; }
 .artifact-live__approval-note { margin-top: 10px; text-align: center; }
+.artifact-live__notice { min-height: 38px; margin-top: 12px; padding: 9px 10px; border-radius: var(--r-sm); background: rgba(211,181,124,.08); color: var(--gold); font-size: 11px; line-height: 1.45; text-align: center; }
+.artifact-live__notice:empty { visibility: hidden; }
+.artifact-live__notice.is-error { background: rgba(224,138,90,.1); color: #e7a176; }
 .switch { display: inline-flex; align-items: center; gap: 10px; min-height: var(--tap); padding: 0 16px; border-radius: var(--r-sm); border: 1px solid var(--line-2); background: transparent; font-family: var(--font-sub); font-size: 14px; font-weight: 600; }
 .switch__track { position: relative; width: 38px; height: 22px; border-radius: 999px; background: var(--line-2); }
 .switch__knob { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--text-2); transition: left .15s ease; }

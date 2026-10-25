@@ -386,6 +386,12 @@
     return fetch('/api/chat-response', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent:{key:FAS.agent.current.key,name:FAS.agent.current.name,title:FAS.agent.current.title},answer:answer,nextQuestion:nextQuestion,history:conversationHistory.slice(0,-1).slice(-12)})}).then(function(response){if(!response.ok)throw new Error('Conversation unavailable');return response.json();}).then(function(payload){return payload.message||fallback;}).catch(function(){return fallback;}).then(function(message){FAS.chat.setTyping(false);conversationHistory.push({role:'assistant',content:message});return message;});
   }
 
+  function synthesizeCompletedArtifact(project, artifact) {
+    if (FAS.agent.current.key !== 'anchor' || !FAS.artifacts.applySynthesis) return Promise.resolve(artifact);
+    var answers=(project.answers||[]).filter(function(answer){return answer.agentKey==='anchor'||answer.agent_key==='anchor';}).map(function(answer){return{field:answer.field||answer.field_path,text:answer.text||(answer.value&&answer.value.text)||answer.value};});
+    return fetch('/api/artifact-synthesis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agentKey:'anchor',answers:answers})}).then(function(response){if(!response.ok)throw new Error('Synthesis unavailable');return response.json();}).then(function(payload){return FAS.artifacts.applySynthesis(artifact,payload.sections);}).catch(function(){return artifact;});
+  }
+
   function send() {
     if (!input) return;
     var text = input.value.trim();
@@ -412,7 +418,7 @@
       if (result.summary) FAS.chat.addMessage({ role: 'note', text: 'Checkpoint saved · Review recent answers anytime in History.', tag: 'CHECKPOINT', variant: 'checkpoint' });
       var completion = interview.completion();
       if (completion.gaps.length) emit('fas:interview-gap', { gaps: completion.gaps });
-      if (completion.complete) return projectStore.loadProject().then(function (project) { var artifact=FAS.artifacts.build(FAS.agent.current.key,project);emit('fas:artifact-ready',{artifact:artifact});return projectStore.saveArtifact(artifact); });
+      if (completion.complete) {if(status)status.textContent='Building your blueprint…';return projectStore.loadProject().then(function (project) { var artifact=FAS.artifacts.build(FAS.agent.current.key,project);return synthesizeCompletedArtifact(project,artifact);}).then(function(artifact){emit('fas:artifact-ready',{artifact:artifact});return projectStore.saveArtifact(artifact);}).then(function(saved){if(status)status.textContent='Blueprint ready.';return saved;});}
     }).catch(function () { if (status) status.textContent = 'Save failed. Copy your answer and retry; it has not been stored.';if(input&&!input.value)input.value=text; });
   }
 
