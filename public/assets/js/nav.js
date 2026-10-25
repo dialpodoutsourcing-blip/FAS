@@ -3,8 +3,23 @@
    Handles: active menu link, mobile menu drawer, tabs,
    and on/off view switches. No app logic, no data.
    ========================================================== */
-(function () {
+(function(root,factory){var api=factory(root);if(typeof module==='object'&&module.exports)module.exports=api;if(root){root.FAS=root.FAS||{};root.FAS.nav=api;}})(typeof window!=='undefined'?window:null,function(root){
   'use strict';
+
+  function applyAccountContext(context,doc,currentHref) {
+    if (!context || !context.projectId || !context.sessions || !doc) return;
+    Array.prototype.forEach.call(doc.querySelectorAll('[data-agent-link]'), function (link) {
+      var key = link.getAttribute('data-agent-link'), sessionId = context.sessions[key];
+      if (!sessionId) return;
+      var url = new URL(link.href, currentHref || 'https://fas.local/index.html');
+      url.searchParams.set('project', context.projectId);
+      url.searchParams.set('session', sessionId);
+      link.href = url.pathname.replace(/^\//, '') + url.search + url.hash;
+    });
+  }
+
+  if (!root || !root.document) return { applyAccountContext: applyAccountContext };
+  var window = root, document = root.document;
 
   /* 1. Highlight the current page in the menu.
         Each page sets <body data-page="...">.
@@ -19,7 +34,8 @@
 
   /* The shared chat page highlights the specialist selected in its query string. */
   if (page === 'chat' && window.FAS && window.FAS.agents) {
-    var agentKey = window.FAS.agents.resolveKey(new URLSearchParams(window.location.search).get('agent'));
+    var query = new URLSearchParams(window.location.search);
+    var agentKey = window.FAS.agents.resolveKey(query.get('agent') || query.get('asset'));
     document.querySelectorAll('[data-agent-link]').forEach(function (link) {
       var active = link.getAttribute('data-agent-link') === agentKey;
       link.classList.toggle('is-active', active);
@@ -27,6 +43,22 @@
       else link.removeAttribute('aria-current');
     });
   }
+  if (window.FAS && window.FAS.agents) document.querySelectorAll('[data-agent-link]').forEach(function(link){
+    var key=link.getAttribute('data-agent-link'),emblem=link.querySelector('.em');
+    if (emblem && window.FAS.agents.keys.indexOf(key)>=0) emblem.setAttribute('data-agent-motion',key);
+  });
+
+  /* Completed local specialists reopen their saved deliverable. */
+  try {
+    var navQuery = new URLSearchParams(window.location.search);
+    var navProjectId = navQuery.get('project') || 'local-default';
+    var savedProject = JSON.parse(localStorage.getItem('fas.project.' + navProjectId) || 'null');
+    var completedAgents = new Set((savedProject && savedProject.artifacts || []).map(function(artifact){ return artifact.agentKey; }));
+    document.querySelectorAll('[data-agent-link]').forEach(function(link){
+      var completedKey = link.getAttribute('data-agent-link');
+      if (completedAgents.has(completedKey)) link.href = 'review.html?asset=' + encodeURIComponent(completedKey) + (navProjectId !== 'local-default' ? '&project=' + encodeURIComponent(navProjectId) : '');
+    });
+  } catch (_) {}
 
   /* 2. Mobile menu drawer (screens under 900px). */
   var menuBtn = document.querySelector('[data-menu-toggle]');
@@ -143,6 +175,8 @@
       if (!window.FAS || !window.FAS.agents) return;
       var destination = new URL(link.href, window.location.href);
       var agent = window.FAS.agents.get(destination.searchParams.get('agent'));
+      var linkEmblem = link.querySelector('.em');
+      if (linkEmblem) linkEmblem.setAttribute('data-agent-motion', agent.key);
       event.preventDefault();
       if (!agentLoader) agentLoader = createAgentLoader();
       stopLoaderNarration(agentLoader);
@@ -157,6 +191,8 @@
       var status = agentLoader.querySelector('[data-loader-status]');
       var start = agentLoader.querySelector('[data-loader-start]');
       icon.setAttribute('href', '#' + agent.symbol);
+      var loaderEmblem = icon.closest('.em');
+      if (loaderEmblem) loaderEmblem.setAttribute('data-agent-motion', agent.key);
       title.textContent = 'LOADING ' + agent.name;
       role.textContent = agent.title;
       description.textContent = agent.briefing;
@@ -182,7 +218,8 @@
       document.body.setAttribute('aria-busy', 'true');
       if (window.FAS.createRealtimeNarrator && agent.introduction) {
         var narrator = window.FAS.createRealtimeNarrator({
-          fetchImpl: window.fetch.bind(window)
+          fetchImpl: window.fetch.bind(window),
+          getAccessToken:function(){return window.FAS.auth&&window.FAS.auth.requireSession?window.FAS.auth.requireSession().then(function(session){return session.accessToken;}):Promise.resolve('');}
         });
         agentLoader._narrator = narrator;
         narrator.connect().catch(function () {});
@@ -208,4 +245,6 @@
       requestAnimationFrame(advance);
     });
   });
-})();
+  if (window.FAS && window.FAS.authReady) window.FAS.authReady.then(function(result){if(result&&result.mode==='supabase')applyAccountContext(result.context,document,window.location.href);});
+  return { applyAccountContext: applyAccountContext };
+});

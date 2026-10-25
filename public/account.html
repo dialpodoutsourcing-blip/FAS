@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#090a08">
+  <title>Your FAS Account · Fitness Authority System</title>
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body class="account-page">
+  <main class="account-shell">
+    <section class="account-story" aria-labelledby="account-brand-title">
+      <a class="account-mark" href="index.html" aria-label="FAS home"><span>FAS</span><small>FITNESS AUTHORITY SYSTEM</small></a>
+      <div class="account-story__copy">
+        <p class="eyebrow">YOUR PRIVATE AUTHORITY WORKSPACE</p>
+        <h1 id="account-brand-title">Turn what you know into an authority system you own.</h1>
+        <p>Seven guided specialists. One connected body of evidence. Every answer, decision, and premium blueprint saved to your account.</p>
+      </div>
+      <ol class="account-proof" aria-label="What your account includes">
+        <li><span>01</span> Private project and saved progress</li>
+        <li><span>02</span> Seven connected specialist sessions</li>
+        <li><span>03</span> Versioned documents ready to revisit</li>
+      </ol>
+    </section>
+
+    <section class="account-panel" aria-label="FAS account access">
+      <div class="account-panel__inner">
+        <p class="eyebrow">WELCOME TO FAS</p>
+        <div class="account-tabs" role="group" aria-label="Account options">
+          <button type="button" data-auth-switch="signup">Create account</button>
+          <button type="button" data-auth-switch="signin">Sign in</button>
+        </div>
+
+        <section data-auth-view="signup">
+          <h2>Create your workspace</h2>
+          <p class="account-intro">Start with your identity. FAS will prepare a private project and a dedicated session for every specialist.</p>
+          <form class="account-form" data-auth-form="signup" novalidate>
+            <div class="account-field account-field--half"><label for="auth-name">Your name</label><input id="auth-name" name="displayName" autocomplete="name" required></div>
+            <div class="account-field account-field--half"><label for="auth-business">Business or project name</label><input id="auth-business" name="projectName" autocomplete="organization" placeholder="My Authority Project"></div>
+            <div class="account-field"><label for="auth-email">Email address</label><input id="auth-email" name="email" type="email" autocomplete="email" required></div>
+            <div class="account-field"><label for="auth-password">Password</label><input id="auth-password" name="password" type="password" autocomplete="new-password" minlength="8" required></div>
+            <div class="account-field"><label for="auth-confirmation">Confirm password</label><input id="auth-confirmation" name="confirmation" type="password" autocomplete="new-password" minlength="8" required></div>
+            <button class="btn btn--lg account-submit" data-auth-submit type="submit">Create my FAS account <span aria-hidden="true">→</span></button>
+          </form>
+        </section>
+
+        <section data-auth-view="signin" hidden>
+          <h2>Welcome back</h2><p class="account-intro">Return to your saved answers, decisions, and documents.</p>
+          <form class="account-form" data-auth-form="signin" novalidate>
+            <div class="account-field"><label for="signin-email">Email address</label><input id="signin-email" name="email" type="email" autocomplete="email" required></div>
+            <div class="account-field"><label for="signin-password">Password</label><input id="signin-password" name="password" type="password" autocomplete="current-password" required></div>
+            <button class="btn btn--lg account-submit" data-auth-submit type="submit">Sign in <span aria-hidden="true">→</span></button>
+          </form>
+          <button class="account-text-button" type="button" data-auth-switch="recover">Forgot your password?</button>
+        </section>
+
+        <section data-auth-view="confirm" hidden>
+          <p class="account-state-icon" aria-hidden="true">✦</p><h2>Check your email</h2>
+          <p class="account-intro">We sent a secure account link to <strong data-auth-confirm-email></strong>. Open it in this browser to continue.</p>
+          <button class="btn btn--outline account-submit" type="button" data-auth-resend>Send another confirmation</button>
+          <button class="account-text-button" type="button" data-auth-switch="signin">Back to sign in</button>
+        </section>
+
+        <section data-auth-view="recover" hidden>
+          <h2>Recover your account</h2><p class="account-intro">Enter your email and we will send a secure reset link.</p>
+          <form class="account-form" data-auth-form="recover" novalidate>
+            <div class="account-field"><label for="recover-email">Email address</label><input id="recover-email" name="email" type="email" autocomplete="email" required></div>
+            <button class="btn btn--lg account-submit" data-auth-submit type="submit">Send recovery link</button>
+          </form>
+          <button class="account-text-button" type="button" data-auth-switch="signin">Back to sign in</button>
+        </section>
+
+        <section data-auth-view="reset" hidden>
+          <h2>Choose a new password</h2><p class="account-intro">Use at least eight characters and keep this password private.</p>
+          <form class="account-form" data-auth-form="reset" novalidate>
+            <div class="account-field"><label for="reset-password">New password</label><input id="reset-password" name="password" type="password" autocomplete="new-password" minlength="8" required></div>
+            <div class="account-field"><label for="reset-confirmation">Confirm new password</label><input id="reset-confirmation" name="confirmation" type="password" autocomplete="new-password" minlength="8" required></div>
+            <button class="btn btn--lg account-submit" data-auth-submit type="submit">Save new password</button>
+          </form>
+        </section>
+
+        <section data-auth-view="migrating" hidden><div class="account-loader" aria-hidden="true"></div><h2>Preparing your workspace</h2><p class="account-intro">Creating your seven specialist sessions and checking for saved Anchor work.</p></section>
+        <section data-auth-view="migration-skip" hidden><p class="account-state-icon" aria-hidden="true">✓</p><h2>Your cloud workspace is already active</h2><p class="account-intro">We found existing cloud answers, so your local browser work was left untouched.</p><a class="btn btn--gold account-submit" href="index.html">Open my dashboard</a></section>
+        <section data-auth-view="error" hidden><p class="account-state-icon" aria-hidden="true">!</p><h2>We need your attention</h2><p class="account-intro">Your account request could not be completed.</p><button class="btn btn--gold account-submit" type="button" data-auth-import-retry hidden>Retry saved-work import</button><a class="btn btn--outline account-submit" href="index.html">Continue in local preview</a><button class="account-text-button" type="button" data-auth-switch="signin">Try signing in again</button></section>
+        <p class="account-status" data-auth-status aria-live="polite"></p>
+        <p class="account-privacy">Your password goes directly to Supabase Auth. FAS never stores it in your project data.</p>
+      </div>
+    </section>
+  </main>
+  <script src="assets/js/runtime-config.js"></script>
+  <script src="assets/js/auth-client.js"></script>
+  <script src="assets/js/account-context.js"></script>
+  <script src="assets/js/artifacts.js"></script>
+  <script src="assets/js/anchor-artifact-upgrade.js"></script>
+  <script src="assets/js/local-import.js"></script>
+  <script src="assets/js/account.js"></script>
+</body>
+</html>

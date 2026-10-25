@@ -7,7 +7,7 @@ guided tutorial narration available through the Cedar voice.
 ## Run it with Cedar narration
 
 1. Install dependencies once with `npm install`.
-2. Copy `.env.example` to `.env` and provide `OPENAI_API_KEY` if the local file has not already been configured.
+2. Copy `.env.example` to `.env`, provide `OPENAI_API_KEY`, and add the public Supabase values described below.
 3. Run `npm start`.
 4. Open `http://127.0.0.1:4173`.
 
@@ -27,13 +27,41 @@ This is a local static preview. All seven specialists are temporarily accessible
 - `chat.html?agent=voice`
 - `chat.html?agent=launch`
 
-The interface appends submitted messages locally and emits the documented FAS browser events. It does not call a backend or generate automatic replies. Customer progress, saved conversations, and production access locks are not implemented in this preview.
+The interface runs the shared guided-interview engine, saves checkpoints through the project-store adapter, and generates matching PDF and DOCX artifacts through the Express server. When Supabase is not configured, the app explicitly uses browser local storage for preview. When Supabase is configured, protected pages require an authenticated account and never fall back to local storage after a cloud error.
+
+## Supabase authentication and project data
+
+Use a Supabase publishable browser key. FAS does not need an elevated database credential.
+
+1. In the Supabase SQL editor, run `supabase/migrations/202610250001_fas_production.sql`, then run `supabase/migrations/202610250002_fas_auth_onboarding.sql`.
+2. In Supabase Authentication → URL Configuration, set the Site URL to the deployed FAS origin. Add `http://127.0.0.1:4173/account.html` and the deployed `https://YOUR-DOMAIN/account.html` as redirect URLs.
+3. In Project Settings → API Keys, copy the publishable key. Set `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` in `.env` and in the deployment environment. `SUPABASE_ANON_KEY` remains a compatibility fallback for older Supabase projects.
+4. Run `npm start`, open `http://127.0.0.1:4173/account.html`, create an account, and use the confirmation link sent by Supabase. The sign-in screen also offers account recovery; its email link returns to `account.html` so the user can choose a new password.
+5. After the first authenticated sign-in, `bootstrap_fas_account` creates or reuses one workspace, one project, and seven active interview sessions—one each for Anchor, Extract, Radar, Forge, Architect, Voice, and Launch.
+6. If the same browser has local FAS answers, onboarding imports them once. A recoverable interruption shows **Retry saved-work import**. Existing cloud answers are never overwritten, and the local payload remains in the browser until the import is durably complete.
+
+To inspect onboarding in Supabase, open Table Editor and verify the signed-in user has a membership row plus one project, seven rows in `interview_sessions`, imported rows in `answers`, and the generated Anchor row/version in `artifacts` and `artifact_versions`. Row Level Security limits browser reads and writes to the user’s memberships.
+
+The public runtime endpoint exposes only the Supabase URL, publishable key, and a configured flag. User access tokens stay in the browser session. Never put an elevated database key into `.env` for this application or into client-side code.
+
+Version 1 accepts pasted evidence and source metadata. Binary uploads, OCR, transcription, automated retention jobs, and the two parked bonus assets are intentionally outside this release until their operating rules are approved.
+
+Generated artifacts are semantic records first. `POST /api/exports` renders both PDF and DOCX from the same version and content fingerprint, with a 1 MB request ceiling and same-origin enforcement.
 
 Run the complete checks with:
 
 ```powershell
 npm test
 ```
+
+For an opt-in live durability check, create a disposable confirmed Supabase user, set `FAS_E2E_EMAIL` and `FAS_E2E_PASSWORD` locally, then run:
+
+```powershell
+$env:FAS_RUN_SUPABASE_E2E='1'
+node --test tests/auth-onboarding.e2e.test.js
+```
+
+The test signs in as that user, verifies idempotent bootstrap, imports six uniquely identified Anchor answers, saves one uniquely typed artifact version, and leaves those rows available for inspection. It does not print credentials or tokens.
 
 ## Brand applied (from the brand board)
 | Brand item | Where it is used |

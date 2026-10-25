@@ -154,6 +154,33 @@
 
   var keys = ['anchor', 'extract', 'radar', 'forge', 'architect', 'voice', 'launch'];
 
+  var chapterMap = {
+    anchor: ['authority','arena','evidence','position','boundaries','activation'],
+    extract: ['context','diagnostic','origin','timeline','method','proof','point_of_view','boundaries','synthesis'],
+    radar: ['market','evidence','current_state','desired_state','triggers','objections','language','priority','approval'],
+    forge: ['strategy','territories','candidates','shortlist','stress_test','selection','screening','identity'],
+    architect: ['transformation','milestones','phases','modules','lessons','implementation','overload','delivery','approval'],
+    voice: ['input_gate','content_job','context','gap_check','message_brief','draft','checks','approval'],
+    launch: ['launch_type','dates','prerequisites','backward_plan','owners','channels','calendar','sales','readiness','review']
+  };
+  var openingQuestions = {
+    authority:'What do people already trust you to help them do?', arena:'Who most needs that result right now?', evidence:'What specific evidence can you legitimately use?', position:'What do you believe the market gets wrong?', boundaries:'What will you not promise, claim, or deliver?', activation:'What visible action will demonstrate this position in the next 30 days?',
+    context:'What do people already come to you for help with?', diagnostic:'Where is the business today in revenue, audience, offer, and sales process?', origin:'What problem did you first have to solve for yourself?', timeline:'Which jobs, clients, failures, and breakthroughs shaped how you work?', method:'Teach me through one recent transformation from the first action onward.', proof:'What evidence supports each result you have described?', point_of_view:'What does your market commonly get wrong?', synthesis:'What feels missing or inaccurate in this summary?',
+    market:'Which group can you credibly reach and help now?', current_state:'What is visibly happening before they seek help?', desired_state:'What practical and emotional change are they seeking?', triggers:'What event makes solving this urgent?', objections:'What do they say when they hesitate?', language:'What exact words have real buyers used?', priority:'Which segment scores highest for access, urgency, ability to pay, credibility, fit, and evidence?', approval:'What must change before you approve this?',
+    strategy:'What buyer, outcome, method, category, and tone must the name express?', territories:'Which three distinct naming directions fit the strategy?', candidates:'Which names feel clear, memorable, relevant, and pronounceable?', shortlist:'How would you rank the strongest nine candidates?', stress_test:'Say each finalist in a referral, webinar, product title, and social bio.', selection:'Which three finalists would you carry forward, and why?', screening:'Which domain, handle, search, and trademark checks have you completed?', identity:'How should the selected identity sound and look in practice?',
+    transformation:'What start state and observable end state should the program create?', milestones:'What three to five changes must happen in sequence?', phases:'What are the chapters or pillars of the method?', modules:'What outcome, prerequisite, action, and completion proof belongs to each module?', lessons:'What does the client need to learn at this exact point?', implementation:'Which worksheets, assessments, feedback, and coaching touchpoints are required?', overload:'What can move to support, bonus, or a future version?', delivery:'Do client effort and coach capacity fit the promised model?',
+    input_gate:'Which approved expert, buyer, brand, program, proof, and boundary facts are ready?', content_job:'What one asset and channel are we writing first?', gap_check:'Which proof, offer term, or call to action is still missing?', message_brief:'Who is the one reader, what problem matters now, and what action should they take?', draft:'Which section should we draft and approve first?', checks:'Which claim needs stronger evidence or a clearer boundary?',
+    launch_type:'Is this a beta, live launch, evergreen activation, or another rollout?', dates:'Which launch, sales-window, delivery, and blackout dates are confirmed?', prerequisites:'Which offer, checkout, copy, audience, proof, tech, and fulfillment pieces already exist?', backward_plan:'What must be true immediately before delivery begins?', owners:'Who owns each launch-critical task?', channels:'Which channels can the team actually execute?', calendar:'Which weekly milestones need daily actions?', sales:'How will leads, conversations, calls, offers, sales, revenue, and follow-up be recorded?', readiness:'Which blocked task puts the launch at risk?', review:'What changed, what worked, and what belongs in the next cycle?'
+  };
+  var outputs = {
+    anchor:['trusted_expert_statement'], extract:['expertise_map','story_bank','proof_bank','gap_list'], radar:['buyer_intelligence_brief','validation_plan'], forge:['brand_identity_brief','screening_record'], architect:['program_one_sheet','curriculum_map','delivery_map','asset_inventory','production_backlog'], voice:['message_brief','copy_pack','voice_kit'], launch:['launch_map','calendar','sales_tracker','readiness_dashboard']
+  };
+  keys.forEach(function(key){
+    registry[key].chapters=chapterMap[key].map(function(id){return{id:id,label:id.replace(/_/g,' '),questions:[{field:key+'.'+id,question:openingQuestions[id]||('What must be decided for '+id.replace(/_/g,' ')+'?'),required:true}]};});
+    registry[key].outputs=outputs[key].slice();
+    registry[key].completionChecks=registry[key].chapters.map(function(chapter){return chapter.id;});
+  });
+
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
   function resolveKey(key) {
     var normalized = typeof key === 'string' ? key.trim().toLowerCase() : '';
@@ -170,6 +197,23 @@
     return result;
   }
   function get(key) { return normalize(registry[resolveKey(key)]); }
+  function applyCatalog(catalog) {
+    if (!Array.isArray(catalog)) return;
+    catalog.forEach(function(definition) {
+      if (!definition || !registry[definition.key]) return;
+      var chapters = Array.isArray(definition.chapters) ? clone(definition.chapters) : null;
+      Object.keys(definition).forEach(function(field) {
+        if (field !== 'key' && field !== 'chapters') registry[definition.key][field] = clone(definition[field]);
+      });
+      if (chapters && chapters.length) {
+        registry[definition.key].chapters = chapters;
+        registry[definition.key].stages = chapters.map(function(chapter) { return chapter.label; });
+        registry[definition.key].completionChecks = chapters.map(function(chapter) { return chapter.id; });
+        registry[definition.key].question = chapters[0].questions[0].question;
+        registry[definition.key].activeStage = Math.min(registry[definition.key].activeStage || 0, chapters.length - 1);
+      }
+    });
+  }
 
-  return { keys: keys.slice(), get: get, resolveKey: resolveKey, normalize: normalize };
+  return { keys: keys.slice(), get: get, resolveKey: resolveKey, normalize: normalize, applyCatalog: applyCatalog };
 });
