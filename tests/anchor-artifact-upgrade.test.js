@@ -95,7 +95,7 @@ test('upgrade synthesizes from saved answers and appends one themed version to t
   assert.equal(requests[0].url, '/api/artifact-synthesis');
   assert.deepEqual(JSON.parse(requests[0].init.body), {
     agentKey: 'anchor',
-    answers: fields.map((field, index) => ({ id: `answer-${index + 1}`, field: `anchor.${field}`, text: `Saved ${field} answer with enough specific detail to remain useful.` }))
+    answers: fields.map((field, index) => ({ id: `answer-${index + 1}`, field: `anchor.${field}`, text: `Saved ${field} answer with enough specific detail to remain useful.`, basis:'user', permissionStatus:'not_required' }))
   });
   assert.equal(saves.length, 1);
   assert.equal(saves[0][0], 'persisted-artifact-id');
@@ -134,4 +134,10 @@ test('strict migration rebuild requires successful premium synthesis', async () 
   await assert.rejects(()=>upgrade.rebuild({project:completeProject(),artifacts,strictSynthesis:true,fetchImpl:async()=>{throw new Error('offline');}}),/offline/);
   const fallback=await upgrade.rebuild({project:completeProject(),artifacts,fetchImpl:async()=>{throw new Error('offline');}});
   assert.ok(fallback.premiumReport,'normal review upgrades retain the grounded deterministic fallback');
+});
+
+test('private or pending Anchor evidence is never included in a publishable rebuild',async()=>{
+  const project=completeProject();project.answers.find(answer=>answer.field==='anchor.evidence').permissionStatus='private';
+  assert.equal(upgrade.collectAnswers(project),null);
+  await assert.rejects(()=>upgrade.rebuild({project,artifacts,fetchImpl:async()=>{throw new Error('must not synthesize');}}),/six complete/i);
 });

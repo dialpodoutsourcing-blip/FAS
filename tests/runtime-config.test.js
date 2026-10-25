@@ -3,6 +3,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 
 function optionalRequire(path){try{return require(path);}catch(error){if(error&&error.code==='MODULE_NOT_FOUND')return null;throw error;}}
+function jwt(role){return 'eyJhbGciOiJub25lIn0.'+Buffer.from(JSON.stringify({role})).toString('base64url')+'.signature';}
 
 test('runtime config exposes only safe public values and prefers the publishable key',()=>{
   const module=optionalRequire('../lib/runtime-config.js');
@@ -16,9 +17,17 @@ test('runtime config exposes only safe public values and prefers the publishable
 test('runtime config supports the legacy anon key and requires both public values',()=>{
   const module=optionalRequire('../lib/runtime-config.js');
   assert.ok(module,'runtime config helper exists');
-  assert.deepEqual(module.buildRuntimeConfig({SUPABASE_URL:'https://example.supabase.co',SUPABASE_ANON_KEY:'legacy-public'}),{supabaseUrl:'https://example.supabase.co',supabasePublishableKey:'legacy-public',configured:true});
+  assert.deepEqual(module.buildRuntimeConfig({SUPABASE_URL:'https://example.supabase.co',SUPABASE_ANON_KEY:jwt('anon')}),{supabaseUrl:'https://example.supabase.co',supabasePublishableKey:jwt('anon'),configured:true});
   assert.deepEqual(module.buildRuntimeConfig({SUPABASE_URL:'https://example.supabase.co'}),{supabaseUrl:'',supabasePublishableKey:'',configured:false});
   assert.deepEqual(module.buildRuntimeConfig({SUPABASE_PUBLISHABLE_KEY:'sb_publishable_test'}),{supabaseUrl:'',supabasePublishableKey:'',configured:false});
+});
+
+test('runtime config rejects malformed URLs and every elevated or malformed key',()=>{
+  const {buildRuntimeConfig}=require('../lib/runtime-config.js'),empty={supabaseUrl:'',supabasePublishableKey:'',configured:false};
+  assert.deepEqual(buildRuntimeConfig({SUPABASE_URL:'not-a-url',SUPABASE_PUBLISHABLE_KEY:'sb_publishable_test'}),empty);
+  assert.deepEqual(buildRuntimeConfig({SUPABASE_URL:'https://example.supabase.co',SUPABASE_PUBLISHABLE_KEY:'sb_secret_never'}),empty);
+  assert.deepEqual(buildRuntimeConfig({SUPABASE_URL:'https://example.supabase.co',SUPABASE_ANON_KEY:jwt('service_role')}),empty);
+  assert.deepEqual(buildRuntimeConfig({SUPABASE_URL:'https://example.supabase.co',SUPABASE_ANON_KEY:'legacy-public'}),empty);
 });
 
 test('runtime config endpoint is public, minimal, and never cached',async()=>{

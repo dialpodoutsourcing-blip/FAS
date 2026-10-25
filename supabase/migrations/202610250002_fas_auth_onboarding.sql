@@ -138,6 +138,8 @@ declare
   v_map jsonb;
   v_supersedes uuid;
   v_created_at timestamptz;
+  v_agent_key text;
+  v_checkpoint jsonb;
 begin
   if v_user_id is null then raise exception 'Authentication required' using errcode = '42501'; end if;
   select * into v_import from public.local_imports where id = p_import_id for update;
@@ -148,6 +150,7 @@ begin
     return jsonb_build_object('importId', v_import.id, 'projectId', v_import.project_id, 'status', v_import.status, 'answerMap', v_import.answer_map);
   end if;
   if jsonb_typeof(p_answers) <> 'array' or jsonb_array_length(p_answers) > 500 then raise exception 'Invalid answer batch'; end if;
+  if v_import.answer_map = '{}'::jsonb and exists(select 1 from public.answers where project_id=v_import.project_id) then raise exception 'Cloud project already contains answers' using errcode='23505'; end if;
 
   v_map := v_import.answer_map;
   for v_item in select value from jsonb_array_elements(p_answers) loop
@@ -186,11 +189,59 @@ begin
     v_map := v_map || jsonb_build_object(v_local_id, v_answer_id);
   end loop;
 
+  for v_agent_key in select distinct value->>'agentKey' from jsonb_array_elements(p_answers) loop
+    select jsonb_build_object(
+      'chapterIndex', 0,
+      'questionIndex', count(distinct item->>'field') filter (where coalesce((item->>'incomplete')::boolean, false) = false),
+      'answers', coalesce(jsonb_agg(jsonb_build_object(
+        'id', v_map->>(item->>'localId'), 'field', item->>'field', 'text', item->>'text',
+        'basis', coalesce(item->>'basis','import'), 'permissionStatus', coalesce(item->>'permissionStatus','not_required'),
+        'createdAt', item->>'createdAt', 'incomplete', coalesce((item->>'incomplete')::boolean,false),
+        'trigger', item->'trigger', 'supersedesId', case when v_map ? (item->>'supersedesLocalId') then v_map->>(item->>'supersedesLocalId') else null end
+      ) order by item->>'createdAt'), '[]'::jsonb),
+      'conflicts','[]'::jsonb,'summaries','[]'::jsonb,'phases','[]'::jsonb,'probeAttempts','{}'::jsonb,'insufficientFields','[]'::jsonb
+    ) into v_checkpoint
+    from jsonb_array_elements(p_answers) item where item->>'agentKey' = v_agent_key;
+    update public.interview_sessions set checkpoint = v_checkpoint, state = v_checkpoint, updated_at = now()
+    where project_id = v_import.project_id and agent_key = v_agent_key and status in ('active','paused');
+  end loop;
+
   update public.local_imports
   set status = 'answers_imported', answer_map = v_map, last_error_code = null, updated_at = now()
   where id = v_import.id
   returning * into v_import;
   return jsonb_build_object('importId', v_import.id, 'projectId', v_import.project_id, 'status', v_import.status, 'answerMap', v_import.answer_map);
+end;
+$$;
+
+create or replace function public.save_fas_answer_checkpoint(p_session_id uuid, p_agent_key text, p_answer jsonb, p_checkpoint jsonb)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_user_id uuid := auth.uid();
+  v_project_id uuid;
+  v_answer public.answers%rowtype;
+  v_client_ref text;
+  v_supersedes uuid;
+  v_checkpoint jsonb;
+begin
+  if v_user_id is null then raise exception 'Authentication required' using errcode = '42501'; end if;
+  select project_id into v_project_id from public.interview_sessions
+  where id = p_session_id and agent_key = p_agent_key and status in ('active','paused') for update;
+  if not found or not public.can_edit_project(v_project_id) then raise exception 'Session access denied' using errcode = '42501'; end if;
+  if jsonb_typeof(p_answer) <> 'object' or nullif(btrim(p_answer->>'field'),'') is null or nullif(btrim(p_answer->>'text'),'') is null or jsonb_typeof(p_checkpoint) <> 'object' then raise exception 'Invalid answer checkpoint'; end if;
+  v_client_ref := left(coalesce(nullif(p_answer->>'clientRef',''),'live:'||p_session_id::text||':'||coalesce(p_answer->>'id',gen_random_uuid()::text)),300);
+  v_supersedes := case when coalesce(p_answer->>'supersedesId','') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' then (p_answer->>'supersedesId')::uuid else null end;
+  insert into public.answers(session_id,project_id,agent_key,field_path,value,basis,permission_status,supersedes_id,created_by,client_ref)
+  values(p_session_id,v_project_id,p_agent_key,left(p_answer->>'field',300),jsonb_build_object('text',left(p_answer->>'text',6000)),case when p_answer->>'basis' in ('user','import','suggestion') then p_answer->>'basis' else 'user' end,case when p_answer->>'permissionStatus' in ('not_required','pending','private','public') then p_answer->>'permissionStatus' else 'not_required' end,v_supersedes,v_user_id,v_client_ref)
+  on conflict(project_id,client_ref) where client_ref is not null do update set client_ref=excluded.client_ref returning * into v_answer;
+  select jsonb_set(p_checkpoint,'{answers}',coalesce(jsonb_agg(case when item->>'id'=p_answer->>'id' then item||jsonb_build_object('id',v_answer.id) else item end),'[]'::jsonb)) into v_checkpoint
+  from jsonb_array_elements(case when jsonb_typeof(p_checkpoint->'answers')='array' then p_checkpoint->'answers' else '[]'::jsonb end) item;
+  update public.interview_sessions set checkpoint=v_checkpoint,state=v_checkpoint,updated_at=now() where id=p_session_id;
+  return jsonb_build_object('id',v_answer.id,'agentKey',v_answer.agent_key,'field',v_answer.field_path,'text',v_answer.value->>'text','basis',v_answer.basis,'permissionStatus',v_answer.permission_status,'supersedesId',v_answer.supersedes_id,'clientRef',v_answer.client_ref);
 end;
 $$;
 
@@ -279,7 +330,30 @@ begin
 end;
 $$;
 
-create or replace function public.approve_fas_artifact(p_artifact_id uuid)
+create or replace function public.save_fas_import_artifact(p_import_id uuid, p_content jsonb)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_user_id uuid := auth.uid();
+  v_import public.local_imports%rowtype;
+  v_saved jsonb;
+begin
+  if v_user_id is null then raise exception 'Authentication required' using errcode = '42501'; end if;
+  select * into v_import from public.local_imports where id=p_import_id for update;
+  if not found or v_import.created_by<>v_user_id or not public.can_edit_project(v_import.project_id) then raise exception 'Import access denied' using errcode='42501'; end if;
+  if v_import.status in ('artifact_saved','complete') then return jsonb_build_object('importId',v_import.id,'projectId',v_import.project_id,'status',v_import.status,'answerMap',v_import.answer_map); end if;
+  if v_import.status <> 'answers_imported' then raise exception 'Answers must be imported first'; end if;
+  v_saved := public.save_fas_artifact(v_import.project_id,'anchor',p_content,null);
+  update public.local_imports set status='artifact_saved',last_error_code=null,updated_at=now() where id=v_import.id returning * into v_import;
+  return jsonb_build_object('importId',v_import.id,'projectId',v_import.project_id,'status',v_import.status,'answerMap',v_import.answer_map,'artifact',v_saved);
+end;
+$$;
+
+drop function if exists public.approve_fas_artifact(uuid);
+create or replace function public.approve_fas_artifact(p_artifact_id uuid, p_expected_version integer)
 returns jsonb
 language plpgsql
 security definer
@@ -292,6 +366,7 @@ begin
   if v_user_id is null then raise exception 'Authentication required' using errcode = '42501'; end if;
   select * into v_artifact from public.artifacts where id = p_artifact_id for update;
   if not found or not public.can_edit_project(v_artifact.project_id) then raise exception 'Artifact access denied' using errcode = '42501'; end if;
+  if v_artifact.current_version <> p_expected_version then raise exception 'Artifact version changed' using errcode = '40001'; end if;
   if v_artifact.status = 'user_approved' then
     return jsonb_build_object('id', v_artifact.id, 'projectId', v_artifact.project_id, 'currentVersion', v_artifact.current_version, 'status', v_artifact.status);
   end if;
@@ -313,9 +388,13 @@ revoke execute on function public.import_fas_local_answers(uuid, jsonb) from pub
 grant execute on function public.import_fas_local_answers(uuid, jsonb) to authenticated;
 revoke execute on function public.update_fas_local_import(uuid, text, jsonb, text) from public, anon;
 grant execute on function public.update_fas_local_import(uuid, text, jsonb, text) to authenticated;
+revoke execute on function public.save_fas_answer_checkpoint(uuid, text, jsonb, jsonb) from public, anon;
+grant execute on function public.save_fas_answer_checkpoint(uuid, text, jsonb, jsonb) to authenticated;
 revoke execute on function public.save_fas_artifact(uuid, text, jsonb, integer) from public, anon;
 grant execute on function public.save_fas_artifact(uuid, text, jsonb, integer) to authenticated;
-revoke execute on function public.approve_fas_artifact(uuid) from public, anon;
-grant execute on function public.approve_fas_artifact(uuid) to authenticated;
+revoke execute on function public.save_fas_import_artifact(uuid, jsonb) from public, anon;
+grant execute on function public.save_fas_import_artifact(uuid, jsonb) to authenticated;
+revoke execute on function public.approve_fas_artifact(uuid, integer) from public, anon;
+grant execute on function public.approve_fas_artifact(uuid, integer) to authenticated;
 
 commit;

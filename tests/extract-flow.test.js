@@ -6,19 +6,22 @@ test('chat loads production domain modules before its controller',()=>{
  assert.ok(html.indexOf('project-store.js')<html.indexOf('adam.js'));
 });
 test('chat controller saves answers, checkpoints, gaps, and ready artifacts',()=>{
- for(const token of ['FAS.projectStore.create','FAS.interview.create','saveAnswer','saveCheckpoint','fas:answer-saved','fas:checkpoint','fas:artifact-ready','fas:interview-gap'])assert.ok(adam.includes(token),token);
+ for(const token of ['FAS.projectStore.create','FAS.interview.create','saveAnswerCheckpoint','fas:answer-saved','fas:checkpoint','fas:artifact-ready','fas:interview-gap'])assert.ok(adam.includes(token),token);
 });
 test('chat keeps failed durable answers retryable without advancing the interview',()=>{
  assert.match(adam,/var previousCheckpoint=interview\.checkpoint\(\)/);
  assert.match(adam,/interview\.restore\(previousCheckpoint\)/);
- assert.ok(adam.indexOf('saveAnswer')<adam.indexOf('saveCheckpoint'));
+ assert.match(adam,/saveAnswerCheckpoint/);
  assert.match(adam,/submitButton\.disabled=true/);
  assert.match(adam,/input\.value=text/);
 });
+test('chat saves answer and checkpoint atomically and exposes blueprint retry',()=>{
+ assert.match(adam,/saveAnswerCheckpoint/);assert.match(adam,/reconcileAnswer/);assert.match(adam,/artifactRetryPending/);assert.match(adam,/Retry blueprint/);
+});
 test('completed Anchor interviews request structured synthesis before saving the artifact',()=>{
- assert.match(adam,/fetch\('\/api\/artifact-synthesis'/);
+ assert.match(adam,/apiFetch\('\/api\/artifact-synthesis'/);
  assert.match(adam,/FAS\.artifacts\.applySynthesis/);
- assert.ok(adam.indexOf("fetch('/api/artifact-synthesis'")<adam.indexOf('projectStore.saveArtifact',adam.indexOf("fetch('/api/artifact-synthesis'")));
+ assert.ok(adam.indexOf("apiFetch('/api/artifact-synthesis'")<adam.indexOf('projectStore.saveArtifact',adam.indexOf("apiFetch('/api/artifact-synthesis'")));
 });
 test('completed interviews open the saved blueprint and reject extra chat answers',()=>{
  const completionGuard=adam.indexOf('if (interview && !interview.currentQuestion())');
@@ -27,7 +30,7 @@ test('completed interviews open the saved blueprint and reject extra chat answer
  assert.match(adam,/projectStore\.saveArtifact[\s\S]*window\.location\.assign\(completionUrl/);
 });
 test('chat controller requests an AI acknowledgement while preserving the engine-selected question',()=>{
- assert.match(adam,/fetch\('\/api\/chat-response'/);
+ assert.match(adam,/apiFetch\('\/api\/chat-response'/);
  assert.match(adam,/nextQuestion/);
  assert.match(adam,/conversationHistory/);
  assert.match(adam,/renderCurrentQuestion/);

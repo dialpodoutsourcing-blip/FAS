@@ -265,6 +265,7 @@
   var projectStore = null;
   var restartAgent = query.get('restart') === '1' ? (agentKey || 'anchor') : null;
   var interview = null;
+  var artifactRetryPending = false;
   var conversationHistory = [];
   function renderCurrentQuestion(question, preserveThread) {
     if (!question) return;
@@ -278,7 +279,7 @@
     if (authState && authState.mode === 'redirect') return;
     var config = window.FAS_CONFIG || {}, account = authState && authState.context;
     projectId = account && account.projectId || query.get('project') || 'local-default';
-    projectStore = FAS.projectStore && FAS.projectStore.create({configured:config.configured===true,config:config,authState:authState,agentKey:agentKey,projectId:projectId,sessionId:account&&account.sessions&&account.sessions[agentKey]||query.get('session')});
+    projectStore = FAS.projectStore && FAS.projectStore.create({configured:config.configured===true,config:config,authState:authState,auth:FAS.auth,agentKey:agentKey,projectId:projectId,sessionId:account&&account.sessions&&account.sessions[agentKey]||query.get('session'),onAuthFailure:function(){window.location.assign('account.html?return='+encodeURIComponent(window.location.pathname+window.location.search));}});
     var restartReady = restartAgent && projectStore ? projectStore.resetAgent(restartAgent).then(function(){query.delete('restart');var cleanUrl=window.location.pathname+(query.toString()?'?'+query.toString():'')+window.location.hash;window.history.replaceState({},'',cleanUrl);}) : Promise.resolve();
     if (projectStore && FAS.interview) return restartReady.then(function(){return projectStore.loadAgentCatalog();}).then(function(catalog){
       if (catalog.length && FAS.agents && FAS.agents.applyCatalog) {FAS.agents.applyCatalog(catalog);FAS.agent.render(agentKey);}
@@ -286,10 +287,14 @@
     }).then(function(project){
       interview=FAS.interview.create({agent:FAS.agent.current,state:project&&project.checkpoints&&project.checkpoints[FAS.agent.current.key]});
       renderCurrentQuestion(interview.currentQuestion());
+      var hasArtifact=(project&&project.artifacts||[]).some(function(artifact){return artifact.agentKey===FAS.agent.current.key||artifact.agent_key===FAS.agent.current.key;});
+      if(!interview.currentQuestion()&&!hasArtifact){artifactRetryPending=true;var retryButton=form&&form.querySelector('[type="submit"]');if(retryButton)retryButton.textContent='Retry blueprint';var retryStatus=$('[data-answer-status]');if(retryStatus)retryStatus.textContent='Your answers are saved. Retry blueprint generation.';}
       (project&&project.answers||[]).filter(function(answer){return answer.agentKey===FAS.agent.current.key||answer.agent_key===FAS.agent.current.key;}).forEach(function(answer){var savedText=answer.text||answer.value;FAS.chat.addMessage({role:'user',text:savedText,tag:'SAVED'});conversationHistory.push({role:'user',content:savedText});});
     }).catch(function(){if(FAS.interview){interview=FAS.interview.create({agent:FAS.agent.current});renderCurrentQuestion(interview.currentQuestion());}});
   }
   (FAS.authReady||Promise.resolve({mode:'local'})).then(initializePersistence);
+
+  function apiFetch(url,init){var config=window.FAS_CONFIG||{};if(!config.configured||!FAS.auth||!FAS.auth.requireSession)return fetch(url,init);return FAS.auth.requireSession().then(function(session){var next=Object.assign({},init||{}, {headers:Object.assign({},init&&init.headers||{},{Authorization:'Bearer '+session.accessToken})});return fetch(url,next);});}
 
   function closeDrawers() {
     $$('[data-chat-history-drawer], [data-chat-saved-drawer], [data-chat-trust-drawer]').forEach(function (drawer) { drawer.hidden = true; });
@@ -350,7 +355,7 @@
     if (!projectStore || !FAS.artifacts) return;
     projectStore.loadProject().then(function (project) {
       var versions=(project.artifactVersions||[]).filter(function(version){return version.agentKey===FAS.agent.current.key||version.artifactId&&version.artifactId.indexOf(FAS.agent.current.key)>=0;}),artifact=versions.filter(function(version){return version.status==='user_approved';}).pop()||versions.pop()||FAS.artifacts.build(FAS.agent.current.key, project);
-      return fetch('/api/exports', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({format:format,artifact:artifact}) });
+      return apiFetch('/api/exports', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({format:format,artifact:artifact}) });
     }).then(function (response) {
       if (!response.ok) throw new Error('Export failed');
       var disposition=response.headers.get('Content-Disposition')||'',match=disposition.match(/filename="([^"]+)"/);
@@ -384,20 +389,22 @@
   function requestConversationalReply(answer, nextQuestion) {
     var fallback = nextQuestion;
     FAS.chat.setTyping(true);
-    return fetch('/api/chat-response', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent:{key:FAS.agent.current.key,name:FAS.agent.current.name,title:FAS.agent.current.title},answer:answer,nextQuestion:nextQuestion,history:conversationHistory.slice(0,-1).slice(-12)})}).then(function(response){if(!response.ok)throw new Error('Conversation unavailable');return response.json();}).then(function(payload){return payload.message||fallback;}).catch(function(){return fallback;}).then(function(message){FAS.chat.setTyping(false);conversationHistory.push({role:'assistant',content:message});return message;});
+    return apiFetch('/api/chat-response', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent:{key:FAS.agent.current.key,name:FAS.agent.current.name,title:FAS.agent.current.title},answer:answer,nextQuestion:nextQuestion,history:conversationHistory.slice(0,-1).slice(-12)})}).then(function(response){if(!response.ok)throw new Error('Conversation unavailable');return response.json();}).then(function(payload){return payload.message||fallback;}).catch(function(){return fallback;}).then(function(message){FAS.chat.setTyping(false);conversationHistory.push({role:'assistant',content:message});return message;});
   }
 
   function synthesizeCompletedArtifact(project, artifact) {
     if (FAS.agent.current.key !== 'anchor' || !FAS.artifacts.applySynthesis) return Promise.resolve(artifact);
-    var answers=(project.answers||[]).filter(function(answer){return answer.agentKey==='anchor'||answer.agent_key==='anchor';}).map(function(answer){return{id:answer.id,field:answer.field||answer.field_path,text:answer.text||(answer.value&&answer.value.text)||answer.value};});
-    return fetch('/api/artifact-synthesis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agentKey:'anchor',answers:answers})}).then(function(response){if(!response.ok)throw new Error('Synthesis unavailable');return response.json();}).then(function(payload){return FAS.artifacts.applySynthesis(artifact,payload.sections);}).catch(function(){return artifact;});
+    var answers=(project.answers||[]).filter(function(answer){var permission=answer.permissionStatus||answer.permission_status||'not_required';return(answer.agentKey==='anchor'||answer.agent_key==='anchor')&&permission!=='private'&&permission!=='pending';}).map(function(answer){return{id:answer.id,field:answer.field||answer.field_path,text:answer.text||(answer.value&&answer.value.text)||answer.value,basis:answer.basis||'user',permissionStatus:answer.permissionStatus||answer.permission_status||'not_required'};});
+    return apiFetch('/api/artifact-synthesis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agentKey:'anchor',answers:answers})}).then(function(response){if(!response.ok)throw new Error('Synthesis unavailable');return response.json();}).then(function(payload){return FAS.artifacts.applySynthesis(artifact,payload.sections);}).catch(function(){return artifact;});
   }
+
+  function generateBlueprint(completionUrl,status){return projectStore.loadProject().then(function(project){var artifact=FAS.artifacts.build(FAS.agent.current.key,project);return synthesizeCompletedArtifact(project,artifact);}).then(function(artifact){emit('fas:artifact-ready',{artifact:artifact});return projectStore.saveArtifact(artifact);}).then(function(saved){artifactRetryPending=false;if(status)status.textContent='Blueprint ready.';window.location.assign(completionUrl);return saved;});}
 
   function send() {
     if (!input) return;
     if(form&&form.getAttribute('aria-busy')==='true')return;
     var completionUrl='review.html?asset='+encodeURIComponent(FAS.agent.current.key)+(projectId!=='local-default'?'&project='+encodeURIComponent(projectId):'');
-    if (interview && !interview.currentQuestion()) { window.location.assign(completionUrl); return; }
+    if (interview && !interview.currentQuestion()) {if(artifactRetryPending){var retryStatus=$('[data-answer-status]'),retryButton=form&&form.querySelector('[type="submit"]');if(retryStatus)retryStatus.textContent='Building your blueprint…';if(retryButton){retryButton.disabled=true;retryButton.textContent='Building…';}generateBlueprint(completionUrl,retryStatus).catch(function(){if(retryStatus)retryStatus.textContent='Blueprint generation failed. Your answers are saved; try again.';if(retryButton){retryButton.disabled=false;retryButton.textContent='Retry blueprint';}});}else window.location.assign(completionUrl);return; }
     var text = input.value.trim();
     if (!text) { input.focus(); return; }
     FAS.chat.addMessage({ role: 'user', text: text, tag: 'YOU' });
@@ -413,10 +420,11 @@
     var previousCheckpoint=interview.checkpoint();
     var durableSaved=false;
     var result = interview.acceptAnswer({ text: text });
-    Promise.resolve().then(function(){return projectStore.saveAnswer(Object.assign({ agentKey: FAS.agent.current.key }, result.answer));}).then(function (saved) {
+    Promise.resolve().then(function(){return projectStore.saveAnswerCheckpoint(Object.assign({ agentKey: FAS.agent.current.key }, result.answer),Object.assign({ agentKey: FAS.agent.current.key }, interview.checkpoint()));}).then(function (saved) {
+      interview.reconcileAnswer(result.answer.id,saved);
       if(status)status.textContent='Answer saved.';
       emit('fas:answer-saved', { answer: saved });
-      return projectStore.saveCheckpoint(Object.assign({ agentKey: FAS.agent.current.key }, interview.checkpoint()));
+      return interview.checkpoint();
     }).then(function (checkpoint) {
       durableSaved=true;
       emit('fas:checkpoint', { checkpoint: checkpoint });
@@ -427,8 +435,8 @@
       if (result.summary) FAS.chat.addMessage({ role: 'note', text: 'Checkpoint saved · Review recent answers anytime in History.', tag: 'CHECKPOINT', variant: 'checkpoint' });
       var completion = interview.completion();
       if (completion.gaps.length) emit('fas:interview-gap', { gaps: completion.gaps });
-      if (completion.complete) {if(status)status.textContent='Building your blueprint…';return projectStore.loadProject().then(function (project) { var artifact=FAS.artifacts.build(FAS.agent.current.key,project);return synthesizeCompletedArtifact(project,artifact);}).then(function(artifact){emit('fas:artifact-ready',{artifact:artifact});return projectStore.saveArtifact(artifact);}).then(function(saved){if(status)status.textContent='Blueprint ready.';window.location.assign(completionUrl);return saved;});}
-    }).catch(function () {if(!durableSaved){interview.restore(previousCheckpoint);if (status) status.textContent = 'Save failed. Your answer is ready to retry and has not been stored.';if(input&&!input.value)input.value=text;}else if(status)status.textContent='Your answers are saved, but the blueprint could not be prepared. Please retry.';}).finally(function(){if(form)form.removeAttribute('aria-busy');if(submitButton)submitButton.disabled=false;});
+      if (completion.complete) {if(status)status.textContent='Building your blueprint…';return generateBlueprint(completionUrl,status);}
+    }).catch(function () {if(!durableSaved){interview.restore(previousCheckpoint);if (status) status.textContent = 'Save failed. Your answer is ready to retry and has not been stored.';if(input&&!input.value)input.value=text;}else{artifactRetryPending=true;if(status)status.textContent='Your answers are saved, but the blueprint could not be prepared. Retry blueprint.';if(submitButton)submitButton.textContent='Retry blueprint';}}).finally(function(){if(form)form.removeAttribute('aria-busy');if(submitButton)submitButton.disabled=false;});
   }
 
   if (form) form.addEventListener('submit', function (e) { e.preventDefault(); send(); });

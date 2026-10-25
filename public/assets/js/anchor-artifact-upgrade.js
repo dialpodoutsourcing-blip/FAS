@@ -12,8 +12,8 @@
   function collectAnswers(project){
     var latest={};
     (project&&project.answers||[]).forEach(function(answer){
-      var agentKey=answer.agentKey||answer.agent_key,field=answer.field||answer.field_path,text=answerText(answer).trim();
-      if(agentKey==='anchor'&&requiredFields.indexOf(field)>=0&&text&&!answer.incomplete)latest[field]={id:answer.id,field:field,text:text};
+      var agentKey=answer.agentKey||answer.agent_key,field=answer.field||answer.field_path,text=answerText(answer).trim(),permissionStatus=answer.permissionStatus||answer.permission_status||'not_required';
+      if(agentKey==='anchor'&&requiredFields.indexOf(field)>=0&&text&&!answer.incomplete&&permissionStatus!=='private'&&permissionStatus!=='pending')latest[field]={id:answer.id,field:field,text:text,basis:answer.basis||'user',permissionStatus:permissionStatus};
     });
     if(!requiredFields.every(function(field){return latest[field];}))return null;
     return requiredFields.map(function(field){return latest[field];});

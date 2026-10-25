@@ -3,7 +3,7 @@
   var storageKey='fas.project.local-default';
   function clean(value){return typeof value==='string'?value.trim():'';}
   function answerText(answer){if(typeof answer.text==='string')return answer.text;if(typeof answer.value==='string')return answer.value;return answer.value&&typeof answer.value.text==='string'?answer.value.text:'';}
-  function canonicalAnswers(project){return(project&&project.answers||[]).map(function(answer,index){return{localId:clean(answer.id)||('answer-'+(index+1)),agentKey:clean(answer.agentKey||answer.agent_key),field:clean(answer.field||answer.field_path),text:clean(answerText(answer)),basis:clean(answer.basis)||'import',permissionStatus:clean(answer.permissionStatus||answer.permission_status)||'not_required',supersedesLocalId:clean(answer.supersedesId||answer.supersedes_id),createdAt:clean(answer.createdAt||answer.created_at)};}).filter(function(answer){return answer.agentKey&&answer.field&&answer.text;}).sort(function(a,b){return(a.createdAt||'').localeCompare(b.createdAt||'')||a.localId.localeCompare(b.localId);});}
+  function canonicalAnswers(project){return(project&&project.answers||[]).map(function(answer,index){var agentKey=clean(answer.agentKey||answer.agent_key),rawId=clean(answer.id)||('answer-'+(index+1)),supersedes=clean(answer.supersedesId||answer.supersedes_id);return{localId:agentKey+':'+rawId,agentKey:agentKey,field:clean(answer.field||answer.field_path),text:clean(answerText(answer)),basis:clean(answer.basis)||'import',permissionStatus:clean(answer.permissionStatus||answer.permission_status)||'not_required',supersedesLocalId:supersedes?agentKey+':'+supersedes:'',createdAt:clean(answer.createdAt||answer.created_at),incomplete:Boolean(answer.incomplete),trigger:answer.trigger||null};}).filter(function(answer){return answer.agentKey&&answer.field&&answer.text;}).sort(function(a,b){return(a.createdAt||'').localeCompare(b.createdAt||'')||a.localId.localeCompare(b.localId);});}
   async function sha256(value){
     var bytes=new TextEncoder().encode(value),cryptoObject=typeof crypto!=='undefined'?crypto:null;
     if(cryptoObject&&cryptoObject.subtle){var digest=await cryptoObject.subtle.digest('SHA-256',bytes);return Array.from(new Uint8Array(digest)).map(function(byte){return byte.toString(16).padStart(2,'0');}).join('');}
@@ -31,7 +31,7 @@
       try{
         remote=await rpc('begin_fas_local_import',{p_project_id:context.projectId,p_payload_checksum:candidate.checksum});
         if(remote.status==='complete'){markComplete(candidate,remote);return remote;}
-        if(remote.status==='started'&&(!remote.answerMap||!Object.keys(remote.answerMap).length)){
+        if((remote.status==='started'||remote.status==='failed')&&(!remote.answerMap||!Object.keys(remote.answerMap).length)){
           var existing=await request('answers?project_id=eq.'+encodeURIComponent(context.projectId)+'&select=id&limit=1',undefined,'GET');
           if(existing.length)return{status:'skipped',reason:'cloud_has_answers'};
         }
@@ -40,13 +40,13 @@
           if(hasCompleteAnchor(candidate)){
             if(!anchorUpgrade||typeof anchorUpgrade.rebuild!=='function')throw new Error('Anchor rebuild is unavailable.');
             var artifact=await anchorUpgrade.rebuild({project:cloudProject(candidate,remote.answerMap||{}),artifacts:artifacts,fetchImpl:options.synthesisFetch||fetchImpl,strictSynthesis:true});
-            await rpc('save_fas_artifact',{p_project_id:context.projectId,p_agent_key:'anchor',p_content:artifact,p_expected_version:null});
+            remote=await rpc('save_fas_import_artifact',{p_import_id:remote.importId,p_content:artifact});
           }
-          remote=await rpc('update_fas_local_import',{p_import_id:remote.importId,p_status:'artifact_saved',p_answer_map:remote.answerMap||{},p_error_code:null});
+          if(remote.status==='answers_imported')remote=await rpc('update_fas_local_import',{p_import_id:remote.importId,p_status:'artifact_saved',p_answer_map:remote.answerMap||{},p_error_code:null});
         }
         if(remote.status==='artifact_saved')remote=await rpc('update_fas_local_import',{p_import_id:remote.importId,p_status:'complete',p_answer_map:remote.answerMap||{},p_error_code:null});
         if(remote.status!=='complete')throw new Error('Cloud import did not complete.');markComplete(candidate,remote);return remote;
-      }catch(error){if(remote&&remote.importId){try{await rpc('update_fas_local_import',{p_import_id:remote.importId,p_status:'failed',p_answer_map:remote.answerMap||{},p_error_code:'import_failed'});}catch(_){}}throw error;}
+      }catch(error){if(remote&&remote.importId&&(remote.status==='started'||remote.status==='failed')){try{await rpc('update_fas_local_import',{p_import_id:remote.importId,p_status:'failed',p_answer_map:remote.answerMap||{},p_error_code:'import_failed'});}catch(_){}}throw error;}
     }
     return{inspect:inspect,run:run};
   }

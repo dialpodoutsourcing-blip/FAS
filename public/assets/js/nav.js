@@ -218,7 +218,8 @@
       document.body.setAttribute('aria-busy', 'true');
       if (window.FAS.createRealtimeNarrator && agent.introduction) {
         var narrator = window.FAS.createRealtimeNarrator({
-          fetchImpl: window.fetch.bind(window)
+          fetchImpl: window.fetch.bind(window),
+          getAccessToken:function(){return window.FAS.auth&&window.FAS.auth.requireSession?window.FAS.auth.requireSession().then(function(session){return session.accessToken;}):Promise.resolve('');}
         });
         agentLoader._narrator = narrator;
         narrator.connect().catch(function () {});

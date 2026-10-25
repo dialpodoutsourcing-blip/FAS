@@ -54,8 +54,8 @@
       if(params.get('error')||params.get('error_code'))return Promise.reject(authError('account_request_failed'));
       var accessToken=params.get('access_token'),refreshToken=params.get('refresh_token');
       if(!accessToken||!refreshToken)return Promise.reject(authError('account_callback_missing','This account link is invalid or expired.'));
-      var payload={access_token:accessToken,refresh_token:refreshToken,expires_in:Number(params.get('expires_in')||3600),user:read()&&read().user||null};
-      return Promise.resolve(write(normalize(payload,params.get('type')||undefined)));
+      var payload={access_token:accessToken,refresh_token:refreshToken,expires_in:Number(params.get('expires_in')||3600)};
+      return request('/auth/v1/user',{method:'GET',token:accessToken,action:'user'}).then(function(user){payload.user=user;return write(normalize(payload,params.get('type')||undefined));});
     }
     return{supabaseUrl:supabaseUrl,publishableKey:publishableKey,signUp:signUp,resendConfirmation:resendConfirmation,signIn:signIn,refresh:refresh,signOut:signOut,sendRecovery:sendRecovery,updatePassword:updatePassword,consumeCallback:consumeCallback,getSession:read,requireSession:requireSession,getUser:getUser,clearSession:clear};
   }

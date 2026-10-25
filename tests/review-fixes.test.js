@@ -101,6 +101,9 @@ test('review controls expose visible status and validate exported file signature
  assert.match(ui,/Approved ✓/);
  assert.match(ui,/setTimeout\(function\(\)\{URL\.revokeObjectURL/);
 });
+test('approval pins the exact displayed artifact version',()=>{
+ const ui=fs.readFileSync(path.join(__dirname,'..','assets','js','artifact-ui.js'),'utf8');assert.match(ui,/approveArtifact\(selected\.artifactId\|\|selected\.id,selected\.version\)/);
+});
 
 test('draft review suppresses the next-agent arrow until approval',()=>{
  const ui=fs.readFileSync(path.join(__dirname,'..','assets','js','artifact-ui.js'),'utf8');

@@ -47,7 +47,7 @@
   function createController(win) {
     var doc=win.document,state=createTourState(),narrator=null;
     function setVoiceStatus(value){if(shell){var node=shell.querySelector('[data-tour-voice-status]');if(node)node.textContent=value;}}
-    function makeNarrator(){return win.FAS.createRealtimeNarrator({fetchImpl:win.fetch.bind(win),onStatus:setVoiceStatus});}
+    function makeNarrator(){return win.FAS.createRealtimeNarrator({fetchImpl:win.fetch.bind(win),getAccessToken:function(){return win.FAS.auth&&win.FAS.auth.requireSession?win.FAS.auth.requireSession().then(function(session){return session.accessToken;}):Promise.resolve('');},onStatus:setVoiceStatus});}
     var shell=null,frame=null,lastTrigger=null,app=null,appWasHidden=null,token=0,currentChapter='',ready=false,targetRect=null,loadTimer=null,targetAttempt=0;
     function createShell(){
       if(shell)return shell; shell=doc.createElement('div');shell.className='tour-overlay';shell.hidden=true;

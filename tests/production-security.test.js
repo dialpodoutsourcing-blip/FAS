@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');const {once}=require('node:events');const fs=require('node:fs');const path=require('node:path');const {createApp}=require('../server.js');
-async function withServer(run){const server=createApp({allowedOrigin:'http://127.0.0.1:4173'}).listen(0,'127.0.0.1');await once(server,'listening');try{return await run(`http://127.0.0.1:${server.address().port}`);}finally{server.close();await once(server,'close');}}
+async function withServer(run){const server=createApp({allowedOrigin:'http://127.0.0.1:4173',runtimeEnv:{}}).listen(0,'127.0.0.1');await once(server,'listening');try{return await run(`http://127.0.0.1:${server.address().port}`);}finally{server.close();await once(server,'close');}}
 const artifact={schemaVersion:1,id:'a',agentKey:'extract',type:'expertise_map',title:'Expertise Map',version:1,sections:[{title:'Origin story',blocks:[{kind:'evidence',text:'Grounded content',sourceId:'s'}]}],sources:[{id:'s',field:'origin',basis:'user'}]};
 test('export route rejects cross-origin traffic and serves safe attachment headers',async()=>withServer(async base=>{
  const rejected=await fetch(base+'/api/exports',{method:'POST',headers:{Origin:'https://evil.example','Content-Type':'application/json'},body:JSON.stringify({format:'pdf',artifact})});assert.equal(rejected.status,403);

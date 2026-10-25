@@ -68,6 +68,13 @@ test('restore returns an interview to the exact checkpoint before a rejected dur
   assert.equal(interview.currentQuestion().field,'anchor.authority');
 });
 
+test('reconcileAnswer replaces local identities with durable UUIDs for later clarifications',()=>{
+  const interview=interviews.create({agent:agents.get('anchor')}),first=interview.acceptAnswer({text:'Many clients ask for help.'});
+  interview.reconcileAnswer(first.answer.id,{id:'55555555-5555-4555-8555-555555555555'});
+  const clarification=interview.acceptAnswer({text:'Twelve clients asked last quarter.'});
+  assert.equal(clarification.answer.supersedesId,'55555555-5555-4555-8555-555555555555');
+});
+
 test('contradictions and public-use permission stay unresolved until confirmed', () => {
   const interview = interviews.create({ agent: agents.get('extract') });
   interview.acceptAnswer({ field:'offer.price', text:'The price is $997.' });

@@ -162,11 +162,11 @@ test('Supabase project store saves and approves artifacts with one atomic RPC ea
   assert.match(calls[0].url,/\/rest\/v1\/rpc\/save_fas_artifact$/);
   assert.equal(calls[0].init.method,'POST');
   assert.deepEqual(JSON.parse(calls[0].init.body),{p_project_id:projectId,p_agent_key:'anchor',p_content:artifact,p_expected_version:1});
-  const approved=await store.approveArtifact(artifactId);
+  const approved=await store.approveArtifact(artifactId,2);
   assert.equal(approved.status,'user_approved');
   assert.equal(calls.length,2);
   assert.match(calls[1].url,/\/rest\/v1\/rpc\/approve_fas_artifact$/);
-  assert.deepEqual(JSON.parse(calls[1].init.body),{p_artifact_id:artifactId});
+  assert.deepEqual(JSON.parse(calls[1].init.body),{p_artifact_id:artifactId,p_expected_version:2});
 });
 
 test('configured persistence resolves the selected agent session and never falls back locally', async () => {
@@ -188,5 +188,26 @@ test('authenticated write failures never create local project state', async () =
   await assert.rejects(()=>store.saveAnswer({agentKey:'anchor',field:'anchor.authority',text:'Proof'}),/Supabase request failed/);
   assert.equal(storage.getItem('fas.project.local-default'),null);
   assert.equal(storage.getItem('fas.project.11111111-1111-4111-8111-111111111111'),null);
+});
+
+test('Supabase answer and checkpoint use one idempotent RPC and return the durable UUID',async()=>{
+  const stores=require('../assets/js/project-store.js'),calls=[],projectId='11111111-1111-4111-8111-111111111111',sessionId='44444444-4444-4444-8444-444444444444';
+  const store=stores.create({configured:true,supabaseUrl:'https://example.supabase.co',anonKey:'anon-public',accessToken:'user-token',userId:'33333333-3333-4333-8333-333333333333',projectId,sessionId,fetchImpl:async(url,init)=>{calls.push({url,init});return{ok:true,status:200,json:async()=>({id:'55555555-5555-4555-8555-555555555555',agentKey:'anchor',field:'anchor.authority',text:'Proof',clientRef:'live:'+sessionId+':answer-1'})};}});
+  const saved=await store.saveAnswerCheckpoint({id:'answer-1',agentKey:'anchor',field:'anchor.authority',text:'Proof'},{agentKey:'anchor',questionIndex:1,answers:[]});
+  assert.equal(saved.id,'55555555-5555-4555-8555-555555555555');assert.equal(calls.length,1);assert.match(calls[0].url,/rpc\/save_fas_answer_checkpoint$/);const body=JSON.parse(calls[0].init.body);assert.equal(body.p_answer.clientRef,'live:'+sessionId+':answer-1');assert.equal(body.p_checkpoint.questionIndex,1);
+});
+
+test('Supabase requests refresh once on expiry and retry with the fresh token',async()=>{
+  const stores=require('../assets/js/project-store.js'),tokens=[],auth={requireSession:async()=>({accessToken:'expired',user:{id:'user'}}),refresh:async()=>({accessToken:'fresh',user:{id:'user'}})},fetchImpl=async(_url,init)=>{tokens.push(init.headers.Authorization);return tokens.length===1?{ok:false,status:401,json:async()=>({})}:{ok:true,status:200,json:async()=>[]};};
+  const store=stores.create({configured:true,supabaseUrl:'https://example.supabase.co',anonKey:'anon-public',accessToken:'expired',userId:'user',projectId:'project',sessionId:'session',auth,fetchImpl});
+  await store.listArtifacts();assert.deepEqual(tokens,['Bearer expired','Bearer fresh']);
+});
+
+test('Supabase refresh failures invoke the authentication failure handler once',async()=>{
+  const stores=require('../assets/js/project-store.js');let failures=0;
+  const auth={requireSession:async()=>({accessToken:'expired',user:{id:'user'}}),refresh:async()=>{throw new Error('refresh failed');}};
+  const store=stores.create({configured:true,supabaseUrl:'https://example.supabase.co',anonKey:'anon-public',accessToken:'expired',userId:'user',projectId:'project',sessionId:'session',auth,onAuthFailure:()=>{failures+=1;},fetchImpl:async()=>({ok:false,status:401,json:async()=>({})})});
+  await assert.rejects(()=>store.listArtifacts(),/refresh failed/);
+  assert.equal(failures,1);
 });
 

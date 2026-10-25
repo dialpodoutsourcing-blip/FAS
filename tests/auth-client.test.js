@@ -49,11 +49,11 @@ test('confirmation resend and recovery use their dedicated endpoints without exp
   assert.match(calls[1].url,/\/auth\/v1\/recover\?redirect_to=/);
 });
 
-test('callback tokens become a stored normalized session and errors remain sanitized',async()=>{
+test('callback tokens fetch and persist the verified callback user before continuing',async()=>{
   const api=optionalRequire('../assets/js/auth-client.js');assert.ok(api,'auth client exists');
-  const storage=memoryStorage(),auth=api.create({supabaseUrl,publishableKey,storage,now:()=>100000,fetchImpl:async()=>response({})});
+  const storage=memoryStorage(),calls=[],verified={id:'callback-user',email:'callback@example.com',user_metadata:{display_name:'Callback User'}},auth=api.create({supabaseUrl,publishableKey,storage,now:()=>100000,fetchImpl:async(url,init)=>{calls.push({url,init});return response(verified);}});
   const session=await auth.consumeCallback('https://app.example/account.html#access_token=callback-access&refresh_token=callback-refresh&expires_in=120&type=recovery');
-  assert.equal(session.accessToken,'callback-access');assert.equal(session.refreshToken,'callback-refresh');assert.equal(session.type,'recovery');
+  assert.equal(session.accessToken,'callback-access');assert.equal(session.refreshToken,'callback-refresh');assert.equal(session.type,'recovery');assert.deepEqual(session.user,verified);assert.match(calls[0].url,/\/auth\/v1\/user$/);assert.equal(calls[0].init.headers.Authorization,'Bearer callback-access');
   await assert.rejects(()=>auth.consumeCallback('https://app.example/account.html#error=access_denied&error_description=person%40example.com+token-secret'),error=>error.code==='account_request_failed'&&!/person|token-secret/i.test(error.message));
 });
 

@@ -4,6 +4,7 @@
   function userMetadata(session){var user=session&&session.user||{},data=user.user_metadata||{};return{displayName:clean(data.display_name||data.full_name||user.email&&user.email.split('@')[0])||'FAS Member',projectName:clean(data.project_name||data.business_name)||'My Authority Project'};}
   function protect(options){
     options=options||{};var config=options.config||{},auth=options.auth||{},context=options.context||{},location=options.location||{};
+    if(config.unavailable)return Promise.resolve({mode:'config-error'});
     if(!config.configured)return Promise.resolve({mode:'local'});
     return auth.requireSession().then(function(session){var account=context.load();if(account)return{mode:'supabase',session:session,context:account};var details=userMetadata(session);return context.bootstrap(details).then(function(created){return{mode:'supabase',session:session,context:created};});}).catch(function(){
       if(auth.clearSession)auth.clearSession();if(context.clear)context.clear();
@@ -22,12 +23,12 @@
   function bindSignOut(auth,context,root){Array.prototype.forEach.call(root.document.querySelectorAll('[data-account-signout]'),function(button){button.addEventListener('click',function(event){event.preventDefault();button.setAttribute('aria-busy','true');signOut({auth:auth,context:context,location:root.location});});});}
   function mount(root){
     var FAS=root.FAS=root.FAS||{};
-    var ready=FAS.runtimeConfig.load({target:root}).catch(function(){return{supabaseUrl:'',supabasePublishableKey:'',configured:false};}).then(function(config){
+    var ready=FAS.runtimeConfig.load({target:root}).catch(function(){return{unavailable:true,configured:false};}).then(function(config){
       if(!config.configured)return protect({config:config,location:root.location});
       var auth=FAS.authClient.create({supabaseUrl:config.supabaseUrl,publishableKey:config.supabasePublishableKey}),context=FAS.accountContext.create({auth:auth});
       FAS.auth=auth;FAS.accountContext.current=context;
       return protect({config:config,auth:auth,context:context,location:root.location}).then(function(result){if(result.mode==='supabase'){renderAccount(result.session,root.document);bindSignOut(auth,context,root);}return result;});
-    }).then(function(result){if(root.document&&root.CustomEvent)root.document.dispatchEvent(new root.CustomEvent('fas:auth-ready',{detail:result}));return result;});
+    }).then(function(result){if(result.mode==='config-error'&&root.location&&root.location.assign){var candidate=(root.location.pathname||'')+(root.location.search||'');root.location.assign('account.html?error=config&return='+encodeURIComponent(candidate));}if(root.document&&root.CustomEvent)root.document.dispatchEvent(new root.CustomEvent('fas:auth-ready',{detail:result}));return result;});
     FAS.authReady=ready;return ready;
   }
   return{protect:protect,renderAccount:renderAccount,signOut:signOut,mount:mount};

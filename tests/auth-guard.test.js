@@ -12,6 +12,11 @@ test('unconfigured pages continue only in explicit local mode',async()=>{
   assert.deepEqual(result,{mode:'local'});
 });
 
+test('unavailable runtime configuration blocks work instead of enabling local mode',async()=>{
+  const guard=optionalRequire('../assets/js/auth-guard.js');
+  assert.deepEqual(await guard.protect({config:{unavailable:true},location:{}}),{mode:'config-error'});
+});
+
 test('configured pages redirect unauthenticated visitors with a safe local return',async()=>{
   const guard=optionalRequire('../assets/js/auth-guard.js');assert.ok(guard,'auth guard exists');
   const assigned=[],context={clear(){},safeReturnPath:value=>value==='/chat.html?agent=anchor'?'chat.html?agent=anchor':'index.html'};

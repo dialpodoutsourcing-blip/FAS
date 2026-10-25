@@ -63,6 +63,11 @@ test('unconfigured deployments expose local preview without claiming authenticat
   const result=await controller.start({configured:false});assert.deepEqual(result,{mode:'local'});assert.equal(authCalls,0);assert.equal(controller.getState().authenticated,false);
 });
 
+test('unavailable runtime configuration shows a retryable error instead of local preview',async()=>{
+  const api=optionalRequire('../assets/js/account.js'),controller=api.create({auth:{},context:{},location:{href:'http://127.0.0.1/account.html',search:'',assign(){}}});
+  const result=await controller.start({unavailable:true,configured:false});assert.equal(result.mode,'config-error');assert.equal(controller.getState().mode,'error');assert.match(controller.getState().message,/configuration|connection/i);
+});
+
 test('invalid credentials render a generic account error',async()=>{
   const api=optionalRequire('../assets/js/account.js');assert.ok(api,'account controller exists');
   const controller=api.create({auth:{signIn:async()=>{const error=new Error('secret upstream detail');error.code='invalid_credentials';throw error;}},context:{},location:{href:'https://app.example/account.html',search:'',assign(){}}});

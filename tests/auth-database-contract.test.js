@@ -30,18 +30,22 @@ test('local imports are durable, project scoped, and answer-idempotent',()=>{
   assert.match(sql,/answer_map/i);
   assert.match(sql,/alter table public\.local_imports enable row level security/i);
   assert.match(sql,/can_edit_project\s*\(project_id\)/i);
+  assert.match(sql,/update public\.interview_sessions[\s\S]*checkpoint/i,'imports rebuild resumable session checkpoints');
+  assert.match(sql,/create or replace function public\.save_fas_import_artifact/i,'artifact save and import stage advance share one transaction');
 });
 
 test('artifact creation, versioning, and approval are atomic authenticated RPCs',()=>{
   assert.match(sql,/create or replace function public\.save_fas_artifact[\s\S]*insert into public\.artifact_versions/i);
   assert.match(sql,/create or replace function public\.approve_fas_artifact[\s\S]*update public\.artifacts[\s\S]*update public\.artifact_versions[\s\S]*insert into public\.approvals/i);
+  assert.match(sql,/approve_fas_artifact\s*\(p_artifact_id uuid,\s*p_expected_version integer\)/i);
+  assert.match(sql,/create or replace function public\.save_fas_answer_checkpoint/i);
   assert.match(sql,/created_by[\s\S]*v_user_id/i);
   assert.match(sql,/decided_by[\s\S]*v_user_id/i);
   assert.match(sql,/can_edit_project/i);
 });
 
 test('onboarding RPC execution is limited to authenticated users',()=>{
-  for(const name of ['bootstrap_fas_account','begin_fas_local_import','import_fas_local_answers','update_fas_local_import','save_fas_artifact','approve_fas_artifact']){
+  for(const name of ['bootstrap_fas_account','begin_fas_local_import','import_fas_local_answers','update_fas_local_import','save_fas_import_artifact','save_fas_answer_checkpoint','save_fas_artifact','approve_fas_artifact']){
     assert.match(sql,new RegExp(`revoke execute on function public\\.${name}[\\s\\S]*?from public, anon`,'i'),`${name} must revoke public and anon`);
     assert.match(sql,new RegExp(`grant execute on function public\\.${name}[\\s\\S]*?to authenticated`,'i'),`${name} must grant authenticated`);
   }
