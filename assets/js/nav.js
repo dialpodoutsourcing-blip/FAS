@@ -33,6 +33,18 @@
     if (emblem && window.FAS.agents.keys.indexOf(key)>=0) emblem.setAttribute('data-agent-motion',key);
   });
 
+  /* Completed local specialists reopen their saved deliverable. */
+  try {
+    var navQuery = new URLSearchParams(window.location.search);
+    var navProjectId = navQuery.get('project') || 'local-default';
+    var savedProject = JSON.parse(localStorage.getItem('fas.project.' + navProjectId) || 'null');
+    var completedAgents = new Set((savedProject && savedProject.artifacts || []).map(function(artifact){ return artifact.agentKey; }));
+    document.querySelectorAll('[data-agent-link]').forEach(function(link){
+      var completedKey = link.getAttribute('data-agent-link');
+      if (completedAgents.has(completedKey)) link.href = 'review.html?asset=' + encodeURIComponent(completedKey) + (navProjectId !== 'local-default' ? '&project=' + encodeURIComponent(navProjectId) : '');
+    });
+  } catch (_) {}
+
   /* 2. Mobile menu drawer (screens under 900px). */
   var menuBtn = document.querySelector('[data-menu-toggle]');
   var scrim = document.querySelector('.scrim');

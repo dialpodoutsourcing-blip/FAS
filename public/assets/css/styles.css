@@ -579,6 +579,7 @@ body.src-off .part__src { display: none; }
 .artifact-live__summary dd { margin: 0; color: var(--gold); font-family: var(--font-sub); font-weight: 700; }
 .artifact-live__assurance, .artifact-live__approval-note { color: var(--muted); font-size: 12px; line-height: 1.55; }
 .artifact-live__summary .btn { margin-top: 20px; }
+.artifact-live__restart { margin-top: 10px !important; background: transparent; }
 .artifact-live__approval-note { margin-top: 10px; text-align: center; }
 .artifact-live__notice { min-height: 38px; margin-top: 12px; padding: 9px 10px; border-radius: var(--r-sm); background: rgba(211,181,124,.08); color: var(--gold); font-size: 11px; line-height: 1.45; text-align: center; }
 .artifact-live__notice:empty { visibility: hidden; }

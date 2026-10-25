@@ -66,6 +66,21 @@ test('draft review suppresses the next-agent arrow until approval',()=>{
  assert.match(ui,/selected\.status==='user_approved'/);
  assert.match(ui,/nextLink\.classList\.add\('is-preview'\)/);
 });
+test('completed specialists reopen their saved artifact while review offers chat and restart paths',()=>{
+ const ui=fs.readFileSync(path.join(__dirname,'..','assets','js','artifact-ui.js'),'utf8'),nav=fs.readFileSync(path.join(__dirname,'..','assets','js','nav.js'),'utf8');
+ assert.match(nav,/fas\.project\./);
+ assert.match(nav,/review\.html\?asset=/);
+ assert.match(ui,/data-live-restart/);
+ assert.match(ui,/restart=1/);
+ assert.match(ui,/Back to chat/);
+});
+
+test('PDF control opens the validated file in the browser viewer',()=>{
+ const ui=fs.readFileSync(path.join(__dirname,'..','assets','js','artifact-ui.js'),'utf8');
+ assert.match(ui,/window\.open\('about:blank','_blank'\)/);
+ assert.match(ui,/previewWindow\.location\.href=url/);
+ assert.match(ui,/Open PDF/);
+});
 
 test('shared navigation uses the reviewed artifact agent when selecting a specialist',()=>{
  const nav=fs.readFileSync(path.join(__dirname,'..','assets','js','nav.js'),'utf8');
