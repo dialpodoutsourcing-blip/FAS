@@ -53,6 +53,21 @@ test('signup card density keeps its framed edges inside a 768px desktop viewport
   assert.match(css,/\.account-form input\s*\{[^}]*min-height:\s*40px/s);
 });
 
+test('desktop account panel keeps enlarged content reachable without unlocking the page',()=>{
+  const css=fs.readFileSync(accountCssPath,'utf8');
+  assert.match(css,/\.account-panel\s*\{[^}]*align-items:\s*safe center[^}]*justify-items:\s*center[^}]*overflow-x:\s*hidden[^}]*overflow-y:\s*auto/s);
+});
+
+test('account privacy text retains readable contrast',()=>{
+  const css=fs.readFileSync(accountCssPath,'utf8');
+  assert.match(css,/\.account-privacy\s*\{[^}]*color:\s*var\(--muted\)/s);
+});
+
+test('long confirmation email addresses wrap inside the account card',()=>{
+  const css=fs.readFileSync(accountCssPath,'utf8');
+  assert.match(css,/\[data-auth-confirm-email\]\s*\{[^}]*overflow-wrap:\s*anywhere/s);
+});
+
 test('password mismatch never reaches Supabase',async()=>{
   const api=optionalRequire('../assets/js/account.js');assert.ok(api,'account controller exists');
   let signups=0;const controller=api.create({auth:{signUp:async()=>{signups++;}},context:{},location:{href:'https://app.example/account.html',search:'',assign(){}}});
