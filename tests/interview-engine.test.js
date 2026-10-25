@@ -46,6 +46,40 @@ test('interview recognizes core responsive follow-up classes', () => {
   for (const [answer, trigger] of cases) assert.equal(classify(answer).trigger, trigger, answer);
 });
 
+test('ordinary strategic prose is not mistaken for an unordered step list', () => {
+  const answer = 'People already trust me to turn their ideas and business challenges into practical technology solutions.';
+  assert.equal(interviews.classify(answer).trigger, null);
+});
+
+test('the requested follow-up resolves a probe even when its wording still matches the trigger', () => {
+  const interview = interviews.create({ agent: agents.get('anchor') });
+  const first = interview.acceptAnswer({ text:'We use assessment, planning, delivery.' });
+  assert.equal(first.followUps[0].trigger, 'loose_steps');
+  const clarification = interview.acceptAnswer({ text:'The exact order is assessment, planning, delivery.' });
+  assert.equal(clarification.conflict, null);
+  assert.equal(clarification.answer.incomplete, false);
+  assert.equal(clarification.answer.supersedesId, first.answer.id);
+  assert.equal(interview.currentQuestion().field, 'anchor.arena');
+  assert.deepEqual(interview.checkpoint().insufficientFields, []);
+});
+
+test('legacy same-trigger probe checkpoints reopen as complete instead of getting stuck', () => {
+  const agent={key:'test',chapters:[{id:'sequence',questions:[{field:'test.sequence',question:'What is the sequence?',required:true}]}]};
+  const interview=interviews.create({agent,state:{
+    questionIndex:1,
+    answers:[
+      {id:'answer-1',field:'test.sequence',text:'Assessment, planning, delivery.',incomplete:true,trigger:'loose_steps'},
+      {id:'answer-2',field:'test.sequence',text:'The exact order is assessment, planning, delivery.',incomplete:true,trigger:'loose_steps'}
+    ],
+    conflicts:[{field:'test.sequence',values:['Assessment, planning, delivery.','The exact order is assessment, planning, delivery.'],status:'open'}],
+    probeAttempts:{'test.sequence':1},
+    insufficientFields:['test.sequence']
+  }});
+  assert.equal(interview.completion().complete, true);
+  assert.deepEqual(interview.checkpoint().conflicts, []);
+  assert.equal(interview.checkpoint().answers[1].incomplete, false);
+});
+
 test('summaries occur after accepted answer intervals and checkpoint resumes', () => {
   let interview = interviews.create({ agent: agents.get('extract') });
   for (let index=0; index<3; index++) {

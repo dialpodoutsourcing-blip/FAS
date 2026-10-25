@@ -29,6 +29,19 @@ test('completed interviews open the saved blueprint and reject extra chat answer
  assert.ok(completionGuard>=0&&completionGuard<addUserMessage,'completion is checked before another user message is saved');
  assert.match(adam,/projectStore\.saveArtifact[\s\S]*window\.location\.assign\(completionUrl/);
 });
+test('completion is clearly announced before automatic blueprint generation',()=>{
+ assert.match(adam,/function announceCompletion/);
+ assert.match(adam,/finished[\s\S]*generat[\s\S]*review[\s\S]*PDF/i);
+ const announce=adam.indexOf('announceCompletion()');
+ const generate=adam.indexOf('generateBlueprint(completionUrl,status)',announce);
+ assert.ok(announce>=0&&generate>announce,'completion announcement precedes generation and redirect');
+});
+test('restored answers render before the completion announcement',()=>{
+ const initialize=adam.indexOf('function initializePersistence');
+ const savedAnswers=adam.indexOf('(project&&project.answers||[]).filter',initialize);
+ const restoredCompletion=adam.indexOf('if(!interview.currentQuestion()&&!hasArtifact)',initialize);
+ assert.ok(savedAnswers>initialize&&restoredCompletion>savedAnswers,'completion remains the final visible message after reload');
+});
 test('chat controller requests an AI acknowledgement while preserving the engine-selected question',()=>{
  assert.match(adam,/apiFetch\('\/api\/chat-response'/);
  assert.match(adam,/nextQuestion/);
