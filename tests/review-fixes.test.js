@@ -1,5 +1,5 @@
 'use strict';
-const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');
+const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');const vm=require('node:vm');
 const interviews=require('../assets/js/interview-engine.js');const agents=require('../assets/js/agents.js');const artifacts=require('../assets/js/artifacts.js');
 const anchorUpgrade=require('../assets/js/anchor-artifact-upgrade.js');
 
@@ -60,6 +60,14 @@ test('review page wires the upgrade module before the controller and includes co
  const upgradeIndex=review.indexOf('assets/js/anchor-artifact-upgrade.js'),controllerIndex=review.indexOf('assets/js/artifact-ui.js');assert.ok(upgradeIndex>=0&&upgradeIndex<controllerIndex);
  assert.match(ui,/Upgrading your blueprint/);assert.match(ui,/We couldn\\'t save your upgraded blueprint/);assert.match(ui,/Try again/);
  assert.match(css,/\.artifact-upgrade-state\s*\{/);assert.match(css,/\.artifact-upgrade-state\.is-error\s*\{/);
+});
+
+test('review controller creates an authenticated Supabase store from runtime configuration',()=>{
+ const source=fs.readFileSync(path.join(__dirname,'..','assets','js','artifact-ui.js'),'utf8');let received;
+ const pending=new Promise(()=>{}),body={hasAttribute:name=>name==='data-artifact-review'};
+ const context={window:{FAS_CONFIG:{supabaseUrl:'https://example.supabase.co',supabaseAnonKey:'anon-public'},FAS:{projectStore:{create:options=>{received=options;return{loadProject:()=>pending};}}},fetch:async()=>{}},document:{body},location:{search:'?asset=anchor&project=project-id&session=session-id'},localStorage:{getItem:key=>key==='fas.supabase.session'?JSON.stringify({access_token:'user-token',user:{id:'user-id'}}):null},URLSearchParams,setTimeout,Promise};
+ vm.runInNewContext(source,context);
+ assert.deepEqual({...received},{projectId:'project-id',supabaseUrl:'https://example.supabase.co',anonKey:'anon-public',accessToken:'user-token',userId:'user-id',sessionId:'session-id'});
 });
 
 test('live artifact review replaces the static preview and reflects the selected specialist',()=>{

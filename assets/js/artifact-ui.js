@@ -2,7 +2,9 @@
   'use strict';
   var FAS=window.FAS||{},body=document.body;
   if(!FAS.projectStore||(!body.hasAttribute('data-artifact-review')&&!body.hasAttribute('data-artifact-vault')))return;
-  var query=new URLSearchParams(location.search),projectId=query.get('project')||'local-default',agentKey=query.get('agent')||query.get('asset')||'extract',store=FAS.projectStore.create({projectId:projectId});
+  var query=new URLSearchParams(location.search),projectId=query.get('project')||'local-default',agentKey=query.get('agent')||query.get('asset')||'extract',config=window.FAS_CONFIG||{},storedSession=null;
+  try{storedSession=JSON.parse(localStorage.getItem('fas.supabase.session')||'null');}catch(_){}
+  var store=FAS.projectStore.create({projectId:projectId,supabaseUrl:config.supabaseUrl,anonKey:config.supabaseAnonKey,accessToken:storedSession&&storedSession.access_token,userId:storedSession&&storedSession.user&&storedSession.user.id,sessionId:query.get('session')});
   function download(artifact,format,theme){return fetch('/api/exports',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({format:format,theme:theme,artifact:artifact})}).then(function(response){if(!response.ok)throw new Error('Export failed');return Promise.all([response.blob(),response.headers.get('Content-Disposition')]);}).then(function(result){return result[0].slice(0,5).text().then(function(signature){if(format==='pdf'&&signature!=='%PDF-')throw new Error('The server did not return a valid PDF.');if(format==='docx'&&signature.slice(0,2)!=='PK')throw new Error('The server did not return a valid DOCX.');return result;});}).then(function(result){var url=URL.createObjectURL(result[0]),link=document.createElement('a'),match=(result[1]||'').match(/filename="([^"]+)"/),filename=match?match[1]:('FAS-artifact.'+format);link.href=url;link.download=filename;document.body.appendChild(link);link.click();link.remove();setTimeout(function(){URL.revokeObjectURL(url);},30000);return filename;});}
   function setReviewIdentity(agent,selected){
     var approved=selected.status==='user_approved',nextKey=agent&&FAS.agents&&FAS.agents.keys[agent.step];
