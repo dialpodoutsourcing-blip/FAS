@@ -36,11 +36,11 @@
           <h2>Create your workspace</h2>
           <p class="account-intro">Start with your identity. FAS will prepare a private project and a dedicated session for every specialist.</p>
           <form class="account-form" data-auth-form="signup" novalidate>
-            <label for="auth-name">Your name</label><input id="auth-name" name="displayName" autocomplete="name" required>
-            <label for="auth-business">Business or project name</label><input id="auth-business" name="projectName" autocomplete="organization" placeholder="My Authority Project">
-            <label for="auth-email">Email address</label><input id="auth-email" name="email" type="email" autocomplete="email" required>
-            <label for="auth-password">Password</label><input id="auth-password" name="password" type="password" autocomplete="new-password" minlength="8" required>
-            <label for="auth-confirmation">Confirm password</label><input id="auth-confirmation" name="confirmation" type="password" autocomplete="new-password" minlength="8" required>
+            <div class="account-field account-field--half"><label for="auth-name">Your name</label><input id="auth-name" name="displayName" autocomplete="name" required></div>
+            <div class="account-field account-field--half"><label for="auth-business">Business or project name</label><input id="auth-business" name="projectName" autocomplete="organization" placeholder="My Authority Project"></div>
+            <div class="account-field"><label for="auth-email">Email address</label><input id="auth-email" name="email" type="email" autocomplete="email" required></div>
+            <div class="account-field"><label for="auth-password">Password</label><input id="auth-password" name="password" type="password" autocomplete="new-password" minlength="8" required></div>
+            <div class="account-field"><label for="auth-confirmation">Confirm password</label><input id="auth-confirmation" name="confirmation" type="password" autocomplete="new-password" minlength="8" required></div>
             <button class="btn btn--lg account-submit" data-auth-submit type="submit">Create my FAS account <span aria-hidden="true">→</span></button>
           </form>
         </section>
@@ -48,8 +48,8 @@
         <section data-auth-view="signin" hidden>
           <h2>Welcome back</h2><p class="account-intro">Return to your saved answers, decisions, and documents.</p>
           <form class="account-form" data-auth-form="signin" novalidate>
-            <label for="signin-email">Email address</label><input id="signin-email" name="email" type="email" autocomplete="email" required>
-            <label for="signin-password">Password</label><input id="signin-password" name="password" type="password" autocomplete="current-password" required>
+            <div class="account-field"><label for="signin-email">Email address</label><input id="signin-email" name="email" type="email" autocomplete="email" required></div>
+            <div class="account-field"><label for="signin-password">Password</label><input id="signin-password" name="password" type="password" autocomplete="current-password" required></div>
             <button class="btn btn--lg account-submit" data-auth-submit type="submit">Sign in <span aria-hidden="true">→</span></button>
           </form>
           <button class="account-text-button" type="button" data-auth-switch="recover">Forgot your password?</button>
@@ -65,7 +65,7 @@
         <section data-auth-view="recover" hidden>
           <h2>Recover your account</h2><p class="account-intro">Enter your email and we will send a secure reset link.</p>
           <form class="account-form" data-auth-form="recover" novalidate>
-            <label for="recover-email">Email address</label><input id="recover-email" name="email" type="email" autocomplete="email" required>
+            <div class="account-field"><label for="recover-email">Email address</label><input id="recover-email" name="email" type="email" autocomplete="email" required></div>
             <button class="btn btn--lg account-submit" data-auth-submit type="submit">Send recovery link</button>
           </form>
           <button class="account-text-button" type="button" data-auth-switch="signin">Back to sign in</button>
@@ -74,8 +74,8 @@
         <section data-auth-view="reset" hidden>
           <h2>Choose a new password</h2><p class="account-intro">Use at least eight characters and keep this password private.</p>
           <form class="account-form" data-auth-form="reset" novalidate>
-            <label for="reset-password">New password</label><input id="reset-password" name="password" type="password" autocomplete="new-password" minlength="8" required>
-            <label for="reset-confirmation">Confirm new password</label><input id="reset-confirmation" name="confirmation" type="password" autocomplete="new-password" minlength="8" required>
+            <div class="account-field"><label for="reset-password">New password</label><input id="reset-password" name="password" type="password" autocomplete="new-password" minlength="8" required></div>
+            <div class="account-field"><label for="reset-confirmation">Confirm new password</label><input id="reset-confirmation" name="confirmation" type="password" autocomplete="new-password" minlength="8" required></div>
             <button class="btn btn--lg account-submit" data-auth-submit type="submit">Save new password</button>
           </form>
         </section>

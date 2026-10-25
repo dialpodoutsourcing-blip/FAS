@@ -5,6 +5,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 
 const root=path.resolve(__dirname,'..'),accountPath=path.join(root,'account.html');
+const accountCssPath=path.join(root,'assets','css','styles.css');
 function optionalRequire(file){try{return require(file);}catch(error){if(error&&error.code==='MODULE_NOT_FOUND')return null;throw error;}}
 
 test('account page is accessible, complete, and contains no credentials',()=>{
@@ -20,6 +21,36 @@ test('account dependencies load in order before the controller',()=>{
   const html=fs.existsSync(accountPath)?fs.readFileSync(accountPath,'utf8'):'';
   const scripts=['runtime-config.js','auth-client.js','account-context.js','artifacts.js','anchor-artifact-upgrade.js','local-import.js','account.js'].map(name=>html.indexOf(name));
   assert.ok(scripts.every(index=>index>=0),'all account scripts exist');assert.deepEqual(scripts,scripts.slice().sort((a,b)=>a-b));
+});
+
+test('account desktop layout fits one viewport inside a premium contained panel',()=>{
+  const css=fs.readFileSync(accountCssPath,'utf8');
+  assert.match(css,/\.account-page\s*\{[^}]*height:\s*100dvh[^}]*overflow:\s*hidden/s);
+  assert.match(css,/\.account-shell\s*\{[^}]*height:\s*100dvh[^}]*grid-template-columns:\s*minmax\([^;]+42%[^;]+58%/s);
+  assert.match(css,/\.account-panel__inner\s*\{[^}]*border:\s*1px solid[^}]*border-radius:\s*\d+px[^}]*padding:\s*clamp\(/s);
+});
+
+test('account brand hierarchy uses a heavy wordmark and a controlled story headline',()=>{
+  const css=fs.readFileSync(accountCssPath,'utf8');
+  assert.match(css,/\.account-mark span\s*\{[^}]*font-weight:\s*850/s);
+  const heading=css.match(/\.account-story__copy h1\s*\{([^}]*)\}/s);
+  assert.ok(heading,'account story heading rule exists');
+  assert.match(heading[1],/font-size:\s*clamp\([^,]+,[^,]+,\s*(?:6[0-8])px\)/);
+  assert.doesNotMatch(heading[1],/9[0-9]px/);
+});
+
+test('account layout restores safe scrolling for short and narrow screens',()=>{
+  const css=fs.readFileSync(accountCssPath,'utf8');
+  assert.match(css,/@media\s*\(max-height:\s*760px\)[^{]*\{[\s\S]*?\.account-page\s*\{[^}]*overflow-y:\s*auto/s);
+  assert.match(css,/@media\s*\(max-width:\s*900px\)[^{]*\{[\s\S]*?\.account-page\s*\{[^}]*overflow-y:\s*auto[\s\S]*?\.account-shell\s*\{[^}]*grid-template-columns:\s*1fr/s);
+  assert.match(css,/@media\s*\(max-width:\s*900px\)[^{]*\{[\s\S]*?\.account-panel\s*\{[^}]*min-height:\s*calc\(100dvh - 104px\)/s);
+});
+
+test('signup card density keeps its framed edges inside a 768px desktop viewport',()=>{
+  const css=fs.readFileSync(accountCssPath,'utf8');
+  assert.match(css,/\.account-panel__inner\s*\{[^}]*width:\s*min\(100%,640px\)[^}]*padding:\s*clamp\([^,]+,[^,]+,32px\)/s);
+  assert.match(css,/\.account-panel h2\s*\{[^}]*max-width:\s*16ch[^}]*font-size:\s*clamp\([^,]+,[^,]+,46px\)/s);
+  assert.match(css,/\.account-form input\s*\{[^}]*min-height:\s*40px/s);
 });
 
 test('password mismatch never reaches Supabase',async()=>{
