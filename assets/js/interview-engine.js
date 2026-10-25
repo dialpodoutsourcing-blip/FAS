@@ -6,7 +6,7 @@
     ['hedging',/\b(all of the above|i defer|whatever you think|any of them)\b/i,'Which single option is your gut choice?'],
     ['stuck',/\b(i don.?t know|no idea|not sure|blank)\b/i,'Would it help to react to two concrete examples?'],
     ['ambiguous_number',/(?:\$|£|€)\s*[\d,.]+[^.!?]*(?:or|profit|revenue|top.?line|maybe)/i,'Is that revenue, profit, price, or another exact amount?'],
-    ['loose_steps',/(?:\b[\w-]+\b\s*,\s*){2,}\b[\w-]+\b/i,'How many steps is that, and what is the exact order?'],
+    ['loose_steps',/\b(?:steps?|process|sequence|order|framework|method|approach|workflow|journey|we\s+(?:always\s+)?(?:do|use|follow))\b[^.!?\n]{0,180}(?:\b[\w-]+\b\s*,\s*){2}\b[\w-]+\b/i,'How many steps is that, and what is the exact order?'],
     ['vague_quantity',/\b(a lot|many|tons|more money|too much|hundreds|some|often)\b/i,'What is the closest real number, amount, or time range?'],
     ['abstract_principle',/\b(i believe|principle|philosophy|everything|always)\b/i,'Tell me one specific story that proves that principle.'],
     ['tool_or_template',/\b(template|worksheet|scorecard|tool|checklist|script)\b/i,'Is that an existing deliverable, a bonus, or something we need to create?'],
@@ -17,7 +17,7 @@
   function create(options){
     options=options||{};var agent=clone(options.agent||{}),state=Object.assign({chapterIndex:0,questionIndex:0,answers:[],conflicts:[],summaries:[],phases:[],probeAttempts:{},insufficientFields:[]},clone(options.state||{}));
     function flatQuestions(){var result=[];(agent.chapters||[]).forEach(function(chapter){chapter.questions.forEach(function(question){result.push(Object.assign({chapter:chapter.id},question));});});return result;}
-    function resolvesProbe(previous,text,trigger){return!trigger||Boolean(previous&&previous.trigger==='loose_steps'&&/\b(?:exact order|exact sequence|in this order|sequence is)\b|(?:^|\n)\s*(?:step\s*)?\d+[.)]/im.test(text));}
+    function resolvesProbe(previous,text,trigger){if(!trigger)return true;if(!previous||previous.trigger!=='loose_steps'||trigger!=='loose_steps')return false;if(/\b(?:not sure|unsure|no exact|there is no|maybe|approximately|roughly|unknown|don.?t know|do not know)\b/i.test(text))return false;return/\b(?:exact order|exact sequence|in this order|sequence is)\b/i.test(text)&&(/(?:^|[\s:])(?:step\s*)?\d+[.)]/im.test(text)||/\b\d+\s+steps?\b/i.test(text)||/→|->|\b(?:first|second|third|fourth|fifth|finally)\b/i.test(text));}
     function repairLegacyProbeState(){Object.keys(state.probeAttempts||{}).forEach(function(field){var fieldAnswers=state.answers.filter(function(answer){return answer.field===field;});if(fieldAnswers.length!==2)return;var first=fieldAnswers[0],latest=fieldAnswers[1];if(!first.incomplete||!latest.incomplete||first.trigger!=='loose_steps'||latest.trigger!=='loose_steps'||!resolvesProbe(first,latest.text,latest.trigger))return;latest.incomplete=false;latest.supersedesId=latest.supersedesId||first.id;state.insufficientFields=state.insufficientFields.filter(function(item){return item!==field;});state.conflicts=state.conflicts.filter(function(conflict){return!(conflict.field===field&&conflict.status==='open'&&conflict.values&&conflict.values[0]===first.text&&conflict.values[1]===latest.text);});});}
     repairLegacyProbeState();
     function currentQuestion(){return flatQuestions()[state.questionIndex]||null;}

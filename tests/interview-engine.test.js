@@ -49,18 +49,33 @@ test('interview recognizes core responsive follow-up classes', () => {
 test('ordinary strategic prose is not mistaken for an unordered step list', () => {
   const answer = 'People already trust me to turn their ideas and business challenges into practical technology solutions.';
   assert.equal(interviews.classify(answer).trigger, null);
+  assert.equal(interviews.classify('I serve coaches, consultants, and creators.').trigger, null);
+  assert.equal(interviews.classify('We focus on strategy, systems, and support.').trigger, null);
 });
 
 test('the requested follow-up resolves a probe even when its wording still matches the trigger', () => {
   const interview = interviews.create({ agent: agents.get('anchor') });
   const first = interview.acceptAnswer({ text:'We use assessment, planning, delivery.' });
   assert.equal(first.followUps[0].trigger, 'loose_steps');
-  const clarification = interview.acceptAnswer({ text:'The exact order is assessment, planning, delivery.' });
+  const clarification = interview.acceptAnswer({ text:'The exact order is: 1. assessment, 2. planning, 3. delivery.' });
   assert.equal(clarification.conflict, null);
   assert.equal(clarification.answer.incomplete, false);
   assert.equal(clarification.answer.supersedesId, first.answer.id);
   assert.equal(interview.currentQuestion().field, 'anchor.arena');
   assert.deepEqual(interview.checkpoint().insufficientFields, []);
+});
+
+test('uncertain or negative ordering follow-ups remain visible gaps', () => {
+  for (const clarification of [
+    'Not sure of the exact order; maybe assessment, planning, delivery.',
+    'There is no exact order: assessment, planning, delivery.'
+  ]) {
+    const interview=interviews.create({agent:agents.get('anchor')});
+    interview.acceptAnswer({text:'We always do assessment, planning, delivery.'});
+    const repeated=interview.acceptAnswer({text:clarification});
+    assert.equal(repeated.answer.incomplete,true,clarification);
+    assert.ok(interview.buildGapList().some(gap=>gap.field==='anchor.authority'&&gap.reason==='insufficient'),clarification);
+  }
 });
 
 test('legacy same-trigger probe checkpoints reopen as complete instead of getting stuck', () => {
@@ -69,9 +84,9 @@ test('legacy same-trigger probe checkpoints reopen as complete instead of gettin
     questionIndex:1,
     answers:[
       {id:'answer-1',field:'test.sequence',text:'Assessment, planning, delivery.',incomplete:true,trigger:'loose_steps'},
-      {id:'answer-2',field:'test.sequence',text:'The exact order is assessment, planning, delivery.',incomplete:true,trigger:'loose_steps'}
+      {id:'answer-2',field:'test.sequence',text:'I organize it into 3 steps, in this exact order:\nAssess – Find the problem.\nPlan – Choose the route.\nDeliver – Complete the work.',incomplete:true,trigger:'loose_steps'}
     ],
-    conflicts:[{field:'test.sequence',values:['Assessment, planning, delivery.','The exact order is assessment, planning, delivery.'],status:'open'}],
+    conflicts:[{field:'test.sequence',values:['Assessment, planning, delivery.','I organize it into 3 steps, in this exact order:\nAssess – Find the problem.\nPlan – Choose the route.\nDeliver – Complete the work.'],status:'open'}],
     probeAttempts:{'test.sequence':1},
     insufficientFields:['test.sequence']
   }});

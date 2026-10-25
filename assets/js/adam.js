@@ -267,6 +267,7 @@
   var interview = null;
   var artifactRetryPending = false;
   var completionAnnounced = false;
+  var blueprintPromise = null;
   var conversationHistory = [];
   function getCompletionUrl(){return'review.html?asset='+encodeURIComponent(FAS.agent.current.key)+(projectId!=='local-default'?'&project='+encodeURIComponent(projectId):'');}
   function renderCurrentQuestion(question, preserveThread) {
@@ -291,7 +292,7 @@
       renderCurrentQuestion(interview.currentQuestion());
       (project&&project.answers||[]).filter(function(answer){return answer.agentKey===FAS.agent.current.key||answer.agent_key===FAS.agent.current.key;}).forEach(function(answer){var savedText=answer.text||answer.value;FAS.chat.addMessage({role:'user',text:savedText,tag:'SAVED'});conversationHistory.push({role:'user',content:savedText});});
       var hasArtifact=(project&&project.artifacts||[]).some(function(artifact){return artifact.agentKey===FAS.agent.current.key||artifact.agent_key===FAS.agent.current.key;});
-      if(!interview.currentQuestion()&&!hasArtifact){var restoredStatus=$('[data-answer-status]'),restoredButton=form&&form.querySelector('[type="submit"]');if(interview.completion().complete){announceCompletion();if(restoredStatus)restoredStatus.textContent='Generating your blueprint…';generateBlueprint(getCompletionUrl(),restoredStatus).catch(function(){artifactRetryPending=true;if(restoredStatus)restoredStatus.textContent='Your answers are saved, but the blueprint could not be prepared. Retry blueprint.';if(restoredButton){restoredButton.disabled=false;restoredButton.textContent='Retry blueprint';}if(input)input.disabled=false;});}else{artifactRetryPending=true;if(restoredButton)restoredButton.textContent='Retry blueprint';if(restoredStatus)restoredStatus.textContent='Your answers are saved. Retry blueprint generation.';}}
+      if(!interview.currentQuestion()&&!hasArtifact){var restoredStatus=$('[data-answer-status]'),restoredButton=form&&form.querySelector('[type="submit"]');if(interview.completion().complete){announceCompletion();if(restoredStatus)restoredStatus.textContent='Generating your blueprint…';generateBlueprint(getCompletionUrl(),restoredStatus).catch(function(){artifactRetryPending=true;if(form)form.removeAttribute('aria-busy');if(restoredStatus)restoredStatus.textContent='Your answers are saved, but the blueprint could not be prepared. Retry blueprint.';if(restoredButton){restoredButton.disabled=false;restoredButton.textContent='Retry blueprint';}});}else{artifactRetryPending=true;if(restoredButton)restoredButton.textContent='Retry blueprint';if(restoredStatus)restoredStatus.textContent='Your answers are saved. Retry blueprint generation.';}}
     }).catch(function(){if(FAS.interview){interview=FAS.interview.create({agent:FAS.agent.current});renderCurrentQuestion(interview.currentQuestion());}});
   }
   (FAS.authReady||Promise.resolve({mode:'local'})).then(initializePersistence);
@@ -402,13 +403,13 @@
 
   function announceCompletion(){if(completionAnnounced)return;completionAnnounced=true;var label=FAS.agent.current.key==='anchor'?'Trusted Expert Blueprint':FAS.agent.current.title;FAS.chat.addMessage({role:'agent',tag:'ADAM',variant:'completion',text:'Great—you’ve finished '+FAS.agent.current.name+'. Your answers are saved. I’m generating your '+label+' now. Next, you’ll review it and choose your PDF design.'});if(input)input.disabled=true;var button=form&&form.querySelector('[type="submit"]');if(button)button.disabled=true;$$('[data-agent-stages] .stage').forEach(function(stage){stage.classList.remove('is-active');stage.classList.add('is-done');stage.removeAttribute('aria-current');});}
 
-  function generateBlueprint(completionUrl,status){return projectStore.loadProject().then(function(project){var artifact=FAS.artifacts.build(FAS.agent.current.key,project);return synthesizeCompletedArtifact(project,artifact);}).then(function(artifact){emit('fas:artifact-ready',{artifact:artifact});return projectStore.saveArtifact(artifact);}).then(function(saved){artifactRetryPending=false;if(status)status.textContent='Blueprint ready. Opening your review…';window.location.assign(completionUrl);return saved;});}
+  function generateBlueprint(completionUrl,status){if(blueprintPromise)return blueprintPromise;if(form)form.setAttribute('aria-busy','true');var button=form&&form.querySelector('[type="submit"]');if(button)button.disabled=true;blueprintPromise=projectStore.loadProject().then(function(project){var artifact=FAS.artifacts.build(FAS.agent.current.key,project);return synthesizeCompletedArtifact(project,artifact);}).then(function(artifact){emit('fas:artifact-ready',{artifact:artifact});return projectStore.saveArtifact(artifact);}).then(function(saved){artifactRetryPending=false;if(status)status.textContent='Blueprint ready. Opening your review…';window.location.assign(completionUrl);return saved;}).catch(function(error){blueprintPromise=null;throw error;});return blueprintPromise;}
 
   function send() {
     if (!input) return;
     if(form&&form.getAttribute('aria-busy')==='true')return;
     var completionUrl=getCompletionUrl();
-    if (interview && !interview.currentQuestion()) {if(artifactRetryPending){var retryStatus=$('[data-answer-status]'),retryButton=form&&form.querySelector('[type="submit"]');announceCompletion();if(retryStatus)retryStatus.textContent='Generating your blueprint…';if(retryButton){retryButton.disabled=true;retryButton.textContent='Building…';}generateBlueprint(completionUrl,retryStatus).catch(function(){if(retryStatus)retryStatus.textContent='Blueprint generation failed. Your answers are saved; try again.';if(retryButton){retryButton.disabled=false;retryButton.textContent='Retry blueprint';}if(input)input.disabled=false;});}else window.location.assign(completionUrl);return; }
+    if (interview && !interview.currentQuestion()) {if(artifactRetryPending){var retryStatus=$('[data-answer-status]'),retryButton=form&&form.querySelector('[type="submit"]');announceCompletion();if(retryStatus)retryStatus.textContent='Generating your blueprint…';if(retryButton)retryButton.textContent='Building…';generateBlueprint(completionUrl,retryStatus).catch(function(){if(form)form.removeAttribute('aria-busy');if(retryStatus)retryStatus.textContent='Blueprint generation failed. Your answers are saved; try again.';if(retryButton){retryButton.disabled=false;retryButton.textContent='Retry blueprint';}});}else window.location.assign(completionUrl);return; }
     var text = input.value.trim();
     if (!text) { input.focus(); return; }
     FAS.chat.addMessage({ role: 'user', text: text, tag: 'YOU' });
@@ -440,7 +441,7 @@
       var completion = interview.completion();
       if (completion.gaps.length) emit('fas:interview-gap', { gaps: completion.gaps });
       if (completion.complete) {announceCompletion();if(status)status.textContent='Generating your blueprint…';return generateBlueprint(completionUrl,status);}
-    }).catch(function () {if(!durableSaved){interview.restore(previousCheckpoint);if (status) status.textContent = 'Save failed. Your answer is ready to retry and has not been stored.';if(input&&!input.value)input.value=text;}else{artifactRetryPending=true;if(status)status.textContent='Your answers are saved, but the blueprint could not be prepared. Retry blueprint.';if(submitButton)submitButton.textContent='Retry blueprint';}}).finally(function(){if(form)form.removeAttribute('aria-busy');if(submitButton)submitButton.disabled=false;});
+    }).catch(function () {if(!durableSaved){interview.restore(previousCheckpoint);if (status) status.textContent = 'Save failed. Your answer is ready to retry and has not been stored.';if(input&&!input.value)input.value=text;}else{artifactRetryPending=true;if(status)status.textContent='Your answers are saved, but the blueprint could not be prepared. Retry blueprint.';if(submitButton)submitButton.textContent='Retry blueprint';}}).finally(function(){if(!blueprintPromise){if(form)form.removeAttribute('aria-busy');if(submitButton)submitButton.disabled=false;}});
   }
 
   if (form) form.addEventListener('submit', function (e) { e.preventDefault(); send(); });
