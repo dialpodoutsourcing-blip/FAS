@@ -115,6 +115,7 @@
 
   /* 5. Premium transition shown whenever a specialist is opened. */
   function stopLoaderNarration(loader) {
+    if (loader && loader._narrationTimer) { window.clearTimeout(loader._narrationTimer); loader._narrationTimer = null; }
     if (!loader || !loader._narrator) return;
     loader._narrator.destroy();
     loader._narrator = null;
@@ -140,7 +141,7 @@
           '<span class="agent-loader__hud-scan" aria-hidden="true"></span><div class="agent-loader__hud-head"><span>ADAM // AGENT BRIEF</span><i>LIVE DATA</i></div>' +
           '<div class="agent-loader__briefing"><section><h3>WHAT THIS AGENT DOES</h3><p data-loader-description></p></section>' +
           '<section><h3>WHAT IT CREATES FOR YOU</h3><ul data-loader-outputs></ul></section></div>' +
-          '<div class="agent-loader__actions"><button class="btn btn--quiet agent-loader__back" type="button" data-loader-back>Go back</button>' +
+          '<div class="agent-loader__actions"><audio class="agent-loader__audio" data-loader-audio controls autoplay aria-label="ADAM introduction playback"></audio><button class="btn btn--quiet agent-loader__back" type="button" data-loader-back>Go back</button>' +
           '<button class="btn btn--gold btn--lg agent-loader__start" type="button" data-loader-start disabled>START ADAM</button></div>' +
         '</section>' +
         '<footer class="agent-loader__footer"><div class="agent-loader__progress"><span class="agent-loader__progress-bar" data-loader-progress></span></div>' +
@@ -216,14 +217,18 @@
       agentLoader.hidden = false;
       document.body.classList.add('agent-loading');
       document.body.setAttribute('aria-busy', 'true');
+      var narrationReady = Promise.resolve(true);
       if (window.FAS.createRealtimeNarrator && agent.introduction) {
         var narrator = window.FAS.createRealtimeNarrator({
           fetchImpl: window.fetch.bind(window),
-          getAccessToken:function(){return window.FAS.auth&&window.FAS.auth.requireSession?window.FAS.auth.requireSession().then(function(session){return session.accessToken;}):Promise.resolve('');}
+          getAccessToken:function(){return window.FAS.auth&&window.FAS.auth.requireSession?window.FAS.auth.requireSession().then(function(session){return session.accessToken;}):Promise.resolve('');},
+          audioFactory:function(){return agentLoader.querySelector('[data-loader-audio]');},
+          onStatus:function(value){status.textContent=value;}
         });
         agentLoader._narrator = narrator;
         narrator.connect().catch(function () {});
         narrator.speak(agent.introduction);
+        narrationReady=Promise.race([narrator.whenPlaybackAvailable(),new Promise(function(resolve){agentLoader._narrationTimer=window.setTimeout(function(){resolve(false);},5000);})]);
       }
       var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       var duration = reduced ? 450 : 1200;
@@ -236,10 +241,8 @@
         if (value < 100) requestAnimationFrame(advance);
         else {
           title.textContent = agent.name + ' IS READY';
-          status.textContent = 'SPECIALIST READY';
-          start.disabled = false;
-          agentLoader.classList.add('is-ready');
-          start.focus();
+          status.textContent = 'CONNECTING ADAM VOICE';
+          narrationReady.then(function(){if(runId!==agentLoader._runId)return;if(agentLoader._narrationTimer){window.clearTimeout(agentLoader._narrationTimer);agentLoader._narrationTimer=null;}status.textContent='SPECIALIST READY';start.disabled=false;agentLoader.classList.add('is-ready');start.focus();});
         }
       }
       requestAnimationFrame(advance);

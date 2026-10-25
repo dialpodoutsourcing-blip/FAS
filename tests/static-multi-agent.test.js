@@ -21,6 +21,7 @@ assert.match(chat, /data-voice-hud[^>]+aria-hidden="true"/, 'voice panel include
 assert.match(chat, /data-voice-hud-secondary[^>]+aria-hidden="true"/, 'voice panel includes a decorative right-side analysis HUD');
 assert.match(chat, /VOICE ANALYSIS/, 'right-side HUD identifies its analysis role');
 assert.match(chat, /data-voice-status[^>]+aria-live="polite"/, 'voice mode exposes an accessible live status');
+assert.match(chat, /<audio[^>]+data-voice-audio[^>]+controls[^>]+autoplay|<audio[^>]+data-voice-audio[^>]+autoplay[^>]+controls/, 'voice mode exposes browser-native ADAM playback controls');
 assert.match(chat, /data-voice-recovery[^>]+hidden/, 'voice mode includes a hidden recovery panel');
 assert.match(chat, /data-voice-retry[^>]*>Retry voice</, 'voice recovery can retry the connection');
 assert.match(chat, /data-voice-type-instead[^>]*>Type instead</, 'voice recovery preserves the Type fallback');
@@ -65,6 +66,7 @@ assert.match(adam, /URL\.createObjectURL/, 'saved work export creates a local do
 assert.match(adam, /\.wave span[\s\S]*Math\.random\(\)[\s\S]*--wave-height/s, 'voice ticker receives varied bar heights');
 assert.match(adam, /--wave-speed/, 'voice ticker receives varied animation speeds');
 assert.match(adam, /--wave-floor/, 'voice ticker receives varied minimum pulse sizes');
+assert.match(adam, /tab-voice[\s\S]*activateVoiceMode/, 'selecting Talk starts or resumes the hands-free interview');
 
 const pages = ['chat.html', 'review.html', 'vault.html', 'launch.html'];
 const keys = ['anchor', 'extract', 'radar', 'forge', 'architect', 'voice', 'launch'];
@@ -102,6 +104,9 @@ assert.match(nav, /agent\.briefing/, 'loader uses the detailed specialist briefi
 assert.match(nav, /agent\.generates/, 'loader lists agent-specific deliverables');
 assert.match(nav, /FAS\.createRealtimeNarrator/, 'loader uses the Cedar narrator');
 assert.match(nav, /narrator\.speak\(agent\.introduction\)/, 'loader narrates the selected specialist introduction');
+assert.match(nav, /data-loader-audio/, 'loader exposes browser-native narration playback controls');
+assert.match(nav, /audioFactory/, 'loader gives its visible audio control to the Realtime narrator');
+assert.match(nav, /whenPlaybackAvailable/, 'loader waits for remote narration media before enabling entry');
 assert.match(nav, /stopLoaderNarration\(loader\)[\s\S]*window\.location\.assign/s, 'starting the specialist stops its loader narration');
 assert.match(nav, /back\.addEventListener\('click'[\s\S]*stopLoaderNarration\(loader\)/s, 'closing the loader stops its narration');
 assert.match(nav, /START ['"]?\s*\+\s*agent\.name/, 'loader labels its start action for the selected agent');

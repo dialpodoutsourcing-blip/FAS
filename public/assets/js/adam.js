@@ -360,7 +360,9 @@
 
   function buildVoiceInterviewer(){
     if(!FAS.createRealtimeInterviewer)return null;
+    var voiceAudio=$('[data-voice-audio]');
     return FAS.createRealtimeInterviewer({
+      audioFactory:voiceAudio?function(){return voiceAudio;}:undefined,
       getAccessToken:getVoiceAccessToken,
       onState:voiceStateChanged,
       onCaptureChange:syncVoiceCaptureControl,
@@ -529,6 +531,16 @@
     var stopped=previous?previous.stop({waitFor:voiceTurnPromise}):Promise.resolve();
     return stopped.then(startVoiceInterview);
   }
+
+  function activateVoiceMode(){
+    if(!voiceInterviewer)return startVoiceInterview();
+    var state=voiceInterviewer.state();
+    if(state==='error'||state==='unsupported'||state==='stopped')return retryVoiceInterview();
+    if(state==='paused'||state==='idle')return startVoiceInterview();
+    return Promise.resolve(true);
+  }
+
+  var voiceTab=document.getElementById('tab-voice');if(voiceTab)voiceTab.addEventListener('click',function(){activateVoiceMode().catch(function(){});});
 
   var voiceRetry=$('[data-voice-retry]');if(voiceRetry)voiceRetry.addEventListener('click',retryVoiceInterview);
   var voiceTypeInstead=$('[data-voice-type-instead]');if(voiceTypeInstead)voiceTypeInstead.addEventListener('click',switchToTyping);

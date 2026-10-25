@@ -95,6 +95,19 @@ test('start unlocks playback, captures enhanced audio, negotiates send-receive S
   assert.equal(controller.state(), 'listening');
 });
 
+test('plays a remote audio track when WebRTC omits the streams collection', async () => {
+  const { createRealtimeInterviewer } = load();
+  const generated = { tracks: [] };
+  const h = harness({ mediaStreamFactory: tracks => { generated.tracks = tracks; return generated; } });
+  const controller = createRealtimeInterviewer(h.options);
+  await controller.start();
+  const remoteTrack = { kind: 'audio' };
+  h.peer.ontrack({ streams: [], track: remoteTrack });
+  assert.equal(h.audio.srcObject, generated);
+  assert.deepEqual(generated.tracks, [remoteTrack]);
+  assert.ok(h.audio.plays > 1);
+});
+
 test('maps Realtime events to truthful states and finalizes each normalized turn exactly once', async () => {
   const { createRealtimeInterviewer } = load();
   const h = harness();

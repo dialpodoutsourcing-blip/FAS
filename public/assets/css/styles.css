@@ -490,6 +490,7 @@ body.tour-frame [data-tutorial-trigger] { display: none !important; }
 .voice__question { padding: 18px 22px; border-radius: var(--r-md); border: 1px solid var(--line-2); background: var(--bg); }
 .voice__question p { margin-top: 6px; font-family: var(--font-sub); font-size: 19px; font-weight: 700; line-height: 1.45; }
 .voice__controls { display: flex; justify-content: center; align-items: center; gap: 24px; }
+.voice__audio { width: min(260px, 80vw); height: 34px; margin: -3px auto 0; opacity: .82; accent-color: var(--gold); }
 .vbtn { width: 58px; height: 58px; border-radius: 50%; border: 1px solid var(--line-2); background: var(--surface-2); color: var(--text); display: flex; align-items: center; justify-content: center; }
 .vbtn:hover { border-color: var(--gold-line); }
 .vbtn--mic { width: 92px; height: 92px; border: none; background: var(--gold-gradient); color: var(--simple-black); box-shadow: 0 14px 40px -12px rgba(211,181,124,.7); }
@@ -538,6 +539,7 @@ body.agent-loading { overflow: hidden; }
 .agent-loader__meta { width: 100%; display: flex; justify-content: space-between; margin-top: 9px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 9px; letter-spacing: 1px; }
 .agent-loader__meta strong { color: var(--gold); font-weight: 600; }
 .agent-loader__actions { position: relative; z-index: 1; min-height: 52px; display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: auto; }
+.agent-loader__audio { width: min(240px, 32vw); height: 34px; opacity: .82; accent-color: var(--gold); }
 .agent-loader__start { min-width: 190px; opacity: 0; transform: translateY(6px); pointer-events: none; transition: opacity .24s ease, transform .24s ease, filter .15s ease; }
 .agent-loader.is-ready .agent-loader__start { opacity: 1; transform: translateY(0); pointer-events: auto; }
 .agent-loader.is-ready .agent-loader__progress-bar { box-shadow: 0 0 24px rgba(211,181,124,.8); }

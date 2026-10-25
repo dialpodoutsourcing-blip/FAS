@@ -16,6 +16,7 @@
     options = options || {};
     var makePeer = options.peerFactory || (root && root.RTCPeerConnection ? function () { return new root.RTCPeerConnection(); } : null);
     var makeAudio = options.audioFactory || (root && root.Audio ? function () { return new root.Audio(); } : null);
+    var makeMediaStream = options.mediaStreamFactory || (root && root.MediaStream ? function (tracks) { return new root.MediaStream(tracks); } : null);
     var mediaDevices = options.mediaDevices || (root && root.navigator && root.navigator.mediaDevices);
     var fetchImpl = options.fetchImpl || (root && root.fetch && root.fetch.bind(root));
     var getAccessToken = options.getAccessToken || function () { return Promise.resolve(''); };
@@ -234,7 +235,7 @@
         peer = makePeer();
         var tracks = stream.getAudioTracks ? stream.getAudioTracks() : [];
         tracks.forEach(function (track) { peer.addTransceiver(track, { direction: 'sendrecv', streams: [stream] });if(track.addEventListener){track.addEventListener('ended',function(){if(!stopRequested)terminateWithError('Microphone access ended. Continue with Type or retry voice.','voice_microphone_ended');});track.addEventListener('mute',function(){if(!stopRequested)pause();});} });
-        peer.ontrack = function (event) { if (!audio) return; audio.srcObject = event.streams && event.streams[0] || null; playRemote(true); };
+        peer.ontrack = function (event) { if (!audio) return; audio.srcObject = event.streams && event.streams[0] || event.track && makeMediaStream && makeMediaStream([event.track]) || null; playRemote(true); };
         var peerFailure=function(){var state=peer&&peer.connectionState;if(!stopRequested&&!cleaned&&(state==='failed'||state==='closed'||state==='disconnected'))terminateWithError('The voice connection ended. Continue with Type or retry voice.','voice_connection_failed');};
         if(peer.addEventListener)peer.addEventListener('connectionstatechange',peerFailure);else peer.onconnectionstatechange=peerFailure;
         channel = peer.createDataChannel('oai-events');
