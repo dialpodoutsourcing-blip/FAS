@@ -3,7 +3,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const output=path.join(root,'public');
-const pages=['index.html','chat.html','review.html','vault.html','launch.html'];
+const pages=['index.html','account.html','chat.html','review.html','vault.html','launch.html'];
 fs.rmSync(output,{recursive:true,force:true});
 fs.mkdirSync(output,{recursive:true});
 for(const page of pages)fs.copyFileSync(path.join(root,page),path.join(output,page));
