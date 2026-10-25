@@ -10,4 +10,11 @@ test('motion respects reduced preferences and avoids layout properties',()=>{
  const reduced=css.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*$/);assert.ok(reduced);assert.match(reduced[0],/animation:\s*none/);
  for(const block of css.matchAll(/@keyframes\s+(?:anchorSettle|extractFacet|radarSweep|forgeFlame|architectTrace|voiceWave|launchRise)\b[\s\S]*?\n\}/g))assert.doesNotMatch(block[0],/\b(?:width|height|top|left|margin|padding):/);
 });
+test('roadmap cards visibly animate every emblem and matching background motif',()=>{
+ assert.match(css,/\.spec \.em\[data-agent-motion\] svg\s*\{[^}]*animation-play-state:\s*running/s);
+ const backgrounds=['anchorRings','extractNetwork','radarField','forgeHeat','architectGrid','voiceSignal','launchClimb'];
+ for(const name of backgrounds){assert.match(css,new RegExp(`@keyframes\\s+${name}\\b`));assert.match(css,new RegExp(`spec\\[data-agent-link=["']${name.replace(/(?:Rings|Network|Field|Heat|Grid|Signal|Climb)$/,'')}["']\\][^}]*animation[^;]*${name}`));}
+ const reduced=css.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*$/)[0];
+ assert.match(reduced,/\.spec__motif/);
+});
 
