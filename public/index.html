@@ -138,30 +138,26 @@
         </div>
       </header>
 
-      <section class="hero" aria-label="Your next step" data-tour-id="welcome">
-        <svg class="hero__fold" viewBox="0 0 84 84" aria-hidden="true"><defs><linearGradient id="fold-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F7F0E3"/><stop offset=".5" stop-color="#D9C7A3"/><stop offset="1" stop-color="#AB7633"/></linearGradient></defs><path d="M84 0H22L84 62Z" fill="#080806"/><path d="M22 0C40 10 70 36 84 62L84 46C66 30 44 12 34 0Z" fill="url(#fold-g)"/></svg>
-        <svg class="hero__chevrons" viewBox="0 0 150 200" fill="none" stroke="#D3B57C" stroke-width="1" aria-hidden="true"><path d="M10 80L75 20l65 60M10 130L75 70l65 60M10 180L75 120l65 60"/></svg>
-        <div class="hero__orb">
-          <div class="orb-wrap orb-wrap--lg" data-orb data-orb-state="idle"><div class="orb-halo"></div><div class="orb orb--lg"></div></div>
-          <span class="hero__orb-label">ADAM is ready</span>
-        </div>
-        <div class="hero__body">
-          <div class="hero__step">
-            <span class="em em--sm is-active"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="#em-extract"></use></svg></span>
-            <div class="hero__step-text"><span class="hero__agent" style="color:#BFD0DF">EXTRACT · Expertise interviewer</span><span class="body-2">Step 2 of 7</span></div>
+      <section class="dashboard-progress" aria-label="Your next step" data-tour-id="welcome">
+        <svg class="dashboard-progress__fold" viewBox="0 0 60 60" aria-hidden="true"><defs><linearGradient id="fold-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F7F0E3"/><stop offset=".5" stop-color="#D9C7A3"/><stop offset="1" stop-color="#AB7633"/></linearGradient></defs><path d="M60 0H16L60 44Z" fill="#080806"/><path d="M16 0C29 7 50 26 60 44V33C47 21 31 9 24 0Z" fill="url(#fold-g)"/></svg>
+        <div class="dashboard-progress__layout">
+          <div class="dashboard-progress__badge" aria-hidden="true"><span class="dashboard-progress__number">02</span><span class="dashboard-progress__total">/ 07</span></div>
+          <div class="dashboard-progress__main">
+            <h2 class="dashboard-progress__title">Tell your <span class="gold-text">story</span></h2>
+            <div class="dashboard-progress__meta">
+              <div class="dashboard-progress__identity">
+                <span class="em em--xs is-active"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="#em-extract"></use></svg></span>
+                <span class="dashboard-progress__agent">EXTRACT · Expertise interviewer</span>
+              </div>
+              <p class="dashboard-progress__output">Creates your <strong>Expertise Map</strong></p>
+            </div>
           </div>
-          <h2 class="h-display">Tell your <span class="gold-text">story</span></h2>
-          <p class="sub">ADAM asks one question at a time about your work and how you get results. You answer in your own words. ADAM turns it into your Expertise Map.</p>
-          <div class="hero__actions">
-            <a class="btn btn--gold btn--lg resume-cta" href="chat.html?agent=extract" data-tour-id="resume"><span class="resume-cta__label"><span class="resume-cta__default">Continue where you left off</span><span class="resume-cta__hover" aria-hidden="true">Continue to step 2</span></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
-            <a class="btn btn--lg" href="chat.html#voice"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4a3 3 0 0 1 6 0v7a3 3 0 0 1-6 0zM5 11a7 7 0 0 0 14 0M12 18v3"></path></svg> Talk to ADAM</a>
-          </div>
-          <div class="hero__meta">
-            <span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0M12 7v5l3 2"></path></svg> 25 to 40 minutes</span>
-            <span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h11l3 3v15H5zM8 3v6h8V3"></path></svg> Saves as you go</span>
-            <span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5v14M16 5v14"></path></svg> Stop any time</span>
+          <div class="dashboard-progress__action">
+            <span class="dashboard-progress__status"><span class="dashboard-progress__status-dot" aria-hidden="true"></span>In progress</span>
+            <a class="btn btn--gold resume-cta" href="chat.html?agent=extract" data-tour-id="resume"><span class="resume-cta__label"><span class="resume-cta__default">Continue to step 2</span><span class="resume-cta__hover" aria-hidden="true">Resume with EXTRACT</span></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
           </div>
         </div>
+        <div class="dashboard-progress__rail" role="progressbar" aria-label="Step 2 of 7" aria-valuemin="1" aria-valuenow="2" aria-valuemax="7"><span class="dashboard-progress__rail-step is-done"></span><span class="dashboard-progress__rail-step is-active"></span><span class="dashboard-progress__rail-step"></span><span class="dashboard-progress__rail-step"></span><span class="dashboard-progress__rail-step"></span><span class="dashboard-progress__rail-step"></span><span class="dashboard-progress__rail-step"></span></div>
       </section>
 
 
