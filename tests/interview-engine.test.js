@@ -75,6 +75,22 @@ test('the requested follow-up resolves a probe even when its wording still match
   assert.deepEqual(interview.checkpoint().insufficientFields, []);
 });
 
+test('natural affirmative ordering structures resolve the step probe', () => {
+  const clarifications=[
+    'First assess the problem, then plan the route, and finally deliver the work.',
+    '1. Assess the problem.\n2. Plan the route.\n3. Deliver the work.',
+    'Assessment -> planning -> delivery.',
+    'There are 3 steps: assessment, planning, delivery.'
+  ];
+  for(const text of clarifications){
+    const interview=interviews.create({agent:agents.get('anchor')});
+    interview.acceptAnswer({text:'We always do assessment, planning, delivery.'});
+    const result=interview.acceptAnswer({text});
+    assert.equal(result.answer.incomplete,false,text);
+    assert.equal(interview.buildGapList().some(gap=>gap.field==='anchor.authority'),false,text);
+  }
+});
+
 test('uncertain or negative ordering follow-ups remain visible gaps', () => {
   for (const clarification of [
     'Not sure of the exact order; maybe assessment, planning, delivery.',
