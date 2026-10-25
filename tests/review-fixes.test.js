@@ -75,11 +75,20 @@ test('completed specialists reopen their saved artifact while review offers chat
  assert.match(ui,/Back to chat/);
 });
 
-test('PDF control opens the validated file in the browser viewer',()=>{
+test('PDF control validates and downloads the selected branded file',()=>{
  const ui=fs.readFileSync(path.join(__dirname,'..','assets','js','artifact-ui.js'),'utf8');
- assert.match(ui,/window\.open\('about:blank','_blank'\)/);
- assert.match(ui,/previewWindow\.location\.href=url/);
- assert.match(ui,/Open PDF/);
+ assert.match(ui,/%PDF-/);
+ assert.match(ui,/link\.download=filename/);
+ assert.match(ui,/theme:theme/);
+});
+
+test('PDF control opens a three-brand chooser while DOCX remains direct',()=>{
+ const ui=fs.readFileSync(path.join(__dirname,'..','assets','js','artifact-ui.js'),'utf8'),review=fs.readFileSync(path.join(__dirname,'..','review.html'),'utf8');
+ assert.match(review,/assets\/js\/export-themes\.js/);
+ assert.match(ui,/Choose your blueprint style/);
+ assert.match(ui,/showModal\(\)/);
+ assert.match(ui,/saveExportTheme/);
+ assert.match(ui,/runExport\([^,]+,'docx'\)/);
 });
 
 test('shared navigation uses the reviewed artifact agent when selecting a specialist',()=>{
