@@ -688,6 +688,64 @@ body.src-off .part__src { display: none; }
   .sidebar, .switch__knob, .btn { transition: none; }
 }
 
+/* Specialist motion — additive to the original SVG artwork -------- */
+.em[data-agent-motion] svg { transform-box: fill-box; transform-origin: center; will-change: transform, opacity, filter; }
+.em[data-agent-motion="anchor"] svg { animation: anchorSettle 3.8s cubic-bezier(.22,.8,.3,1) infinite; }
+.em[data-agent-motion="extract"] svg { animation: extractFacet 4.2s ease-in-out infinite; }
+.em[data-agent-motion="radar"] svg { animation: radarSweep 3.6s linear infinite; }
+.em[data-agent-motion="forge"] svg { animation: forgeFlame 2.4s ease-in-out infinite; }
+.em[data-agent-motion="architect"] svg { animation: architectTrace 4.8s steps(12) infinite; }
+.em[data-agent-motion="voice"] svg { animation: voiceWave 2.2s ease-in-out infinite; }
+.em[data-agent-motion="launch"] svg { animation: launchRise 3s cubic-bezier(.2,.7,.2,1) infinite; }
+.em[data-agent-motion="extract"] { position: relative; }
+.em[data-agent-motion="extract"]::after { content:""; position:absolute; inset:14%; pointer-events:none; opacity:.55; background:linear-gradient(115deg,transparent 32%,rgba(255,255,255,.72) 49%,transparent 64%); mix-blend-mode:screen; clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%); animation: extractGlint 4.2s ease-in-out infinite; }
+.em[data-agent-motion="forge"] { filter: drop-shadow(0 0 8px color-mix(in srgb,var(--c,#E08A5A) 32%,transparent)); }
+.em[data-agent-motion="radar"] { filter: drop-shadow(0 0 7px color-mix(in srgb,var(--c,#5FB597) 28%,transparent)); }
+
+@keyframes anchorSettle {
+  0%,100% { transform: translateY(0) rotate(0); filter: brightness(1); }
+  42% { transform: translateY(-2px) rotate(-1deg); filter: brightness(1.08); }
+  55% { transform: translateY(1px) rotate(.4deg); }
+}
+@keyframes extractFacet {
+  0%,100% { transform: perspective(220px) rotateY(0) scale(1); filter: brightness(1); }
+  48% { transform: perspective(220px) rotateY(8deg) scale(1.025); filter: brightness(1.2); }
+}
+@keyframes extractGlint {
+  0%,28%,100% { transform: translateX(-125%) skewX(-12deg); opacity:0; }
+  46% { opacity:.72; }
+  64% { transform: translateX(125%) skewX(-12deg); opacity:0; }
+}
+@keyframes radarSweep {
+  0% { transform: rotate(0); filter: brightness(.92); }
+  50% { filter: brightness(1.16); }
+  100% { transform: rotate(360deg); filter: brightness(.92); }
+}
+@keyframes forgeFlame {
+  0%,100% { transform: translateY(0) scale(1); filter: brightness(1) saturate(1); }
+  35% { transform: translateY(-1.5px) scale(1.015,.98); filter: brightness(1.16) saturate(1.12); }
+  68% { transform: translateY(.5px) scale(.99,1.02); }
+}
+@keyframes architectTrace {
+  0%,100% { transform: translate(0,0); filter: contrast(1); opacity:.92; }
+  50% { transform: translate(.5px,-.5px); filter: contrast(1.2) brightness(1.12); opacity:1; }
+}
+@keyframes voiceWave {
+  0%,100% { transform: scaleX(1) scaleY(1); filter: brightness(1); }
+  25% { transform: scaleX(.985) scaleY(1.025); }
+  55% { transform: scaleX(1.018) scaleY(.99); filter: brightness(1.15); }
+}
+@keyframes launchRise {
+  0%,100% { transform: translateY(0) scale(1); filter: brightness(1); }
+  46% { transform: translateY(-3px) scale(1.025); filter: brightness(1.18); }
+  64% { transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .em[data-agent-motion] svg,
+  .em[data-agent-motion]::after { animation: none !important; transform: none !important; }
+}
+
 /* 17. One-screen chat ---------------------------------- */
 .chat-page { height: 100dvh; overflow: hidden; }
 .chat-page .app { height: 100dvh; min-height: 0; }

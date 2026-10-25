@@ -27,6 +27,10 @@
       else link.removeAttribute('aria-current');
     });
   }
+  if (window.FAS && window.FAS.agents) document.querySelectorAll('[data-agent-link]').forEach(function(link){
+    var key=link.getAttribute('data-agent-link'),emblem=link.querySelector('.em');
+    if (emblem && window.FAS.agents.keys.indexOf(key)>=0) emblem.setAttribute('data-agent-motion',key);
+  });
 
   /* 2. Mobile menu drawer (screens under 900px). */
   var menuBtn = document.querySelector('[data-menu-toggle]');
@@ -143,6 +147,8 @@
       if (!window.FAS || !window.FAS.agents) return;
       var destination = new URL(link.href, window.location.href);
       var agent = window.FAS.agents.get(destination.searchParams.get('agent'));
+      var linkEmblem = link.querySelector('.em');
+      if (linkEmblem) linkEmblem.setAttribute('data-agent-motion', agent.key);
       event.preventDefault();
       if (!agentLoader) agentLoader = createAgentLoader();
       stopLoaderNarration(agentLoader);
@@ -157,6 +163,8 @@
       var status = agentLoader.querySelector('[data-loader-status]');
       var start = agentLoader.querySelector('[data-loader-start]');
       icon.setAttribute('href', '#' + agent.symbol);
+      var loaderEmblem = icon.closest('.em');
+      if (loaderEmblem) loaderEmblem.setAttribute('data-agent-motion', agent.key);
       title.textContent = 'LOADING ' + agent.name;
       role.textContent = agent.title;
       description.textContent = agent.briefing;

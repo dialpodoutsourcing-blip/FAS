@@ -237,6 +237,7 @@
       }
       var agent = FAS.agents.get(key);
       this.current = agent;
+      $$('.em').forEach(function (emblem) { if (emblem.querySelector('[data-agent-symbol], [data-agent-voice-icon], [data-agent-template-icon]')) emblem.setAttribute('data-agent-motion', agent.key); });
       setText('[data-agent-name]', agent.name);
       setText('[data-agent-title]', agent.title);
       setText('[data-agent-step]', 'Step ' + agent.step + ' of 7');

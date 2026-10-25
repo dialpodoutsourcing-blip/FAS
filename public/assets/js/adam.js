@@ -237,6 +237,7 @@
       }
       var agent = FAS.agents.get(key);
       this.current = agent;
+      $$('.em').forEach(function (emblem) { if (emblem.querySelector('[data-agent-symbol], [data-agent-voice-icon], [data-agent-template-icon]')) emblem.setAttribute('data-agent-motion', agent.key); });
       setText('[data-agent-name]', agent.name);
       setText('[data-agent-title]', agent.title);
       setText('[data-agent-step]', 'Step ' + agent.step + ' of 7');
@@ -318,6 +319,21 @@
 
   var downloadSavedButton = $('[data-download-saved]');
   if (downloadSavedButton) downloadSavedButton.addEventListener('click', downloadSavedWork);
+
+  function exportArtifact(format) {
+    if (!projectStore || !FAS.artifacts) return;
+    projectStore.loadProject().then(function (project) {
+      var artifact = FAS.artifacts.build(FAS.agent.current.key, project);
+      return fetch('/api/exports', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({format:format,artifact:artifact}) });
+    }).then(function (response) {
+      if (!response.ok) throw new Error('Export failed');
+      var disposition=response.headers.get('Content-Disposition')||'',match=disposition.match(/filename="([^"]+)"/);
+      return Promise.all([response.blob(),match&&match[1]||('FAS-export.'+format)]);
+    }).then(function (result) {
+      var url=URL.createObjectURL(result[0]),link=document.createElement('a');link.href=url;link.download=result[1];document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
+    }).catch(function () { var status=$('[data-answer-status]');if(status)status.textContent='Export could not be generated. Your answers remain saved.'; });
+  }
+  $$('[data-export-format]').forEach(function(button){button.addEventListener('click',function(){exportArtifact(button.getAttribute('data-export-format'));});});
 
   FAS.chat = {
     addMessage: function (opts) {
