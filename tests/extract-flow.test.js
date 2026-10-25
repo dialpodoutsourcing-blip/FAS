@@ -8,4 +8,10 @@ test('chat loads production domain modules before its controller',()=>{
 test('chat controller saves answers, checkpoints, gaps, and ready artifacts',()=>{
  for(const token of ['FAS.projectStore.create','FAS.interview.create','saveAnswer','saveCheckpoint','fas:answer-saved','fas:checkpoint','fas:artifact-ready','fas:interview-gap'])assert.ok(adam.includes(token),token);
 });
+test('chat controller requests an AI acknowledgement while preserving the engine-selected question',()=>{
+ assert.match(adam,/fetch\('\/api\/chat-response'/);
+ assert.match(adam,/nextQuestion/);
+ assert.match(adam,/conversationHistory/);
+ assert.match(adam,/renderCurrentQuestion/);
+});
 

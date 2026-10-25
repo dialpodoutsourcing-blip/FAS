@@ -267,6 +267,7 @@
   try { storedSession = JSON.parse(localStorage.getItem('fas.supabase.session') || 'null'); } catch (_) {}
   var projectStore = FAS.projectStore && FAS.projectStore.create({ projectId:projectId, supabaseUrl:config.supabaseUrl, anonKey:config.supabaseAnonKey, accessToken:storedSession&&storedSession.access_token, userId:storedSession&&storedSession.user&&storedSession.user.id, sessionId:query.get('session') });
   var interview = null;
+  var conversationHistory = [];
   function renderCurrentQuestion(question) {
     if (!question) return;
     setText('[data-agent-question]', question.question);
@@ -282,7 +283,7 @@
   }).then(function(project){
     interview=FAS.interview.create({agent:FAS.agent.current,state:project&&project.checkpoints&&project.checkpoints[FAS.agent.current.key]});
     renderCurrentQuestion(interview.currentQuestion());
-    (project&&project.answers||[]).filter(function(answer){return answer.agentKey===FAS.agent.current.key||answer.agent_key===FAS.agent.current.key;}).forEach(function(answer){FAS.chat.addMessage({role:'user',text:answer.text||answer.value,tag:'SAVED'});});
+    (project&&project.answers||[]).filter(function(answer){return answer.agentKey===FAS.agent.current.key||answer.agent_key===FAS.agent.current.key;}).forEach(function(answer){var savedText=answer.text||answer.value;FAS.chat.addMessage({role:'user',text:savedText,tag:'SAVED'});conversationHistory.push({role:'user',content:savedText});});
   }).catch(function(){if(FAS.interview){interview=FAS.interview.create({agent:FAS.agent.current});renderCurrentQuestion(interview.currentQuestion());}});
 
   function closeDrawers() {
@@ -371,11 +372,18 @@
     }
   };
 
+  function requestConversationalReply(answer, nextQuestion) {
+    var fallback = nextQuestion;
+    FAS.chat.setTyping(true);
+    return fetch('/api/chat-response', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent:{key:FAS.agent.current.key,name:FAS.agent.current.name,title:FAS.agent.current.title},answer:answer,nextQuestion:nextQuestion,history:conversationHistory.slice(0,-1).slice(-12)})}).then(function(response){if(!response.ok)throw new Error('Conversation unavailable');return response.json();}).then(function(payload){return payload.message||fallback;}).catch(function(){return fallback;}).then(function(message){FAS.chat.setTyping(false);conversationHistory.push({role:'assistant',content:message});return message;});
+  }
+
   function send() {
     if (!input) return;
     var text = input.value.trim();
     if (!text) { input.focus(); return; }
     FAS.chat.addMessage({ role: 'user', text: text, tag: 'YOU' });
+    conversationHistory.push({role:'user',content:text});
     input.value = '';
     input.focus();
     var status = $('[data-answer-status]');
@@ -389,8 +397,10 @@
       return projectStore.saveCheckpoint(Object.assign({ agentKey: FAS.agent.current.key }, interview.checkpoint()));
     }).then(function (checkpoint) {
       emit('fas:checkpoint', { checkpoint: checkpoint });
-      if (result.followUps.length) { renderCurrentQuestion({question:result.followUps[0].question});FAS.chat.addMessage({ role: 'agent', text: result.followUps[0].question }); }
-      else if (result.nextQuestion) { renderCurrentQuestion(result.nextQuestion); FAS.chat.addMessage({ role: 'agent', text: result.nextQuestion.question }); }
+      var nextQuestion=result.followUps.length?result.followUps[0].question:result.nextQuestion&&result.nextQuestion.question;
+      if(nextQuestion){renderCurrentQuestion({question:nextQuestion});return requestConversationalReply(text,nextQuestion).then(function(message){FAS.chat.addMessage({role:'agent',text:message});return checkpoint;});}
+      return checkpoint;
+    }).then(function () {
       if (result.summary) FAS.chat.addMessage({ role: 'note', text: 'Checkpoint saved. Review the last three answers and correct anything that is off.', tag: 'CHECKPOINT' });
       var completion = interview.completion();
       if (completion.gaps.length) emit('fas:interview-gap', { gaps: completion.gaps });
