@@ -44,6 +44,26 @@ test('local agent reset removes its answers, checkpoint, artifacts, and versions
   assert.equal(project.artifacts.some(artifact => artifact.agentKey === 'extract'), true);
 });
 
+test('local project store persists a normalized export theme across instances', async () => {
+  const stores = require('../assets/js/project-store.js');
+  const storage = memoryStorage(),projectId='theme-project';
+  const first = stores.create({ storage, projectId });
+  await first.saveArtifact({ id:'anchor-map', agentKey:'anchor', title:'Trusted Expert Blueprint', sections:[] });
+  assert.equal((await first.loadProject()).artifacts[0].exportTheme,'editorial-strategy');
+  const saved=await first.saveExportTheme('anchor-map','luxury-editorial');
+  assert.equal(saved.exportTheme,'luxury-editorial');
+  const reopened=stores.create({storage,projectId});
+  assert.equal((await reopened.loadProject()).artifacts[0].exportTheme,'luxury-editorial');
+  assert.equal((await reopened.saveExportTheme('anchor-map','not-a-theme')).exportTheme,'editorial-strategy');
+});
+
+test('local project store hydrates legacy artifacts with the default export theme', async () => {
+  const stores=require('../assets/js/project-store.js'),storage=memoryStorage(),projectId='legacy-theme';
+  storage.setItem('fas.project.'+projectId,JSON.stringify({id:projectId,answers:[],checkpoints:{},artifacts:[{id:'legacy',agentKey:'anchor'}],artifactVersions:[],facts:[],gaps:[],conflicts:[]}));
+  const project=await stores.create({storage,projectId}).loadProject();
+  assert.equal(project.artifacts[0].exportTheme,'editorial-strategy');
+});
+
 test('Supabase store sends authenticated project-scoped REST requests without a service key', async () => {
   const stores = require('../assets/js/project-store.js');
   const calls = [];
@@ -76,5 +96,19 @@ test('Supabase store loads the ordered dynamic agent interview catalog', async (
   assert.equal(catalog[0].chapters[0].questions[0].field, 'extract.origin');
   assert.equal(catalog[0].chapters[0].questions[0].question, 'What problem did you first solve?');
   assert.deepEqual(catalog[0].chapters[0].questions[0].hints, ['Start at the beginning']);
+});
+
+test('Supabase store hydrates and project-scopes persisted export themes', async () => {
+  const stores=require('../assets/js/project-store.js'),calls=[];
+  const projectId='11111111-1111-4111-8111-111111111111',artifactId='22222222-2222-4222-8222-222222222222';
+  const fetchImpl=async(url,init={})=>{calls.push({url,init});if(url.includes('/projects?'))return{ok:true,json:async()=>[{id:projectId}]};if(url.includes('/answers?')||url.includes('/interview_sessions?'))return{ok:true,json:async()=>[]};if(url.includes('/artifacts?')&&(!init.method||init.method==='GET'))return{ok:true,json:async()=>[{id:artifactId,agent_key:'anchor',export_theme:'boardroom-consultancy'}]};if(init.method==='PATCH')return{ok:true,json:async()=>[{id:artifactId,agent_key:'anchor',export_theme:'luxury-editorial'}]};return{ok:true,json:async()=>[]};};
+  const store=stores.create({supabaseUrl:'https://example.supabase.co',anonKey:'anon-public',accessToken:'user-token',projectId,userId:'33333333-3333-4333-8333-333333333333',sessionId:'44444444-4444-4444-8444-444444444444',fetchImpl});
+  const project=await store.loadProject();
+  assert.equal(project.artifacts[0].exportTheme,'boardroom-consultancy');
+  const saved=await store.saveExportTheme(artifactId,'luxury-editorial');
+  assert.equal(saved.exportTheme,'luxury-editorial');
+  const patch=calls.find(call=>call.init.method==='PATCH');
+  assert.match(patch.url,new RegExp('artifacts\\?id=eq\\.'+artifactId+'.*project_id=eq\\.'+projectId));
+  assert.deepEqual(JSON.parse(patch.init.body),{export_theme:'luxury-editorial'});
 });
 

@@ -23,5 +23,7 @@ test('production migration defines the canonical project record and security pol
   }
   assert.match(sql, /insert into public\.agent_questions/i, 'guided questions must be database seeded');
   assert.match(sql, /agent_questions_read/i, 'authenticated users can read active questions');
+  assert.match(sql, /export_theme\s+text\s+not null\s+default\s+'editorial-strategy'/i);
+  assert.match(sql, /export_theme\s+in\s*\('editorial-strategy',\s*'luxury-editorial',\s*'boardroom-consultancy'\)/i);
 });
 
