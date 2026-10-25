@@ -25,6 +25,25 @@ test('local project store persists answers, checkpoints, and immutable approved 
   assert.equal(project.artifactVersions[0].title, 'Expertise Map');
 });
 
+test('local agent reset removes its answers, checkpoint, artifacts, and versions only', async () => {
+  const stores = require('../assets/js/project-store.js');
+  const storage = memoryStorage();
+  const store = stores.create({ storage, projectId: 'reset-project' });
+  await store.saveAnswer({ agentKey:'anchor', field:'anchor.authority', text:'Anchor answer' });
+  await store.saveAnswer({ agentKey:'extract', field:'extract.context', text:'Extract answer' });
+  await store.saveCheckpoint({ agentKey:'anchor', questionIndex:1 });
+  await store.saveArtifact({ id:'anchor-map', agentKey:'anchor', title:'Anchor', sections:[] });
+  await store.saveArtifact({ id:'extract-map', agentKey:'extract', title:'Extract', sections:[] });
+  await store.resetAgent('anchor');
+  const project = await store.loadProject();
+  assert.equal(project.answers.some(answer => answer.agentKey === 'anchor'), false);
+  assert.equal(project.checkpoints.anchor, undefined);
+  assert.equal(project.artifacts.some(artifact => artifact.agentKey === 'anchor'), false);
+  assert.equal(project.artifactVersions.some(version => version.agentKey === 'anchor'), false);
+  assert.equal(project.answers.some(answer => answer.agentKey === 'extract'), true);
+  assert.equal(project.artifacts.some(artifact => artifact.agentKey === 'extract'), true);
+});
+
 test('Supabase store sends authenticated project-scoped REST requests without a service key', async () => {
   const stores = require('../assets/js/project-store.js');
   const calls = [];

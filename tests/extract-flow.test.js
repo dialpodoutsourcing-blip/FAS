@@ -13,6 +13,12 @@ test('completed Anchor interviews request structured synthesis before saving the
  assert.match(adam,/FAS\.artifacts\.applySynthesis/);
  assert.ok(adam.indexOf("fetch('/api/artifact-synthesis'")<adam.indexOf('projectStore.saveArtifact',adam.indexOf("fetch('/api/artifact-synthesis'")));
 });
+test('completed interviews open the saved blueprint and reject extra chat answers',()=>{
+ const completionGuard=adam.indexOf('if (interview && !interview.currentQuestion())');
+ const addUserMessage=adam.indexOf("FAS.chat.addMessage({ role: 'user'",adam.indexOf('function send()'));
+ assert.ok(completionGuard>=0&&completionGuard<addUserMessage,'completion is checked before another user message is saved');
+ assert.match(adam,/projectStore\.saveArtifact[\s\S]*window\.location\.assign\(completionUrl/);
+});
 test('chat controller requests an AI acknowledgement while preserving the engine-selected question',()=>{
  assert.match(adam,/fetch\('\/api\/chat-response'/);
  assert.match(adam,/nextQuestion/);
