@@ -57,6 +57,10 @@ test('ANCHOR deterministic premium fallback marks thin evidence as a gap without
  assert.ok(artifact.premiumReport);
  assert.equal(artifact.premiumReport.evidenceMatrix[0].confidence,35);
  assert.match(artifact.premiumReport.evidenceMatrix[0].gap,/needs validation/i);
+ assert.ok(artifact.premiumReport.evidenceMatrix.length>=3);
+ assert.ok(artifact.premiumReport.messagingArchitecture.pillars.length>=3);
+ assert.ok(artifact.premiumReport.risks.length>=2);
+ assert.equal(artifact.premiumReport.activationPlan.length,4);
  assert.doesNotMatch(JSON.stringify(artifact.premiumReport),/certified|million|guaranteed result|\d+ clients/i);
  assert.ok(artifact.premiumReport.recommendations.length>=3);
 });
