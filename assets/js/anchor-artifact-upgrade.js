@@ -48,5 +48,25 @@
     return{upgraded:true,artifact:artifact,reason:'saved'};
   }
 
-  return{requiredFields:requiredFields.slice(),collectAnswers:collectAnswers,needsUpgrade:needsUpgrade,requestSynthesis:requestSynthesis,upgrade:upgrade};
+  function selectLatest(project,agentKey){
+    var versions=(project&&project.artifactVersions||[]).filter(function(version){return version.agentKey===agentKey||version.artifactId&&version.artifactId.indexOf(agentKey)>=0;});
+    return{project:project,versions:versions,selected:versions[versions.length-1]};
+  }
+
+  async function loadReview(options){
+    var notify=typeof options.onState==='function'?options.onState:function(){},current=selectLatest(await options.store.loadProject(),options.agentKey);
+    if(!current.selected){var empty=Object.assign({status:'empty'},current);notify(empty);return empty;}
+    if(options.isReview&&needsUpgrade(options.agentKey,current.selected,current.project)){
+      notify(Object.assign({status:'upgrading'},current));
+      try{
+        await upgrade({agentKey:options.agentKey,project:current.project,selected:current.selected,artifacts:options.artifacts,fetchImpl:options.fetchImpl,saveVersion:function(artifactId,expectedVersion,artifact){return options.store.saveArtifactVersion(artifactId,expectedVersion,artifact);}});
+        current=selectLatest(await options.store.loadProject(),options.agentKey);
+      }catch(error){
+        var failed=Object.assign({status:'error',error:error,retry:function(){return loadReview(options);}},current);notify(failed);return failed;
+      }
+    }
+    var ready=Object.assign({status:'ready'},current);notify(ready);return ready;
+  }
+
+  return{requiredFields:requiredFields.slice(),collectAnswers:collectAnswers,needsUpgrade:needsUpgrade,requestSynthesis:requestSynthesis,upgrade:upgrade,selectLatest:selectLatest,loadReview:loadReview};
 });

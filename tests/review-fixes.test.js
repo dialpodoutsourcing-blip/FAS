@@ -1,6 +1,14 @@
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');
 const interviews=require('../assets/js/interview-engine.js');const agents=require('../assets/js/agents.js');const artifacts=require('../assets/js/artifacts.js');
+const anchorUpgrade=require('../assets/js/anchor-artifact-upgrade.js');
+
+function legacyAnchorProject(premium){
+ const fields=['authority','arena','evidence','position','boundaries','activation'];
+ const selected={id:'trusted-expert-statement-review-project',artifactId:'saved-anchor-id',agentKey:'anchor',type:'trusted_expert_statement',title:'Trusted Expert Blueprint',version:premium?2:1,status:'draft',exportTheme:'boardroom-consultancy',sections:[{title:'Authority arena',blocks:[{text:'Legacy summary.'}]}]};
+ if(premium)selected.premiumReport={executiveBrief:{opportunity:'Premium report.'}};
+ return{id:'review-project',answers:fields.map((field,index)=>({id:'answer-'+index,agentKey:'anchor',field:'anchor.'+field,text:'Specific saved '+field+' answer for the premium report.'})),artifactVersions:[selected]};
+}
 
 test('RLS separates read access from editor mutations and approved history is immutable',()=>{
  const sql=fs.readFileSync(path.join(__dirname,'..','supabase','migrations','202610250001_fas_production.sql'),'utf8');
@@ -28,6 +36,30 @@ test('PDF accepts Unicode and long unbroken content',async()=>{
 test('production UI includes connected artifact controller and runtime config bootstrap',()=>{
  const chat=fs.readFileSync(path.join(__dirname,'..','assets','js','adam.js'),'utf8'),review=fs.readFileSync(path.join(__dirname,'..','review.html'),'utf8'),vault=fs.readFileSync(path.join(__dirname,'..','vault.html'),'utf8');
  assert.match(chat,/loadProject\(\)[\s\S]*FAS\.interview\.create/);assert.match(chat,/window\.FAS_CONFIG/);assert.match(review,/assets\/js\/artifact-ui\.js/);assert.match(vault,/assets\/js\/artifact-ui\.js/);
+});
+
+test('Anchor review startup upgrades once, reloads persistence, and renders the latest premium version',async()=>{
+ const legacy=legacyAnchorProject(false),premium=legacyAnchorProject(true),states=[];let loads=0,saves=0;
+ const store={loadProject:async()=>++loads===1?legacy:premium,saveArtifactVersion:async()=>{saves+=1;}};
+ const result=await anchorUpgrade.loadReview({agentKey:'anchor',isReview:true,store,artifacts,fetchImpl:async()=>({ok:false}),onState:state=>states.push(state)});
+ assert.equal(loads,2);assert.equal(saves,1);assert.deepEqual(states.map(state=>state.status),['upgrading','ready']);
+ assert.equal(result.selected.version,2);assert.ok(result.selected.premiumReport);
+});
+
+test('Anchor review startup keeps the legacy version visible and exposes a working retry after save failure',async()=>{
+ const legacy=legacyAnchorProject(false),premium=legacyAnchorProject(true),states=[];let saved=false,fail=true;
+ const store={loadProject:async()=>saved?premium:legacy,saveArtifactVersion:async()=>{if(fail)throw new Error('database unavailable');saved=true;}};
+ const first=await anchorUpgrade.loadReview({agentKey:'anchor',isReview:true,store,artifacts,fetchImpl:async()=>({ok:false}),onState:state=>states.push(state)});
+ assert.equal(first.status,'error');assert.equal(first.selected.version,1);assert.equal(typeof first.retry,'function');
+ fail=false;const retried=await first.retry();
+ assert.equal(retried.status,'ready');assert.equal(retried.selected.version,2);assert.deepEqual(states.map(state=>state.status),['upgrading','error','upgrading','ready']);
+});
+
+test('review page wires the upgrade module before the controller and includes compact upgrade states',()=>{
+ const review=fs.readFileSync(path.join(__dirname,'..','review.html'),'utf8'),ui=fs.readFileSync(path.join(__dirname,'..','assets','js','artifact-ui.js'),'utf8'),css=fs.readFileSync(path.join(__dirname,'..','assets','css','styles.css'),'utf8');
+ const upgradeIndex=review.indexOf('assets/js/anchor-artifact-upgrade.js'),controllerIndex=review.indexOf('assets/js/artifact-ui.js');assert.ok(upgradeIndex>=0&&upgradeIndex<controllerIndex);
+ assert.match(ui,/Upgrading your blueprint/);assert.match(ui,/We couldn\\'t save your upgraded blueprint/);assert.match(ui,/Try again/);
+ assert.match(css,/\.artifact-upgrade-state\s*\{/);assert.match(css,/\.artifact-upgrade-state\.is-error\s*\{/);
 });
 
 test('live artifact review replaces the static preview and reflects the selected specialist',()=>{
