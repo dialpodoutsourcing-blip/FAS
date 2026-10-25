@@ -98,13 +98,16 @@ test('Supabase store loads the ordered dynamic agent interview catalog', async (
   assert.deepEqual(catalog[0].chapters[0].questions[0].hints, ['Start at the beginning']);
 });
 
-test('Supabase store hydrates and project-scopes persisted export themes', async () => {
+test('Supabase store hydrates saved artifact content and project-scopes persisted export themes', async () => {
   const stores=require('../assets/js/project-store.js'),calls=[];
   const projectId='11111111-1111-4111-8111-111111111111',artifactId='22222222-2222-4222-8222-222222222222';
-  const fetchImpl=async(url,init={})=>{calls.push({url,init});if(url.includes('/projects?'))return{ok:true,json:async()=>[{id:projectId}]};if(url.includes('/answers?')||url.includes('/interview_sessions?'))return{ok:true,json:async()=>[]};if(url.includes('/artifacts?')&&(!init.method||init.method==='GET'))return{ok:true,json:async()=>[{id:artifactId,agent_key:'anchor',export_theme:'boardroom-consultancy'}]};if(init.method==='PATCH')return{ok:true,json:async()=>[{id:artifactId,agent_key:'anchor',export_theme:'luxury-editorial'}]};return{ok:true,json:async()=>[]};};
+  const content={id:'trusted-expert-statement-project',agentKey:'anchor',title:'Trusted Expert Blueprint',type:'trusted_expert_statement',sections:[{title:'Authority arena',blocks:[{kind:'synthesis',text:'Saved premium content.'}]}],premiumReport:{executiveBrief:{opportunity:'Saved opportunity.'}}};
+  const fetchImpl=async(url,init={})=>{calls.push({url,init});if(url.includes('/projects?'))return{ok:true,json:async()=>[{id:projectId}]};if(url.includes('/answers?')||url.includes('/interview_sessions?'))return{ok:true,json:async()=>[]};if(url.includes('/artifact_versions?'))return{ok:true,json:async()=>[{id:'version-one',artifact_id:artifactId,version:1,status:'draft',content}]};if(url.includes('/artifacts?')&&(!init.method||init.method==='GET'))return{ok:true,json:async()=>[{id:artifactId,agent_key:'anchor',export_theme:'boardroom-consultancy'}]};if(init.method==='PATCH')return{ok:true,json:async()=>[{id:artifactId,agent_key:'anchor',export_theme:'luxury-editorial'}]};return{ok:true,json:async()=>[]};};
   const store=stores.create({supabaseUrl:'https://example.supabase.co',anonKey:'anon-public',accessToken:'user-token',projectId,userId:'33333333-3333-4333-8333-333333333333',sessionId:'44444444-4444-4444-8444-444444444444',fetchImpl});
   const project=await store.loadProject();
   assert.equal(project.artifacts[0].exportTheme,'boardroom-consultancy');
+  assert.equal(project.artifactVersions.length,1);assert.equal(project.artifactVersions[0].artifactId,artifactId);assert.equal(project.artifactVersions[0].premiumReport.executiveBrief.opportunity,'Saved opportunity.');assert.equal(project.artifactVersions[0].exportTheme,'boardroom-consultancy');
+  assert.match(calls.find(call=>call.url.includes('/artifact_versions?')).url,new RegExp('artifact_id=in\\.\\('+artifactId+'\\)'));
   const saved=await store.saveExportTheme(artifactId,'luxury-editorial');
   assert.equal(saved.exportTheme,'luxury-editorial');
   const patch=calls.find(call=>call.init.method==='PATCH');
