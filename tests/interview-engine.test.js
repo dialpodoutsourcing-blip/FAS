@@ -80,7 +80,9 @@ test('natural affirmative ordering structures resolve the step probe', () => {
     'First assess the problem, then plan the route, and finally deliver the work.',
     '1. Assess the problem.\n2. Plan the route.\n3. Deliver the work.',
     'Assessment -> planning -> delivery.',
-    'There are 3 steps: assessment, planning, delivery.'
+    'There are 3 steps: assessment, planning, delivery.',
+    'First assess what could fail, then plan safeguards, and finally deliver the work.',
+    '1. Review what might block progress. 2. Plan the response. 3. Deliver the work.'
   ];
   for(const text of clarifications){
     const interview=interviews.create({agent:agents.get('anchor')});
@@ -103,6 +105,7 @@ test('uncertain or negative ordering follow-ups remain visible gaps', () => {
     'First assess the problem, then maybe plan the route, and finally deliver the work.',
     'Assessment -> maybe planning -> delivery.',
     '1. Assess the problem.\n2. Maybe plan the route.\n3. Deliver the work.',
+    'There are 3 steps: assessment, planning, maybe delivery.',
     'There are 3 steps, in this exact order.',
     'I cannot give an exact order.',
     'It could be assessment, planning, delivery.',
