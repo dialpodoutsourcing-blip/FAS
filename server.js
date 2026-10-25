@@ -2,6 +2,7 @@
 const path=require('node:path');
 const express=require('express');
 const exportsService=require('./lib/export-service');
+const agentAccess=require('./lib/agent-access');
 const {buildRuntimeConfig}=require('./lib/runtime-config');
 require('dotenv').config();
 const REALTIME_URL='https://api.openai.com/v1/realtime/calls';
@@ -52,23 +53,31 @@ function createApp({fetchImpl=globalThis.fetch,apiKey=process.env.OPENAI_API_KEY
   const match=String(req.get('authorization')||'').match(/^Bearer\s+(.+)$/i);if(!match){res.status(401).json({error:'Authentication required.'});return null;}
   try{const response=await fetchImpl(publicConfig.supabaseUrl+'/auth/v1/user',{method:'GET',headers:{apikey:publicConfig.supabasePublishableKey,Authorization:'Bearer '+match[1],Accept:'application/json'}});if(!response.ok){res.status(401).json({error:'Authentication required.'});return null;}const user=await response.json(),now=Date.now(),key=user&&user.id||'unknown',entry=paidUsage.get(key);if(entry&&now-entry.startedAt<60000&&entry.count>=60){res.status(429).json({error:'Please wait before making more AI requests.'});return null;}paidUsage.set(key,!entry||now-entry.startedAt>=60000?{startedAt:now,count:1}:{startedAt:entry.startedAt,count:entry.count+1});return user;}catch(_){res.status(503).json({error:'Authentication verification unavailable.'});return null;}
  }
+ function bearerToken(req){const match=String(req.get('authorization')||'').match(/^Bearer\s+(.+)$/i);return match?match[1]:'';}
+ async function authorizeSpecialistRequest(req,res,agentKey){
+  const user=await authorizePaidRequest(req,res);if(!user)return null;
+  const allowed=await agentAccess.authorizeAgentAccess({agentKey:agentKey,token:bearerToken(req),supabaseUrl:publicConfig.supabaseUrl,publishableKey:publicConfig.supabasePublishableKey,fetchImpl:fetchImpl});
+  if(!allowed){res.status(403).json({error:'This specialist is not available on your current plan.'});return null;}
+  return user;
+ }
  app.use((req,res,next)=>{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','same-origin');next();});
  app.get('/api/runtime-config',(req,res)=>{res.setHeader('Cache-Control','no-store');return res.json(buildRuntimeConfig(runtimeEnv));});
  app.post('/api/exports',express.json({limit:'1mb'}),async(req,res)=>{
   const origin=req.get('origin'),forwardedHost=req.get('x-forwarded-host'),requestHost=forwardedHost||req.get('host'),requestProtocol=req.get('x-forwarded-proto')||req.protocol,sameOrigin=requestHost?`${requestProtocol}://${requestHost}`:'';if(origin&&origin!==allowedOrigin&&origin!==sameOrigin)return res.status(403).json({error:'Origin not allowed.'});
-  if(!await authorizePaidRequest(req,res))return;
-  try{const request=exportsService.assertExportRequest(req.body),isPdf=request.format==='pdf',bytes=isPdf?await exportsService.renderPdf(request.artifact,{theme:request.theme}):await exportsService.renderDocx(request.artifact),mime=isPdf?'application/pdf':'application/vnd.openxmlformats-officedocument.wordprocessingml.document';res.setHeader('Content-Type',mime);res.setHeader('Content-Disposition',`attachment; filename="${exportsService.filename(request.artifact,request.format)}"`);res.setHeader('X-FAS-Artifact-Version',String(request.artifact.version));res.setHeader('X-FAS-Content-Fingerprint',request.artifact.contentFingerprint);return res.send(bytes);}catch(error){return res.status(400).json({error:error&&error.message||'Export failed.'});}
+  let request;try{request=exportsService.assertExportRequest(req.body);}catch(error){return res.status(400).json({error:error&&error.message||'Export failed.'});}
+  if(!await authorizeSpecialistRequest(req,res,request.artifact.agentKey))return;
+  try{const isPdf=request.format==='pdf',bytes=isPdf?await exportsService.renderPdf(request.artifact,{theme:request.theme}):await exportsService.renderDocx(request.artifact),mime=isPdf?'application/pdf':'application/vnd.openxmlformats-officedocument.wordprocessingml.document';res.setHeader('Content-Type',mime);res.setHeader('Content-Disposition',`attachment; filename="${exportsService.filename(request.artifact,request.format)}"`);res.setHeader('X-FAS-Artifact-Version',String(request.artifact.version));res.setHeader('X-FAS-Content-Fingerprint',request.artifact.contentFingerprint);return res.send(bytes);}catch(error){return res.status(400).json({error:error&&error.message||'Export failed.'});}
  });
  app.post('/api/chat-response',express.json({limit:'32kb'}),async(req,res)=>{
   const origin=req.get('origin'),forwardedHost=req.get('x-forwarded-host'),requestHost=forwardedHost||req.get('host'),requestProtocol=req.get('x-forwarded-proto')||req.protocol,sameOrigin=requestHost?`${requestProtocol}://${requestHost}`:'';if(origin&&origin!==allowedOrigin&&origin!==sameOrigin)return res.status(403).json({error:'Origin not allowed.'});
   let request;try{request=normalizeChatRequest(req.body);}catch(_){return res.status(400).json({error:'Invalid chat request.'});}
-  if(!await authorizePaidRequest(req,res))return;
+  if(!await authorizeSpecialistRequest(req,res,request.agent.key))return;
   if(!apiKey)return res.status(503).json({error:'Conversational response unavailable.'});
   try{const upstream=await fetchImpl(RESPONSES_URL,{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json','OpenAI-Safety-Identifier':'fas-guided-interview'},body:JSON.stringify(buildChatPayload(request,chatModel))});if(!upstream.ok)return res.status(502).json({error:'Conversational response unavailable.'});const acknowledgement=cleanAcknowledgement(extractResponseText(await upstream.json()));if(!acknowledgement)return res.status(502).json({error:'Conversational response unavailable.'});return res.json({message:acknowledgement+'\n\n'+request.nextQuestion});}catch(_){return res.status(502).json({error:'Conversational response unavailable.'});}
  });
  app.post('/api/artifact-synthesis',express.json({limit:'64kb'}),async(req,res)=>{
   const origin=req.get('origin'),forwardedHost=req.get('x-forwarded-host'),requestHost=forwardedHost||req.get('host'),requestProtocol=req.get('x-forwarded-proto')||req.protocol,sameOrigin=requestHost?`${requestProtocol}://${requestHost}`:'';if(origin&&origin!==allowedOrigin&&origin!==sameOrigin)return res.status(403).json({error:'Origin not allowed.'});
-  let request;try{request=normalizeSynthesisRequest(req.body);}catch(_){return res.status(400).json({error:'Invalid synthesis request.'});}if(!await authorizePaidRequest(req,res))return;if(!apiKey)return res.status(503).json({error:'Artifact synthesis unavailable.'});
+  let request;try{request=normalizeSynthesisRequest(req.body);}catch(_){return res.status(400).json({error:'Invalid synthesis request.'});}if(!await authorizeSpecialistRequest(req,res,request.agentKey))return;if(!apiKey)return res.status(503).json({error:'Artifact synthesis unavailable.'});
   try{const upstream=await fetchImpl(RESPONSES_URL,{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json','OpenAI-Safety-Identifier':'fas-artifact-synthesis'},body:JSON.stringify(buildSynthesisPayload(request,chatModel))});if(!upstream.ok)return res.status(502).json({error:'Artifact synthesis unavailable.'});const sections=JSON.parse(extractResponseText(await upstream.json()));if(!validatePremiumSynthesis(sections,request))return res.status(502).json({error:'Artifact synthesis unavailable.'});return res.json({sections:sections});}catch(_){return res.status(502).json({error:'Artifact synthesis unavailable.'});}
  });
  app.post('/api/realtime-session',express.text({type:'application/sdp',limit:'16kb'}),async(req,res)=>{
@@ -81,7 +90,7 @@ function createApp({fetchImpl=globalThis.fetch,apiKey=process.env.OPENAI_API_KEY
  app.post('/api/realtime-interview-session',express.text({type:'application/sdp',limit:'16kb'}),async(req,res)=>{
   const origin=req.get('origin'),forwardedHost=req.get('x-forwarded-host'),requestHost=forwardedHost||req.get('host'),requestProtocol=req.get('x-forwarded-proto')||req.protocol,sameOrigin=requestHost?`${requestProtocol}://${requestHost}`:'';if(origin&&origin!==allowedOrigin&&origin!==sameOrigin)return res.status(403).json({error:'Origin not allowed.'});
   const sdp=req.body;if(typeof sdp!=='string'||!sdp.trim()||sdp.length>MAX_SDP_LENGTH||!/^v=0(?:\r?\n)/.test(sdp)||!/(?:^|\r?\n)m=audio\s/m.test(sdp))return res.status(400).json({error:'A valid audio SDP offer is required.'});
-  if(!await authorizePaidRequest(req,res))return;
+  if(!await authorizeSpecialistRequest(req,res,req.get('X-FAS-Agent')))return;
   if(!apiKey)return res.status(503).json({error:'Voice interview unavailable.'});
   try{for(const model of ['gpt-realtime-2.1','gpt-realtime-1.5']){const form=new FormData();form.set('sdp',sdp);form.set('session',JSON.stringify({...buildRealtimeInterviewSessionConfig(),model:model}));const upstream=await fetchImpl(REALTIME_URL,{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'OpenAI-Safety-Identifier':'fas-guided-voice-interview'},body:form});if(upstream.ok){const answer=await upstream.text();if(answer.trim())return res.type('application/sdp').send(answer);return res.status(502).json({error:'Voice interview unavailable.'});}if(![502,503,504].includes(upstream.status))return res.status(502).json({error:'Voice interview unavailable.'});}return res.status(502).json({error:'Voice interview unavailable.'});}catch(_){return res.status(502).json({error:'Voice interview unavailable.'});}
  });

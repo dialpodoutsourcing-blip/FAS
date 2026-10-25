@@ -362,6 +362,7 @@
     if(!FAS.createRealtimeInterviewer)return null;
     var voiceAudio=$('[data-voice-audio]');
     return FAS.createRealtimeInterviewer({
+      agentKey:FAS.agent.current.key,
       audioFactory:voiceAudio?function(){return voiceAudio;}:undefined,
       getAccessToken:getVoiceAccessToken,
       onState:voiceStateChanged,

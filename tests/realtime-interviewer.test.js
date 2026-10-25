@@ -48,6 +48,7 @@ function harness(overrides) {
   const captures = [];
   const lifecycle = new LifecycleTarget();
   const options = Object.assign({
+    agentKey: 'anchor',
     peerFactory: () => peer,
     audioFactory: () => audio,
     mediaDevices,
@@ -87,6 +88,7 @@ test('start unlocks playback, captures enhanced audio, negotiates send-receive S
   assert.equal(h.peer.transceivers[0][1].direction, 'sendrecv');
   assert.equal(h.requests[0].url, '/api/realtime-interview-session');
   assert.equal(h.requests[0].init.headers.Authorization, 'Bearer access-token');
+  assert.equal(h.requests[0].init.headers['X-FAS-Agent'], 'anchor');
   assert.equal(h.peer.remote.sdp, 'v=0\r\nanswer');
   assert.equal(h.captures.at(-1), true);
   h.peer.ontrack({ streams: ['remote-stream'] });

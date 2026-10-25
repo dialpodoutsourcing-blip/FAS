@@ -14,6 +14,7 @@
 
   function createRealtimeInterviewer(options) {
     options = options || {};
+    var agentKey = normalizedText(options.agentKey).toLowerCase();
     var makePeer = options.peerFactory || (root && root.RTCPeerConnection ? function () { return new root.RTCPeerConnection(); } : null);
     var makeAudio = options.audioFactory || (root && root.Audio ? function () { return new root.Audio(); } : null);
     var makeMediaStream = options.mediaStreamFactory || (root && root.MediaStream ? function (tracks) { return new root.MediaStream(tracks); } : null);
@@ -254,7 +255,7 @@
         return peer.setLocalDescription(offer).then(function () { return offer; });
       }).then(function (offer) {
         return Promise.resolve(getAccessToken()).then(function (token) {
-          var headers = { 'Content-Type': 'application/sdp' };
+          var headers = { 'Content-Type': 'application/sdp', 'X-FAS-Agent': agentKey };
           if (token) headers.Authorization = 'Bearer ' + token;
           if(stopRequested)throw safeError('Voice start cancelled.','voice_stopped');
           return fetchImpl('/api/realtime-interview-session', { method: 'POST', headers: headers, body: offer.sdp,signal:abortController&&abortController.signal });

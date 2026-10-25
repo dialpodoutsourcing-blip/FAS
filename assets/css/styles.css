@@ -1068,4 +1068,3 @@ html:not(.fas-access-ready) #panel-forge,
 html:not(.fas-access-ready) #panel-architect,
 html:not(.fas-access-ready) #panel-voice,
 html:not(.fas-access-ready) #panel-launch { display: none !important; }
-
