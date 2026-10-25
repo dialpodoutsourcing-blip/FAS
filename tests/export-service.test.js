@@ -1,6 +1,7 @@
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');
 const {PDFDocument}=require('pdf-lib');
+const JSZip=require('jszip');
 const artifact={schemaVersion:1,id:'expertise-map-p1',agentKey:'extract',type:'expertise_map',title:'Expertise Map',version:3,status:'user_approved',generatedAt:'2026-10-25T12:00:00.000Z',sections:[{title:'Origin story',blocks:[{kind:'evidence',text:'A specific source-grounded origin story.',sourceId:'s1'}]},{title:'Proof bank',blocks:[{kind:'evidence',text:'12 clients completed the process.',sourceId:'s2'}]}],sources:[{id:'s1',field:'origin',basis:'user'},{id:'s2',field:'proof',basis:'user'}],warnings:[]};
 
 test('export service renders valid PDF and DOCX from one normalized artifact',async()=>{
@@ -54,6 +55,20 @@ test('premium Anchor embeds the approved material artwork and closes with a reco
  const pdf=await service.renderPdf(anchor,{theme:'editorial-strategy'}),document=await PDFDocument.load(pdf);
  const imageObjects=document.context.enumerateIndirectObjects().filter(([,object])=>/\/Subtype\s*\/Image/.test(object.toString()));
  assert.ok(imageObjects.length>=1,'the approved realistic Anchor artwork must be embedded in the PDF');
+});
+
+test('premium Anchor DOCX uses the full report structure with professional Word formatting',async()=>{
+ const service=require('../lib/export-service.js'),anchor=premiumAnchor();
+ anchor.premiumReport.finalDecision={recommendation:'Proceed with a controlled validation cycle before scaling.',rationale:'The position is credible, but the evidence base still needs direct market validation.',scaleTrigger:'Scale only after qualified buyer response confirms the positioning.',sourceIds:['answer-evidence','answer-activation']};
+ const docx=await service.renderDocx(anchor),zip=await JSZip.loadAsync(docx);
+ const documentXml=await zip.file('word/document.xml').async('string');
+ const footerXml=await zip.file('word/footer1.xml').async('string');
+ for(const heading of ['EXECUTIVE OPPORTUNITY','AUTHORITY FOUNDATION','EVIDENCE &amp; CREDIBILITY','POSITION &amp; MESSAGE','30-DAY ACTIVATION','RECOMMENDED DECISION'])assert.match(documentXml,new RegExp(heading));
+ assert.match(documentXml,/Proceed with a controlled validation cycle before scaling\./);
+ assert.match(documentXml,/<w:br\/>/,'the cover title should use a real Word line break');
+ assert.ok((documentXml.match(/<w:tbl>/g)||[]).length>=3,'premium DOCX should use tables to organize strategic content');
+ assert.match(footerXml,/FAS · ANCHOR · CONFIDENTIAL/);
+ assert.match(footerXml,/PAGE/);
 });
 
 test('export request normalizes unknown branding while preserving premium report data',()=>{

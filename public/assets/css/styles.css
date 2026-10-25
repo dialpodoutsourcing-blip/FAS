@@ -584,6 +584,24 @@ body.src-off .part__src { display: none; }
 .artifact-live__notice { min-height: 38px; margin-top: 12px; padding: 9px 10px; border-radius: var(--r-sm); background: rgba(211,181,124,.08); color: var(--gold); font-size: 11px; line-height: 1.45; text-align: center; }
 .artifact-live__notice:empty { visibility: hidden; }
 .artifact-live__notice.is-error { background: rgba(224,138,90,.1); color: #e7a176; }
+.artifact-compare-dialog { width: min(1080px, calc(100vw - 32px)); max-height: calc(100vh - 32px); padding: 0; border: 1px solid var(--gold-line); border-radius: var(--r-lg); background: var(--bg); color: var(--text); box-shadow: 0 28px 90px rgba(0,0,0,.72); }
+.artifact-compare-dialog::backdrop { background: rgba(0,0,0,.78); backdrop-filter: blur(5px); }
+.artifact-compare-dialog__panel { padding: 28px; }
+.artifact-compare-dialog__head { display: flex; align-items: start; justify-content: space-between; gap: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+.artifact-compare-dialog__head h2 { margin-top: 4px; font-family: var(--font-sub); font-size: 28px; }
+.artifact-compare-dialog__summary { margin-top: 7px; color: var(--text-2); font-size: 13px; }
+.artifact-compare-dialog__close { width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--text); font-size: 24px; cursor: pointer; }
+.artifact-compare-dialog__labels, .artifact-compare-row__columns { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.artifact-compare-dialog__labels { position: sticky; top: 0; z-index: 1; padding: 14px 0 10px; background: var(--bg); color: var(--gold); font-size: 11px; letter-spacing: .7px; text-transform: uppercase; }
+.artifact-compare-dialog__rows { display: flex; flex-direction: column; gap: 12px; }
+.artifact-compare-row { padding: 16px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); }
+.artifact-compare-row--changed, .artifact-compare-row--added, .artifact-compare-row--removed { border-color: var(--gold-line); }
+.artifact-compare-row__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.artifact-compare-row__head h3 { font-family: var(--font-sub); font-size: 16px; }
+.artifact-compare-row__status { padding: 3px 8px; border-radius: 999px; background: var(--gold-soft); color: var(--gold); font-size: 9px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; }
+.artifact-compare-row--unchanged .artifact-compare-row__status { background: rgba(255,255,255,.05); color: var(--muted); }
+.artifact-compare-row__columns p { min-height: 72px; padding: 13px; border-radius: var(--r-sm); background: rgba(255,255,255,.025); color: var(--text-2); font-size: 13px; line-height: 1.6; white-space: pre-line; }
+.artifact-compare-row__columns p:last-child { background: rgba(211,181,124,.06); color: var(--text); }
 .artifact-upgrade-state { width: min(760px, 100%); margin: 24px auto; display: flex; align-items: center; gap: 18px; padding: 22px 24px; border: 1px solid var(--gold-line); border-radius: var(--r-lg); background: radial-gradient(circle at 0 0, rgba(211,181,124,.12), transparent 42%), var(--surface); }
 .artifact-upgrade-state h2 { margin-top: 3px; font-family: var(--font-sub); font-size: 20px; }
 .artifact-upgrade-state p:not(.eyebrow) { margin-top: 7px; color: var(--text-2); font-size: 13px; line-height: 1.55; }
@@ -750,6 +768,12 @@ body.src-off .part__src { display: none; }
   .artifact-live__head { align-items: flex-start; flex-direction: column; }
   .artifact-live__actions { width: 100%; justify-content: flex-start; }
   .artifact-live__section { grid-template-columns: 36px minmax(0, 1fr); gap: 10px; padding: 19px 16px; }
+  .artifact-compare-dialog__panel { padding: 18px; }
+  .artifact-compare-dialog__labels, .artifact-compare-row__columns { grid-template-columns: 1fr; }
+  .artifact-compare-dialog__labels strong:first-child { display: none; }
+  .artifact-compare-row__columns p::before { display: block; margin-bottom: 5px; color: var(--gold); font-size: 9px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; }
+  .artifact-compare-row__columns p:first-child::before { content: 'Previous version'; }
+  .artifact-compare-row__columns p:last-child::before { content: 'Current version'; }
   .vorb { width: 210px; height: 210px; }
   .vorb__core { width: 132px; height: 132px; }
   .vorb__ripple { inset: 38px; }
