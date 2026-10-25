@@ -50,4 +50,10 @@ assert.deepEqual(agents.normalize({ key: 'demo' }).savedFields, []);
 assert.deepEqual(agents.normalize({ key: 'demo' }).generates, []);
 assert.equal(agents.normalize({ key: 'demo' }).introduction, '');
 
+assert.equal(typeof agents.applyCatalog, 'function', 'registry accepts database-backed definitions');
+agents.applyCatalog([{key:'extract',name:'EXTRACT',title:'Database title',chapters:[{id:'db_chapter',label:'Database chapter',questions:[{field:'extract.db_chapter',question:'Database-guided question?',required:true}]}]}]);
+assert.equal(agents.get('extract').title, 'Database title');
+assert.equal(agents.get('extract').chapters[0].questions[0].question, 'Database-guided question?');
+assert.deepEqual(agents.get('extract').stages, ['Database chapter']);
+
 console.log('Agent registry checks passed.');

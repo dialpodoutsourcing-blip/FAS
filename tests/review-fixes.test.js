@@ -30,3 +30,10 @@ test('production UI includes connected artifact controller and runtime config bo
  assert.match(chat,/loadProject\(\)[\s\S]*FAS\.interview\.create/);assert.match(chat,/window\.FAS_CONFIG/);assert.match(review,/assets\/js\/artifact-ui\.js/);assert.match(vault,/assets\/js\/artifact-ui\.js/);
 });
 
+test('chat applies the database interview catalog before creating the interview',()=>{
+ const chat=fs.readFileSync(path.join(__dirname,'..','assets','js','adam.js'),'utf8');
+ assert.match(chat,/loadAgentCatalog\(\)/);
+ assert.match(chat,/FAS\.agents\.applyCatalog/);
+ assert.ok(chat.indexOf('loadAgentCatalog()') < chat.indexOf('FAS.interview.create'), 'database catalog loads before interview creation');
+});
+

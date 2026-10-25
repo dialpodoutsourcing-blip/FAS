@@ -259,7 +259,8 @@
   };
 
   var query = new URLSearchParams(window.location.search);
-  FAS.agent.render(query.get('agent'));
+  var agentKey = query.get('agent');
+  FAS.agent.render(agentKey);
   var projectId = query.get('project') || 'local-default';
   var config = window.FAS_CONFIG || {};
   var storedSession = null;
@@ -272,7 +273,13 @@
     var visible = $('.bubble__text--q', thread);
     if (visible) visible.textContent = question.question;
   }
-  if (projectStore && FAS.interview) projectStore.loadProject().then(function(project){
+  if (projectStore && FAS.interview) projectStore.loadAgentCatalog().then(function(catalog){
+    if (catalog.length && FAS.agents && FAS.agents.applyCatalog) {
+      FAS.agents.applyCatalog(catalog);
+      FAS.agent.render(agentKey);
+    }
+    return projectStore.loadProject();
+  }).then(function(project){
     interview=FAS.interview.create({agent:FAS.agent.current,state:project&&project.checkpoints&&project.checkpoints[FAS.agent.current.key]});
     renderCurrentQuestion(interview.currentQuestion());
     (project&&project.answers||[]).filter(function(answer){return answer.agentKey===FAS.agent.current.key||answer.agent_key===FAS.agent.current.key;}).forEach(function(answer){FAS.chat.addMessage({role:'user',text:answer.text||answer.value,tag:'SAVED'});});

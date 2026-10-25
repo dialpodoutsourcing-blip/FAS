@@ -197,6 +197,23 @@
     return result;
   }
   function get(key) { return normalize(registry[resolveKey(key)]); }
+  function applyCatalog(catalog) {
+    if (!Array.isArray(catalog)) return;
+    catalog.forEach(function(definition) {
+      if (!definition || !registry[definition.key]) return;
+      var chapters = Array.isArray(definition.chapters) ? clone(definition.chapters) : null;
+      Object.keys(definition).forEach(function(field) {
+        if (field !== 'key' && field !== 'chapters') registry[definition.key][field] = clone(definition[field]);
+      });
+      if (chapters && chapters.length) {
+        registry[definition.key].chapters = chapters;
+        registry[definition.key].stages = chapters.map(function(chapter) { return chapter.label; });
+        registry[definition.key].completionChecks = chapters.map(function(chapter) { return chapter.id; });
+        registry[definition.key].question = chapters[0].questions[0].question;
+        registry[definition.key].activeStage = Math.min(registry[definition.key].activeStage || 0, chapters.length - 1);
+      }
+    });
+  }
 
-  return { keys: keys.slice(), get: get, resolveKey: resolveKey, normalize: normalize };
+  return { keys: keys.slice(), get: get, resolveKey: resolveKey, normalize: normalize, applyCatalog: applyCatalog };
 });

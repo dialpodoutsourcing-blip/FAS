@@ -43,3 +43,19 @@ test('Supabase store sends authenticated project-scoped REST requests without a 
   assert.doesNotMatch(JSON.stringify(calls[0]), /service.role/i);
 });
 
+test('Supabase store loads the ordered dynamic agent interview catalog', async () => {
+  const stores = require('../assets/js/project-store.js');
+  const fetchImpl = async url => {
+    if (url.includes('/agent_definitions?')) return { ok:true, json:async()=>[{key:'extract',name:'EXTRACT',definition:{title:'Expertise Extraction Coach'}}] };
+    if (url.includes('/agent_chapters?')) return { ok:true, json:async()=>[{id:'chapter-1',agent_key:'extract',key:'origin',label:'Origin',position:1}] };
+    if (url.includes('/agent_questions?')) return { ok:true, json:async()=>[{id:'question-1',chapter_id:'chapter-1',field_path:'extract.origin',prompt:'What problem did you first solve?',position:1,required:true,config:{hints:['Start at the beginning']}}] };
+    return { ok:true, json:async()=>[] };
+  };
+  const store = stores.create({supabaseUrl:'https://example.supabase.co',anonKey:'anon-public',accessToken:'user-token',projectId:'11111111-1111-4111-8111-111111111111',fetchImpl});
+  const catalog = await store.loadAgentCatalog();
+  assert.equal(catalog[0].key, 'extract');
+  assert.equal(catalog[0].chapters[0].questions[0].field, 'extract.origin');
+  assert.equal(catalog[0].chapters[0].questions[0].question, 'What problem did you first solve?');
+  assert.deepEqual(catalog[0].chapters[0].questions[0].hints, ['Start at the beginning']);
+});
+
