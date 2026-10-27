@@ -98,8 +98,14 @@ class StrategyMatrix(Flowable):
         c.setStrokeColor(colors.HexColor("#8C8377")); c.setLineWidth(.7); c.line(x0,y0,x0,y0+ph); c.line(x0,y0,x0+pw,y0)
         c.setFillColor(colors.HexColor("#5C544A")); c.setFont("Helvetica",7); c.drawString(0,y0+ph-2,"HIGH VALUE"); c.drawRightString(w,y0-9,"HIGH CONFIDENCE")
         positions=[(.2,.36),(.45,.7),(.7,.52),(.86,.82)]
+        points=[(x0+x*pw,y0+y*ph) for x,y in positions]
+        c.saveState(); c.setStrokeColor(self.accent); c.setLineWidth(2.4); c.setLineCap(1); c.setLineJoin(1)
+        for start,end in zip(points,points[1:]):
+            dx=(end[0]-start[0])/3
+            c.bezier(start[0],start[1],start[0]+dx,start[1],end[0]-dx,end[1],end[0],end[1])
+        c.restoreState()
         for i,label in enumerate(self.labels[:4]):
-            px=x0+positions[i][0]*pw; py=y0+positions[i][1]*ph; radius=(7+i)*mm/2
+            px,py=points[i]; radius=(7+i)*mm/2
             c.setFillColor(colors.Color(self.accent.red,self.accent.green,self.accent.blue,alpha=.16)); c.setStrokeColor(self.accent); c.circle(px,py,radius,fill=1,stroke=1)
             c.setFillColor(INK); c.setFont("Helvetica-Bold",6.5); c.drawCentredString(px,py-2,label)
 

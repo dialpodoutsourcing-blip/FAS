@@ -35,6 +35,8 @@ assert.ok(portfolio.length > 140000, 'combined portfolio includes substantial te
 
 assert.match(generator, /name="DocTitle"[^\n]*textColor=INK/, 'light cover uses a high-contrast dark title');
 assert.match(generator, /class StrategyMatrix/, 'PDFs contain strategy-matrix visuals');
+assert.match(generator, /c\.bezier\(/, 'decision matrix connects its circular nodes with a smooth curve');
+assert.match(generator, /for i,label in enumerate\(self\.labels\[:4\]\):[\s\S]*c\.circle\(px,py,radius/, 'decision graph keeps the labeled circular nodes');
 assert.match(generator, /class SignalChart/, 'PDFs contain data visualization');
 assert.match(generator, /class TimelineDiagram/, 'PDFs contain implementation timelines');
 ['Decision rationale', 'Evidence and assumptions', 'Risks and safeguards', 'Recommended next actions'].forEach(section => {
