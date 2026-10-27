@@ -50,6 +50,21 @@ function premiumExtract(){
  return artifacts.build('extract',{id:'premium-extract',answers:Object.entries(fields).map(([field,text])=>({id:'extract-'+field,field:'extract.'+field,text}))});
 }
 
+function attachedExtract(){
+ const fields={
+  context:'At Innov8 IT, people come to us for help in custom development, CRM dashboards, and technical services that need a clear delivery system.',
+  diagnostic:'The real constraint is usually unclear ownership and decision flow, not the software itself.',
+  origin:'The approach emerged while repairing failed software projects and translating technical delivery into clear client decisions.',
+  timeline:'Developer to solutions adviser to delivery lead to systems strategist.',
+  method:'Assess the situation, map the underlying pattern, apply the documented method, validate and transfer the result.',
+  proof:'Clients adopted the mapped delivery process, used explicit On-Time, Late, and Pending statuses, and required evidence of completed work.',
+  point_of_view:'Clarity before automation; diagnose before prescribing; evidence before unsupported claims.',
+  boundaries:'No guaranteed commercial outcomes, no invented client results, and no public proof without permission.',
+  synthesis:'Name and validate the method, build a permission-safe proof bank, then activate it through a focused diagnostic workshop.'
+ };
+ return artifacts.build('extract',{id:'attached-extract',version:2,answers:Object.entries(fields).map(([field,text])=>({id:'attached-'+field,field:'extract.'+field,text}))});
+}
+
 test('premium EXTRACT renders a distinct nine-page PDF in every approved theme',async()=>{
  const service=require('../lib/export-service.js'),buffers=[];
  for(const theme of ['editorial-strategy','luxury-editorial','boardroom-consultancy']){
@@ -99,6 +114,26 @@ test('EXTRACT visual models turn sparse arrays into explicit open gaps',()=>{
  report.proofBank=[];report.pointOfView.frameworks=[];report.risks=[];report.recommendations=[];
  const models=buildVisualModels(report);
  for(const model of models.slice(1))assert.match(JSON.stringify(model),/OPEN GAP/);
+});
+
+test('attached EXTRACT content drives rich visual models and valid themed PDFs',async()=>{
+ const service=require('../lib/export-service.js'),{buildVisualModels}=require('../lib/extract-report-renderer.js'),artifact=attachedExtract(),models=buildVisualModels(artifact.premiumReport);
+ const serialized=JSON.stringify(models);
+ for(const phrase of ['Developer to solutions adviser','Assess the situation','On-Time, Late, and Pending','Diagnose before prescribing','No guaranteed commercial outcomes','Name and validate the method'])assert.match(serialized,new RegExp(phrase,'i'));
+ assert.equal(new Set(models.map(model=>model.type)).size,8);
+ assert.doesNotMatch(serialized,/…|â€¦/);
+ for(const theme of ['editorial-strategy','luxury-editorial','boardroom-consultancy']){
+  const pdf=await service.renderPdf(artifact,{theme}),document=await PDFDocument.load(pdf);
+  assert.equal(document.getPageCount(),9);assert.equal(document.getTitle(),'Expertise Map');assert.ok((document.getKeywords()||'').includes(theme));
+  assert.ok(pdf.length>25000,theme+' must contain substantive vector graphics and report content');
+ }
+});
+
+test('EXTRACT graph labels remain inside the protected chart width',()=>{
+ const {boundedLabelX}=require('../lib/extract-report-renderer.js');
+ assert.equal(boundedLabelX(78,96),57);
+ assert.equal(boundedLabelX(302,96),254);
+ assert.equal(boundedLabelX(526,96),449);
 });
 
 test('every later specialist renders a nine-page object-led report in all three themes',async()=>{
