@@ -53,6 +53,7 @@
     var navQuery = new URLSearchParams(window.location.search);
     var navProjectId = navQuery.get('project') || 'local-default';
     var savedProject = JSON.parse(localStorage.getItem('fas.project.' + navProjectId) || 'null');
+    if(window.FAS.progression)window.FAS.progression.apply(savedProject,document);
     var completedAgents = new Set((savedProject && savedProject.artifacts || []).map(function(artifact){ return artifact.agentKey; }));
     document.querySelectorAll('[data-agent-link]').forEach(function(link){
       var completedKey = link.getAttribute('data-agent-link');

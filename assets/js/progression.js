@@ -3,5 +3,6 @@
  function anchorComplete(project){return(project&&project.artifacts||[]).some(function(artifact){return(artifact.agentKey||artifact.agent_key)==='anchor';});}
  function canEnter(agentKey,project){return agentKey!=='extract'||anchorComplete(project);}
  function lockReason(agentKey,project){return canEnter(agentKey,project)?'':'Finish ANCHOR to unlock EXTRACT.';}
- return{anchorComplete:anchorComplete,canEnter:canEnter,lockReason:lockReason};
+ function apply(project,doc){if(!doc)return;var unlocked=anchorComplete(project);Array.prototype.forEach.call(doc.querySelectorAll('[data-agent-link="extract"]'),function(link){var label=link.querySelector&&link.querySelector('[data-progression-label]');if(unlocked){var href=link.getAttribute('data-unlocked-href');if(href)link.href=href;link.removeAttribute('aria-disabled');link.classList.remove('is-locked');if(label)label.textContent='Continue';}else{if(!link.getAttribute('data-unlocked-href'))link.setAttribute('data-unlocked-href',link.href);link.href='chat.html?agent=anchor&notice=extract-locked';link.setAttribute('aria-disabled','true');link.classList.add('is-locked');if(label)label.textContent='Finish ANCHOR to unlock';}});}
+ return{anchorComplete:anchorComplete,canEnter:canEnter,lockReason:lockReason,apply:apply};
 });

@@ -37,6 +37,16 @@ test('completion is clearly announced before automatic blueprint generation',()=
  const generate=adam.indexOf('generateBlueprint(completionUrl,status)',announce);
  assert.ok(announce>=0&&generate>announce,'completion announcement precedes generation and redirect');
 });
+test('successful completion redirects to review and leaves a specialist review action for restored chat',()=>{
+ assert.match(adam,/Review '\+FAS\.agent\.current\.name/);
+ assert.match(adam,/generateBlueprint\(completionUrl,status\)[\s\S]*window\.location\.assign\(completionUrl\)/);
+ assert.match(adam,/enterCompletedConversation\(project\)[\s\S]*showCompletionPanel/);
+});
+
+test('direct EXTRACT access is blocked until a saved ANCHOR artifact exists',()=>{
+ assert.match(adam,/FAS\.progression\.canEnter\(FAS\.agent\.current\.key,project\)/);
+ assert.match(adam,/notice','extract-locked'/);
+});
 test('restored answers render before the completion announcement',()=>{
  const initialize=adam.indexOf('function initializePersistence');
  const savedAnswers=adam.indexOf('(project&&project.answers||[]).filter',initialize);
