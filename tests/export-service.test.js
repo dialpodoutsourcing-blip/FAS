@@ -70,6 +70,15 @@ test('premium EXTRACT embeds its material object and uses charts without ellipsi
  assert.doesNotMatch(renderer,/candidate\s*\+\s*["'](?:…|â€¦)/,'report copy must not be replaced with visible ellipsis');
 });
 
+test('premium EXTRACT declares a distinct content-driven visual for every report page',()=>{
+ const {EXTRACT_VISUALS}=require('../lib/extract-report-renderer.js');
+ assert.deepEqual(EXTRACT_VISUALS,[
+  'decision-path','origin-timeline','expertise-network','method-flow',
+  'proof-confidence-matrix','ip-relationship-map','risk-control-matrix','activation-roadmap'
+ ]);
+ assert.equal(new Set(EXTRACT_VISUALS).size,8);
+});
+
 test('every later specialist renders a nine-page object-led report in all three themes',async()=>{
  const service=require('../lib/export-service.js'),themes=['editorial-strategy','luxury-editorial','boardroom-consultancy'];
  for(const key of ['radar','forge','architect','voice','launch']){
