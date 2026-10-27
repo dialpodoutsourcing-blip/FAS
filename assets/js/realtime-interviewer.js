@@ -29,6 +29,9 @@
     var onFinalTranscript = options.onFinalTranscript || function () {};
     var onError = options.onError || function () {};
     var onCaptureChange = options.onCaptureChange || function () {};
+    var scheduleTimeout = options.setTimeout || setTimeout;
+    var cancelTimeout = options.clearTimeout || clearTimeout;
+    var transcriptSettleMs = Number.isFinite(options.transcriptSettleMs) ? Math.max(0, options.transcriptSettleMs) : 1500;
     var peer = null;
     var channel = null;
     var audio = null;
@@ -40,12 +43,15 @@
     var stopRequested = false;
     var cleaned = false;
     var responseActive = false;
+    var speechActive = false;
     var currentSpeech = '';
     var queuedSpeech = '';
     var partials = new Map();
     var latestPartial = '';
     var finalizedItems = new Set();
     var finalizedTurns = new Set();
+    var pendingSegments = [];
+    var transcriptSettleTimer = null;
     var inFlight = new Set();
     var startPromise = null;
     var stopPromise = null;
@@ -82,6 +88,8 @@
       cleaned = true;
       ready = false;
       responseActive = false;
+      clearTranscriptSettleTimer();
+      pendingSegments = [];
       finishSpeech(false);
       unbindLifecycle();
       if (localStream && localStream.getTracks) localStream.getTracks().forEach(function (track) { track.enabled = false; if (track.stop) track.stop(); });
@@ -133,6 +141,33 @@
       if (audio && audio.pause) audio.pause();
     }
 
+    function clearTranscriptSettleTimer() {
+      if (transcriptSettleTimer !== null) cancelTimeout(transcriptSettleTimer);
+      transcriptSettleTimer = null;
+    }
+
+    function deliverPendingTranscript() {
+      clearTranscriptSettleTimer();
+      if (!pendingSegments.length) return;
+      var segments = pendingSegments;
+      pendingSegments = [];
+      var turnId = segments.map(function(segment){return segment.turnId;}).join('+');
+      var itemId = segments.map(function(segment){return segment.itemId;}).join('+');
+      var text = normalizedText(segments.map(function(segment){return segment.text;}).join(' '));
+      var work;
+      try { work = Promise.resolve(onFinalTranscript({ turnId: turnId, itemId: itemId, text: text })); }
+      catch (error) { work = Promise.reject(error); }
+      var tracked = work.catch(function () { onError(safeError('The spoken answer could not be saved.', 'voice_turn_failed')); }).finally(function () { inFlight.delete(tracked); });
+      inFlight.add(tracked);
+    }
+
+    function schedulePendingTranscript() {
+      clearTranscriptSettleTimer();
+      if (!pendingSegments.length || speechActive || partials.size) return;
+      if (transcriptSettleMs === 0) deliverPendingTranscript();
+      else transcriptSettleTimer = scheduleTimeout(deliverPendingTranscript, transcriptSettleMs);
+    }
+
     function finalizeTranscript(data) {
       var itemId = normalizedText(data.item_id || data.itemId);
       var turnId = normalizedText(data.turn_id || data.turnId || itemId);
@@ -144,11 +179,8 @@
       finalizedTurns.add(turnId);
       partials.delete(itemId);
       latestPartial = '';
-      var work;
-      try { work = Promise.resolve(onFinalTranscript({ turnId: turnId, itemId: itemId, text: text })); }
-      catch (error) { work = Promise.reject(error); }
-      var tracked = work.catch(function () { onError(safeError('The spoken answer could not be saved.', 'voice_turn_failed')); }).finally(function () { inFlight.delete(tracked); });
-      inFlight.add(tracked);
+      pendingSegments.push({ turnId: turnId, itemId: itemId, text: text });
+      schedulePendingTranscript();
     }
 
     function handleMessage(event) {
@@ -156,11 +188,15 @@
       try { data = JSON.parse(event && event.data); } catch (_) { return; }
       if (!data || typeof data.type !== 'string') return;
       if (data.type === 'input_audio_buffer.speech_started') {
+        speechActive = true;
+        clearTranscriptSettleTimer();
         if (responseActive) cancelSpeech();
         if (!paused && !stopped) setState('listening');
         return;
       }
       if (data.type === 'input_audio_buffer.speech_stopped') {
+        speechActive = false;
+        schedulePendingTranscript();
         if (!paused && !stopped) setState('thinking');
         return;
       }
@@ -312,6 +348,7 @@
       if(localStream&&localStream.getAudioTracks)localStream.getAudioTracks().forEach(function(track){track.enabled=false;});
       notifyCapture();
       if(abortController)abortController.abort();
+      deliverPendingTranscript();
       var waits = Array.from(inFlight);
       if(startPromise)waits.push(startPromise.catch(function(){}));
       if (stopOptions && stopOptions.waitFor) waits.push(Promise.resolve(stopOptions.waitFor));
