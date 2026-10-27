@@ -43,6 +43,14 @@ test('restored answers render before the completion announcement',()=>{
  const restoredCompletion=adam.indexOf('if(!interview.currentQuestion()&&!hasArtifact)',initialize);
  assert.ok(savedAnswers>initialize&&restoredCompletion>savedAnswers,'completion remains the final visible message after reload');
 });
+test('persistence restoration fails closed and retries without creating question one',()=>{
+ const initialize=adam.slice(adam.indexOf('function initializePersistence'),adam.indexOf('function apiFetch'));
+ assert.doesNotMatch(initialize,/catch\(function\(\)\{if\(FAS\.interview\)\{interview=FAS\.interview\.create/);
+ assert.match(initialize,/function loadPersistence/);
+ assert.match(initialize,/persistenceLoadError=error/);
+ assert.match(initialize,/Retry loading/);
+ assert.match(adam,/if\(persistenceLoadError\)loadPersistence\(\)/);
+});
 test('blueprint generation is single-flight and reopens the completed composer for advisory chat',()=>{
  assert.match(adam,/var blueprintPromise = null/);
  assert.match(adam,/if\(blueprintPromise\)return blueprintPromise/);
@@ -99,6 +107,16 @@ test('Talk starts one Realtime interviewer only after durable interview context 
  assert.match(adam,/FAS\.createRealtimeInterviewer/);
  assert.match(adam,/Promise\.all\(\[voiceStart,persistenceReady\]\)/);
  assert.match(adam,/orientation[\s\S]*currentQuestion\(\)\.question[\s\S]*voiceInterviewer\.speak/s);
+ const start=adam.slice(adam.indexOf('function startVoiceInterview'),adam.indexOf('function classifyVoiceCommand'));
+ assert.ok(start.indexOf('persistenceReady.then')<start.indexOf('voiceInterviewer.start()'),'microphone startup waits for restored persistence');
+});
+test('restored Talk welcomes the user back and marks orientation only after speech is accepted',()=>{
+ const start=adam.slice(adam.indexOf('function startVoiceInterview'),adam.indexOf('function classifyVoiceCommand'));
+ assert.match(start,/restoredInterview[\s\S]*Welcome back\. Let[’']s continue where you left off\./);
+ assert.match(start,/currentQuestion\(\)\.question/);
+ const accepted=start.indexOf('var accepted=voiceInterviewer.speak');
+ const marked=start.indexOf('voiceOrientationSpoken=true',accepted);
+ assert.ok(accepted>=0&&marked>accepted,'orientation is marked only after speak accepts it');
 });
 
 test('final spoken turns use the shared coordinator and proactively speak the grounded next prompt',()=>{
