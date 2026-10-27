@@ -48,14 +48,17 @@ function buildRealtimeInterviewSessionConfig(){return{type:'realtime',model:'gpt
 function createApp({fetchImpl=globalThis.fetch,apiKey=process.env.OPENAI_API_KEY,chatModel=process.env.OPENAI_CHAT_MODEL||'gpt-5.4-mini',allowedOrigin=process.env.FAS_ORIGIN||'http://127.0.0.1:4173',runtimeEnv=process.env,allowLocalPaidAi=runtimeEnv.FAS_ALLOW_LOCAL_PAID_AI==='1'}={}){
  const app=express();
  const publicConfig=buildRuntimeConfig(runtimeEnv),paidUsage=new Map();
+ function localPreviewUser(req){const host=String(req.get('host')||'').split(':')[0].replace(/^\[|\]$/g,''),ip=String(req.ip||req.socket&&req.socket.remoteAddress||'');return allowLocalPaidAi&&/^(localhost|127\.0\.0\.1|::1)$/.test(host)&&/(?:^|:)127\.0\.0\.1$|^::1$/.test(ip)?{local:true,id:ip||'local'}:null;}
  async function authorizePaidRequest(req,res){
-  if(!publicConfig.configured){const host=String(req.get('host')||'').split(':')[0].replace(/^\[|\]$/g,''),ip=String(req.ip||req.socket&&req.socket.remoteAddress||'');if(allowLocalPaidAi&&/^(localhost|127\.0\.0\.1|::1)$/.test(host)&&/(?:^|:)127\.0\.0\.1$|^::1$/.test(ip))return{local:true,id:ip||'local'};res.status(503).json({error:'Paid AI authentication configuration is unavailable.'});return null;}
+  const localUser=localPreviewUser(req);if(localUser)return localUser;
+  if(!publicConfig.configured){res.status(503).json({error:'Paid AI authentication configuration is unavailable.'});return null;}
   const match=String(req.get('authorization')||'').match(/^Bearer\s+(.+)$/i);if(!match){res.status(401).json({error:'Authentication required.'});return null;}
   try{const response=await fetchImpl(publicConfig.supabaseUrl+'/auth/v1/user',{method:'GET',headers:{apikey:publicConfig.supabasePublishableKey,Authorization:'Bearer '+match[1],Accept:'application/json'}});if(!response.ok){res.status(401).json({error:'Authentication required.'});return null;}const user=await response.json(),now=Date.now(),key=user&&user.id||'unknown',entry=paidUsage.get(key);if(entry&&now-entry.startedAt<60000&&entry.count>=60){res.status(429).json({error:'Please wait before making more AI requests.'});return null;}paidUsage.set(key,!entry||now-entry.startedAt>=60000?{startedAt:now,count:1}:{startedAt:entry.startedAt,count:entry.count+1});return user;}catch(_){res.status(503).json({error:'Authentication verification unavailable.'});return null;}
  }
  function bearerToken(req){const match=String(req.get('authorization')||'').match(/^Bearer\s+(.+)$/i);return match?match[1]:'';}
  async function authorizeSpecialistRequest(req,res,agentKey){
   const user=await authorizePaidRequest(req,res);if(!user)return null;
+  if(user.local)return user;
   const allowed=await agentAccess.authorizeAgentAccess({agentKey:agentKey,token:bearerToken(req),supabaseUrl:publicConfig.supabaseUrl,publishableKey:publicConfig.supabasePublishableKey,fetchImpl:fetchImpl});
   if(!allowed){res.status(403).json({error:'This specialist is not available on your current plan.'});return null;}
   return user;

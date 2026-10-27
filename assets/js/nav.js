@@ -141,7 +141,7 @@
           '<span class="agent-loader__hud-scan" aria-hidden="true"></span><div class="agent-loader__hud-head"><span>ADAM // AGENT BRIEF</span><i>LIVE DATA</i></div>' +
           '<div class="agent-loader__briefing"><section><h3>WHAT THIS AGENT DOES</h3><p data-loader-description></p></section>' +
           '<section><h3>WHAT IT CREATES FOR YOU</h3><ul data-loader-outputs></ul></section></div>' +
-          '<div class="agent-loader__actions"><audio class="agent-loader__audio" data-loader-audio controls autoplay aria-label="ADAM introduction playback"></audio><button class="btn btn--quiet agent-loader__back" type="button" data-loader-back>Go back</button>' +
+          '<div class="agent-loader__actions"><audio class="agent-loader__audio" data-loader-audio hidden autoplay aria-label="ADAM introduction playback"></audio><button class="btn btn--quiet agent-loader__back" type="button" data-loader-back>Go back</button>' +
           '<button class="btn btn--gold btn--lg agent-loader__start" type="button" data-loader-start disabled>START ADAM</button></div>' +
         '</section>' +
         '<footer class="agent-loader__footer"><div class="agent-loader__progress"><span class="agent-loader__progress-bar" data-loader-progress></span></div>' +
@@ -226,6 +226,7 @@
           onStatus:function(value){status.textContent=value;}
         });
         agentLoader._narrator = narrator;
+        narrator.unlockPlayback();
         narrator.connect().catch(function () {});
         narrator.speak(agent.introduction);
         narrationReady=Promise.race([narrator.whenPlaybackAvailable(),new Promise(function(resolve){agentLoader._narrationTimer=window.setTimeout(function(){resolve(false);},5000);})]);

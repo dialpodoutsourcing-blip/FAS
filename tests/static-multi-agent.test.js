@@ -21,7 +21,10 @@ assert.match(chat, /data-voice-hud[^>]+aria-hidden="true"/, 'voice panel include
 assert.match(chat, /data-voice-hud-secondary[^>]+aria-hidden="true"/, 'voice panel includes a decorative right-side analysis HUD');
 assert.match(chat, /VOICE ANALYSIS/, 'right-side HUD identifies its analysis role');
 assert.match(chat, /data-voice-status[^>]+aria-live="polite"/, 'voice mode exposes an accessible live status');
-assert.match(chat, /<audio[^>]+data-voice-audio[^>]+controls[^>]+autoplay|<audio[^>]+data-voice-audio[^>]+autoplay[^>]+controls/, 'voice mode exposes browser-native ADAM playback controls');
+const voiceAudio = chat.match(/<audio\b[^>]*data-voice-audio[^>]*>/)?.[0] || '';
+assert.ok(voiceAudio, 'voice mode includes ADAM audio playback');
+assert.match(voiceAudio, /\sautoplay(?:\s|=|>)/, 'ADAM speaks automatically');
+assert.doesNotMatch(voiceAudio, /\scontrols(?:\s|=|>)/, 'ADAM voice does not look like a media player');
 assert.match(chat, /data-voice-recovery[^>]+hidden/, 'voice mode includes a hidden recovery panel');
 assert.match(chat, /data-voice-retry[^>]*>Retry voice</, 'voice recovery can retry the connection');
 assert.match(chat, /data-voice-type-instead[^>]*>Type instead</, 'voice recovery preserves the Type fallback');
@@ -111,8 +114,13 @@ assert.match(nav, /agent\.briefing/, 'loader uses the detailed specialist briefi
 assert.match(nav, /agent\.generates/, 'loader lists agent-specific deliverables');
 assert.match(nav, /FAS\.createRealtimeNarrator/, 'loader uses the Cedar narrator');
 assert.match(nav, /narrator\.speak\(agent\.introduction\)/, 'loader narrates the selected specialist introduction');
-assert.match(nav, /data-loader-audio/, 'loader exposes browser-native narration playback controls');
-assert.match(nav, /audioFactory/, 'loader gives its visible audio control to the Realtime narrator');
+const loaderAudio = nav.match(/<audio\b[^>]*data-loader-audio[^>]*>/)?.[0] || '';
+assert.ok(loaderAudio, 'loader includes ADAM introduction audio');
+assert.match(loaderAudio, /\shidden(?:\s|=|>)/, 'loader keeps narration playback controls out of sight');
+assert.match(loaderAudio, /\sautoplay(?:\s|=|>)/, 'loader introduction audio starts automatically');
+assert.doesNotMatch(loaderAudio, /\scontrols(?:\s|=|>)/, 'loader introduction does not look like a media player');
+assert.match(nav, /audioFactory/, 'loader gives its hidden audio element to the Realtime narrator');
+assert.match(nav, /narrator\.unlockPlayback\(\)[\s\S]*narrator\.connect\(\)/, 'loader unlocks audio during the opening click before connecting Realtime');
 assert.match(nav, /whenPlaybackAvailable/, 'loader waits for remote narration media before enabling entry');
 assert.match(nav, /stopLoaderNarration\(loader\)[\s\S]*window\.location\.assign/s, 'starting the specialist stops its loader narration');
 assert.match(nav, /back\.addEventListener\('click'[\s\S]*stopLoaderNarration\(loader\)/s, 'closing the loader stops its narration');

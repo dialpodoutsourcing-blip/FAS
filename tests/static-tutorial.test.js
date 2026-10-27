@@ -40,6 +40,7 @@ assert.match(script, /data-tour-replay/, 'tutorial exposes narration replay');
 assert.match(script, /AI-generated Cedar narration/, 'tutorial discloses that Cedar narration is AI-generated');
 assert.match(script, /createRealtimeNarrator\(/, 'tutorial controller uses the Realtime Cedar narrator');
 assert.match(script, /function open\([^)]*\)[^{]*\{[^}]*narrator=makeNarrator\(\)/, 'each tutorial opening gets a fresh Cedar narrator');
+assert.match(script, /narrator=makeNarrator\(\);narrator\.unlockPlayback\(\);narrator\.connect\(\)/, 'tutorial unlocks audio during the opening click before connecting Realtime');
 assert.match(script, /function open\([^)]*\)[\s\S]*?muteButton\.textContent='Mute'[\s\S]*?muteButton\.setAttribute\('aria-pressed','false'\)/, 'reopening resets the visible mute state');
 assert.match(script, /data\.type==='target-ready'[\s\S]*?narrator\.speak\(state\.current\(\)\.speech\)/, 'automatic narration waits for the real target');
 assert.match(script, /data-tour-voice-status aria-live="polite"/, 'Realtime narration status is announced');
