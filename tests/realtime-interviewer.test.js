@@ -133,8 +133,9 @@ test('maps Realtime events to truthful states and finalizes each normalized turn
   h.peer.channel.emit('message', { type: 'response.done' });
   assert.equal(controller.state(), 'listening');
   h.peer.channel.emit('message', { type: 'error', error: { message: 'private upstream detail' } });
-  assert.equal(controller.state(), 'error');
+  assert.equal(controller.state(), 'listening');
   assert.equal(h.errors.length, 1);
+  assert.equal(h.errors[0].code, 'voice_realtime_turn_failed');
   assert.doesNotMatch(h.errors[0].message, /private upstream detail/);
 });
 
@@ -265,7 +266,7 @@ test('pause and stop remain authoritative when microphone permission resolves la
   assert.equal(stopped.state(), 'stopped');
 });
 
-test('failed negotiation and runtime terminal events disable capture and release resources', async () => {
+test('failed negotiation and transport failures disable capture and release resources', async () => {
   const { createRealtimeInterviewer } = load();
   const failed = harness({ fetchImpl: async () => new Response('unavailable', { status: 502 }) });
   const failedController = createRealtimeInterviewer(failed.options);
@@ -273,19 +274,36 @@ test('failed negotiation and runtime terminal events disable capture and release
   assert.equal(failed.track.stops, 1);
   assert.equal(failed.peer.connectionState, 'closed');
 
-  for (const terminal of [
-    { type: 'conversation.item.input_audio_transcription.failed' },
-    { type: 'error' }
-  ]) {
-    const h = harness(); const controller = createRealtimeInterviewer(h.options);
-    await controller.start(); h.peer.channel.readyState = 'open'; h.peer.channel.emit('open');
-    h.peer.channel.emit('message', terminal);
-    await Promise.resolve();
-    assert.equal(h.track.enabled, false);
-    assert.equal(h.track.stops, 1);
-    assert.equal(h.peer.connectionState, 'closed');
-    assert.equal(controller.state(), 'error');
-  }
+  const closed = harness(); const closedController = createRealtimeInterviewer(closed.options);
+  await closedController.start(); closed.peer.channel.readyState = 'open'; closed.peer.channel.emit('open');
+  closed.peer.channel.emit('close');
+  assert.equal(closed.track.enabled, false);
+  assert.equal(closed.track.stops, 1);
+  assert.equal(closed.peer.connectionState, 'closed');
+  assert.equal(closedController.state(), 'error');
+});
+
+test('transcription and Realtime item errors preserve a healthy hands-free session', async () => {
+  const { createRealtimeInterviewer } = load();
+  const h = harness(); const controller = createRealtimeInterviewer(h.options);
+  await controller.start(); h.peer.channel.readyState = 'open'; h.peer.channel.emit('open');
+  h.peer.channel.emit('message', { type: 'conversation.item.input_audio_transcription.delta', item_id: 'draft-item', delta: 'My unfinished explanation' });
+  h.peer.channel.emit('message', { type: 'conversation.item.input_audio_transcription.failed', item_id: 'draft-item' });
+  assert.equal(h.errors.at(-1).code, 'voice_transcription_failed');
+  assert.equal(h.errors.at(-1).draft, 'My unfinished explanation');
+  assert.equal(controller.state(), 'listening');
+  assert.equal(controller.captureActive(), true);
+  assert.equal(h.track.stops, 0);
+  assert.equal(h.peer.connectionState, 'new');
+
+  h.peer.channel.emit('message', { type: 'error', error: { code: 'response_failed', message: 'private detail' } });
+  assert.equal(h.errors.at(-1).code, 'voice_realtime_turn_failed');
+  assert.equal(controller.state(), 'listening');
+  assert.equal(controller.captureActive(), true);
+  assert.doesNotMatch(h.errors.at(-1).message, /private detail/);
+
+  h.peer.channel.emit('message', { type: 'conversation.item.input_audio_transcription.completed', item_id: 'next-item', transcript: 'A successful retry.', turn_id: 'next-turn' });
+  assert.deepEqual(h.finals.at(-1), { turnId: 'next-turn', itemId: 'next-item', text: 'A successful retry.' });
 });
 
 test('final transcript without a stable item id is rejected instead of inventing a duplicate-prone turn', async () => {
@@ -295,4 +313,7 @@ test('final transcript without a stable item id is rejected instead of inventing
   h.peer.channel.emit('message', { type: 'conversation.item.input_audio_transcription.completed', transcript: 'No stable identity' });
   assert.equal(h.finals.length, 0);
   assert.equal(h.errors.at(-1).code, 'voice_transcript_identity_missing');
+  assert.equal(h.errors.at(-1).draft, 'No stable identity');
+  assert.equal(controller.state(), 'listening');
+  assert.equal(controller.captureActive(), true);
 });

@@ -81,6 +81,14 @@
       return error;
     }
 
+    function reportRecoverableError(message, code, draft) {
+      var error = safeError(message, code);
+      if (draft) error.draft = draft;
+      if (!paused && !stopped && !cleaned) setState('listening');
+      onError(error);
+      return error;
+    }
+
     function finishSpeech(value) { if (speechResolver) { var resolve = speechResolver; speechResolver = null; resolve(value); } }
 
     function cleanupResources() {
@@ -172,7 +180,7 @@
       var itemId = normalizedText(data.item_id || data.itemId);
       var turnId = normalizedText(data.turn_id || data.turnId || itemId);
       var text = normalizedText(data.transcript || data.text || partials.get(itemId));
-      if (!itemId) { terminateWithError('The spoken transcript could not be identified safely. Continue with Type or retry voice.', 'voice_transcript_identity_missing'); return; }
+      if (!itemId) { speechActive=false;reportRecoverableError('That spoken turn could not be identified safely. Please repeat or continue.', 'voice_transcript_identity_missing', text);return; }
       if (!turnId) turnId = itemId;
       if (!text || finalizedItems.has(itemId) || finalizedTurns.has(turnId)) return;
       finalizedItems.add(itemId);
@@ -224,12 +232,16 @@
         return;
       }
       if (data.type === 'conversation.item.input_audio_transcription.failed' || data.type === 'input_audio_transcription.failed') {
-        terminateWithError('The spoken answer could not be transcribed. Continue with Type or retry voice.', 'voice_transcription_failed');
+        var failedItemId=normalizedText(data.item_id||data.itemId),draft=normalizedText(failedItemId&&partials.get(failedItemId)||latestPartial);
+        if(failedItemId)partials.delete(failedItemId);
+        speechActive=false;
+        reportRecoverableError('That spoken turn could not be finalized. Please repeat or continue.', 'voice_transcription_failed', draft);
         return;
       }
       if (data.type === 'error') {
         responseActive = false;
-        terminateWithError('The voice interview encountered a connection error.', 'voice_realtime_error');
+        finishSpeech(false);
+        reportRecoverableError('That voice turn encountered a temporary problem. Please continue.', 'voice_realtime_turn_failed');
       }
     }
 
