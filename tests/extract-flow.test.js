@@ -129,3 +129,10 @@ test('Talk completion announces, stops input, generates once, and keeps recovery
  assert.match(adam,/Microphone access|voice connection|spoken answer/i);
 });
 
+test('recoverable voice errors keep listening and use truthful guidance',()=>{
+ assert.match(adam,/voice_transcription_failed/);
+ assert.match(adam,/voice_realtime_turn_failed/);
+ assert.match(adam,/voice_playback_failed/);
+ assert.match(adam,/preserveVoiceDraft\(error\.draft\)/);
+});
+

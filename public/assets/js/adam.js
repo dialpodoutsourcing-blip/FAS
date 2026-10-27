@@ -369,6 +369,9 @@
   }
 
   function voiceFailed(error){
+    if(error&&(error.code==='voice_transcription_failed'||error.code==='voice_transcript_identity_missing')){if(error.draft)preserveVoiceDraft(error.draft);FAS.orb.setState('listening');setVoiceStatus('I could not finalize that answer. Your words are waiting in Type; please repeat or continue speaking.',false);syncVoiceCaptureControl();return;}
+    if(error&&error.code==='voice_realtime_turn_failed'){FAS.orb.setState('listening');setVoiceStatus('That voice turn had a temporary problem. ADAM is still listening; please continue.',false);syncVoiceCaptureControl();return;}
+    if(error&&error.code==='voice_playback_failed'){setVoiceStatus('ADAM audio could not play, but your microphone is still active. Continue speaking or use Type.',true);syncVoiceCaptureControl();return;}
     var message=error&&error.code==='voice_unsupported'?'Voice is not supported by this browser. Continue with Type.':'Microphone access or the voice connection failed. Check browser permission, then Retry voice or use Type instead.';
     setVoiceStatus(message,true);
     syncVoiceCaptureControl();
