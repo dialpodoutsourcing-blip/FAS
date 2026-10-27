@@ -167,7 +167,11 @@
         <button class="chat-tool" type="button" data-chat-trust-toggle data-drawer-target="chat-trust-drawer" data-tour-id="trust">Why you can trust ADAM</button>
       </div>
 
-      <div class="main__body chat-shell__workspace">
+      <div class="main__body chat-shell__workspace" aria-busy="true">
+        <div class="chat-loading" data-chat-loading role="status" aria-live="polite">
+          <span class="chat-loading__spinner" aria-hidden="true"></span>
+          <span>Loading your saved conversation...</span>
+        </div>
         <div class="split chat-shell__main">
 
           <!-- TEXT CHAT -->
