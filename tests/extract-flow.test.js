@@ -104,6 +104,14 @@ test('final spoken turns use the shared coordinator and proactively speak the gr
  assert.match(adam,/voiceInterviewer\.speak\(result\.message\)/);
 });
 
+test('normal spoken answers receive an immediate bridge before durable processing',()=>{
+ const handler=adam.slice(adam.indexOf('function handleVoiceTurn'),adam.indexOf('function switchToTyping'));
+ const bridge=handler.indexOf("voiceInterviewer.speak('Got it");
+ const submit=handler.indexOf("interviewCoordinator.submit({text:turn.text");
+ assert.ok(bridge>=0&&submit>bridge,'the bridge starts before durable submission');
+ assert.doesNotMatch(handler.slice(bridge,submit),/await|\.then\(/,'saving does not wait for bridge playback');
+});
+
 test('standalone Talk commands are handled without saving answers',()=>{
  for(const command of ['repeat','pause','switch_to_type','end'])assert.ok(adam.includes(command),command);
  const commandCheck=adam.indexOf('classifyVoiceCommand(turn.text)');
