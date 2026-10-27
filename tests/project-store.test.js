@@ -25,6 +25,18 @@ test('local project store persists answers, checkpoints, and immutable approved 
   assert.equal(project.artifactVersions[0].title, 'Expertise Map');
 });
 
+test('local answer revision appends a superseding answer without deleting the original', async () => {
+  const stores = require('../assets/js/project-store.js');
+  const store = stores.create({ configured:false, storage:memoryStorage(), projectId:'revision-project' });
+  const original = await store.saveAnswer({ agentKey:'anchor', field:'anchor.authority', text:'Original answer' });
+  const revised = await store.reviseAnswer(original.id, 'Revised answer');
+  const project = await store.loadProject();
+  assert.equal(project.answers.length, 2);
+  assert.equal(revised.supersedesId, original.id);
+  assert.equal(revised.text, 'Revised answer');
+  assert.equal(project.answers[0].text, 'Original answer');
+});
+
 test('local agent reset removes its answers, checkpoint, artifacts, and versions only', async () => {
   const stores = require('../assets/js/project-store.js');
   const storage = memoryStorage();

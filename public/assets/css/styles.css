@@ -988,7 +988,9 @@ body.src-off .part__src { display: none; }
 .chat-page #panel-voice .devbar { display: none; }
 .chat-page #panel-voice .voice-hud { top: 20px; left: 18px; transform: scale(.9); transform-origin: top left; }
 .chat-page #panel-voice .voice-hud--signal { right: 18px; left: auto; transform-origin: top right; }
-.chat-page .thread { min-height: 0; justify-content: center; overflow: hidden; }
+.chat-page .thread { min-height: 0; justify-content: flex-start; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--gold-line) transparent; }
+.chat-page .thread::-webkit-scrollbar { width: 8px; }
+.chat-page .thread::-webkit-scrollbar-thumb { border-radius: 999px; background: var(--gold-line); }
 .chat-page .thread > .msg { width: 100%; max-width: none; margin: 0; }
 .chat-page .thread > .msg .bubble { width: 100%; max-width: none; }
 .chat-page .bubble { padding: 18px 20px; }
@@ -1001,6 +1003,11 @@ body.src-off .part__src { display: none; }
 .chat-page .composer__chips .pill { min-height: 34px; padding: 0 12px; white-space: nowrap; }
 .composer__status { min-height: 15px; margin: -3px 0 0; color: var(--gold); font-size: 11px; text-align: right; }
 .chat-page [data-agent-completion] { justify-self: end; width: auto; min-height: 34px; padding: 0 12px; font-size: 11px; opacity: .72; }
+.completion-panel { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 18px; padding: 16px 18px; border: 1px solid rgba(95,181,151,.36); border-radius: var(--r-md); background: linear-gradient(110deg,rgba(95,181,151,.1),rgba(211,181,124,.05)); }
+.completion-panel[hidden] { display: none; }
+.completion-panel h2 { margin: 7px 0 4px; font: 700 18px/1.2 var(--font-sub); }
+.completion-panel p { color: var(--text-2); font-size: 12px; line-height: 1.45; }
+.completion-panel__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 
 .chat-drawer { position: fixed; z-index: 70; top: 0; right: 0; width: min(430px, 92vw); height: 100dvh; padding: 20px; overflow-y: auto; background: #0D0C0A; border-left: 1px solid var(--gold-line); box-shadow: -24px 0 60px rgba(0,0,0,.55); }
 .chat-drawer[hidden], .chat-drawer-scrim[hidden] { display: none; }

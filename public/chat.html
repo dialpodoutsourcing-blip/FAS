@@ -210,6 +210,10 @@
               </div>
               <p class="composer__status" data-answer-status aria-live="polite"></p>
             </form>
+            <section class="completion-panel" data-completion-panel hidden aria-label="Completed specialist actions">
+              <div><span class="status status--done">Completed</span><h2 data-completion-title>ANCHOR is complete</h2><p>Ask ADAM anything, review your blueprint, update an answer, or continue with the recommended next specialist.</p></div>
+              <div class="completion-panel__actions"><button class="btn btn--sm" type="button" data-view-blueprint>View Blueprint</button><button class="btn btn--sm" type="button" data-edit-answers>Edit Answers</button><button class="btn btn--sm" type="button" data-retry-agent>Retry ANCHOR</button><a class="btn btn--gold btn--sm" href="chat.html?agent=extract" data-start-extract>Start EXTRACT</a></div>
+            </section>
             <a class="btn btn--block btn--lg" href="review.html" data-agent-completion><span data-agent-completion-label>Show my Expertise Map</span> <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
           </section>
 
@@ -271,7 +275,7 @@
               <button class="vbtn vbtn--mic" type="button" data-voice-mic aria-pressed="false" aria-label="Start or stop talking" disabled><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4a3 3 0 0 1 6 0v7a3 3 0 0 1-6 0zM5 11a7 7 0 0 0 14 0M12 18v3"></path></svg></button>
               <button class="vbtn" type="button" data-goto-text aria-label="Type instead"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6h20v12H2zM6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"></path></svg></button>
             </div>
-            <audio class="voice__audio" data-voice-audio controls autoplay aria-label="ADAM voice playback">Your browser does not support audio playback.</audio>
+            <audio class="voice__audio" data-voice-audio autoplay aria-label="ADAM voice playback">Your browser does not support audio playback.</audio>
             <p class="voice__status"><span data-voice-status aria-live="polite">Preparing your interview…</span><span class="voice__privacy">Your microphone audio is processed by OpenAI for live transcription. FAS saves the finalized transcript, not raw audio.</span></p>
             <div class="transcript">
               <span class="transcript__label">What ADAM heard</span>
