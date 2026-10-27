@@ -335,7 +335,7 @@
   }
   var persistenceReady=Promise.all([FAS.authReady||Promise.resolve({mode:'local'}),FAS.agentAccessReady||Promise.resolve({allowed:true})]).then(function(results){if(results[1]&&results[1].allowed===false)return;return initializePersistence(results[0]);}).finally(function(){setChatLoading(false);if(micBtn)micBtn.disabled=false;setVoiceStatus('Voice is ready when you are.',false);});
 
-  function apiFetch(url,init){var config=window.FAS_CONFIG||{};if(!config.configured||!FAS.auth||!FAS.auth.requireSession)return fetch(url,init);return FAS.auth.requireSession().then(function(session){var next=Object.assign({},init||{}, {headers:Object.assign({},init&&init.headers||{},{Authorization:'Bearer '+session.accessToken})});return fetch(url,next);});}
+  function apiFetch(url,init,timeoutMs){var config=window.FAS_CONFIG||{},controller=timeoutMs&&typeof AbortController!=='undefined'?new AbortController():null;function send(session){var next=Object.assign({},init||{});if(session)next.headers=Object.assign({},init&&init.headers||{},{Authorization:'Bearer '+session.accessToken});if(controller)next.signal=controller.signal;return fetch(url,next);}var work=!config.configured||!FAS.auth||!FAS.auth.requireSession?send(null):FAS.auth.requireSession().then(send);if(!timeoutMs)return work;return new Promise(function(resolve,reject){var settled=false,timer=setTimeout(function(){if(settled)return;settled=true;if(controller)controller.abort();var error=new Error('Request timed out');error.code='request_timeout';reject(error);},timeoutMs);work.then(function(response){if(settled)return;settled=true;clearTimeout(timer);resolve(response);},function(error){if(settled)return;settled=true;clearTimeout(timer);reject(error);});});}
 
   function setVoiceStatus(message,showRecovery){
     var status=$('[data-voice-status]'),recovery=$('[data-voice-recovery]');
@@ -667,7 +667,7 @@
   function requestConversationalReply(answer, nextQuestion) {
     var fallback = nextQuestion;
     FAS.chat.setTyping(true);
-    return apiFetch('/api/chat-response', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent:{key:FAS.agent.current.key,name:FAS.agent.current.name,title:FAS.agent.current.title},answer:answer,nextQuestion:nextQuestion,history:conversationHistory.slice(0,-1).slice(-12)})}).then(function(response){if(!response.ok)throw new Error('Conversation unavailable');return response.json();}).then(function(payload){return payload.message||fallback;}).catch(function(){return fallback;}).then(function(message){FAS.chat.setTyping(false);conversationHistory.push({role:'assistant',content:message});return message;});
+    return apiFetch('/api/chat-response', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent:{key:FAS.agent.current.key,name:FAS.agent.current.name,title:FAS.agent.current.title},answer:answer,nextQuestion:nextQuestion,history:conversationHistory.slice(0,-1).slice(-12)})}, 8000).then(function(response){if(!response.ok)throw new Error('Conversation unavailable');return response.json();}).then(function(payload){return payload.message||fallback;}).catch(function(){return fallback;}).then(function(message){FAS.chat.setTyping(false);conversationHistory.push({role:'assistant',content:message});return message;});
   }
 
   function submitPostCompletionMessage(text,source,turnId){
