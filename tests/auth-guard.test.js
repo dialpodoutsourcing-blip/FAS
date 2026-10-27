@@ -59,3 +59,18 @@ test('protected controllers wait for authentication readiness before creating st
   assert.match(fs.readFileSync('assets/js/adam.js','utf8'),/FAS\.authReady/);
   assert.match(fs.readFileSync('assets/js/artifact-ui.js','utf8'),/FAS\.authReady/);
 });
+
+test('protected content is revealed only after authentication is approved',()=>{
+  const guard=optionalRequire('../assets/js/auth-guard.js'),removed=[];
+  const doc={body:{removeAttribute:name=>removed.push(name)}};
+  guard.settleVisibility({mode:'redirect'},doc);assert.deepEqual(removed,[]);
+  guard.settleVisibility({mode:'config-error'},doc);assert.deepEqual(removed,[]);
+  guard.settleVisibility({mode:'supabase'},doc);assert.deepEqual(removed,['data-auth-pending']);
+});
+
+test('every protected page conceals its first paint while authentication is pending',()=>{
+  for(const file of ['index.html','chat.html','review.html','vault.html','launch.html']){
+    const html=fs.readFileSync(file,'utf8');assert.match(html,/<body[^>]*data-auth-pending/,file);
+  }
+  const css=fs.readFileSync('assets/css/styles.css','utf8');assert.match(css,/body\[data-auth-pending\]\s*\{[^}]*visibility:\s*hidden/s);
+});

@@ -21,6 +21,7 @@
   }
   function signOut(options){options=options||{};var auth=options.auth||{},context=options.context||{},location=options.location||{};return Promise.resolve().then(function(){return auth.signOut&&auth.signOut();}).catch(function(){}).then(function(){if(context.clear)context.clear();if(location.assign)location.assign('account.html');});}
   function bindSignOut(auth,context,root){Array.prototype.forEach.call(root.document.querySelectorAll('[data-account-signout]'),function(button){button.addEventListener('click',function(event){event.preventDefault();button.setAttribute('aria-busy','true');signOut({auth:auth,context:context,location:root.location});});});}
+  function settleVisibility(result,doc){if(doc&&doc.body&&result&&(result.mode==='supabase'||result.mode==='local'))doc.body.removeAttribute('data-auth-pending');return result;}
   function mount(root){
     var FAS=root.FAS=root.FAS||{};
     var ready=FAS.runtimeConfig.load({target:root}).catch(function(){return{unavailable:true,configured:false};}).then(function(config){
@@ -28,8 +29,8 @@
       var auth=FAS.authClient.create({supabaseUrl:config.supabaseUrl,publishableKey:config.supabasePublishableKey}),context=FAS.accountContext.create({auth:auth});
       FAS.auth=auth;FAS.accountContext.current=context;
       return protect({config:config,auth:auth,context:context,location:root.location}).then(function(result){if(result.mode==='supabase'){renderAccount(result.session,root.document);bindSignOut(auth,context,root);}return result;});
-    }).then(function(result){if(result.mode==='config-error'&&root.location&&root.location.assign){var candidate=(root.location.pathname||'')+(root.location.search||'');root.location.assign('account.html?error=config&return='+encodeURIComponent(candidate));}if(root.document&&root.CustomEvent)root.document.dispatchEvent(new root.CustomEvent('fas:auth-ready',{detail:result}));return result;});
+    }).then(function(result){settleVisibility(result,root.document);if(result.mode==='config-error'&&root.location&&root.location.assign){var candidate=(root.location.pathname||'')+(root.location.search||'');root.location.assign('account.html?error=config&return='+encodeURIComponent(candidate));}if(root.document&&root.CustomEvent)root.document.dispatchEvent(new root.CustomEvent('fas:auth-ready',{detail:result}));return result;});
     FAS.authReady=ready;return ready;
   }
-  return{protect:protect,renderAccount:renderAccount,signOut:signOut,mount:mount};
+  return{protect:protect,renderAccount:renderAccount,signOut:signOut,settleVisibility:settleVisibility,mount:mount};
 });
