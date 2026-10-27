@@ -223,3 +223,26 @@ test('Supabase refresh failures invoke the authentication failure handler once',
   assert.equal(failures,1);
 });
 
+test('Supabase persistence rejects and aborts when its request deadline expires',async()=>{
+  const stores=require('../assets/js/project-store.js');let signal,authFailures=0;
+  const store=stores.create({
+    configured:true,
+    supabaseUrl:'https://example.supabase.co',
+    anonKey:'anon-public',
+    accessToken:'user-token',
+    userId:'user',
+    projectId:'project',
+    sessionId:'session',
+    requestTimeoutMs:15,
+    onAuthFailure:()=>{authFailures+=1;},
+    fetchImpl:(_url,init)=>{signal=init.signal;return new Promise(()=>{});}
+  });
+
+  await assert.rejects(
+    ()=>store.saveAnswerCheckpoint({id:'answer-1',agentKey:'extract',field:'extract.timeline',text:'Proof'},{agentKey:'extract',questionIndex:4,answers:[]}),
+    error=>error&&error.code==='request_timeout'
+  );
+  assert.equal(signal.aborted,true);
+  assert.equal(authFailures,0);
+});
+
