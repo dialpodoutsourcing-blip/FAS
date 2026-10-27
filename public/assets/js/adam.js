@@ -287,6 +287,7 @@
   var retryConfirmationPending = false;
   var lastCaptureActive = false;
   var turnSequence = 0;
+  function setChatLoading(active){var loading=$('[data-chat-loading]'),workspace=$('.chat-shell__workspace');if(loading)loading.hidden=!active;if(workspace)workspace.setAttribute('aria-busy',String(Boolean(active)));}
   function createTurnId(source){turnSequence+=1;return(source||'type')+'-'+Date.now()+'-'+turnSequence;}
   function initializeInterviewCoordinator(){
     if(!interview||!projectStore||!FAS.createInterviewCoordinator)return null;
@@ -332,7 +333,7 @@
       if(!interview.currentQuestion()&&!hasArtifact){var restoredStatus=$('[data-answer-status]'),restoredButton=form&&form.querySelector('[type="submit"]');if(interview.completion().complete){announceCompletion();if(restoredStatus)restoredStatus.textContent='Generating your blueprint…';generateBlueprint(getCompletionUrl(),restoredStatus).catch(function(){artifactRetryPending=true;if(form)form.removeAttribute('aria-busy');if(restoredStatus)restoredStatus.textContent='Your answers are saved, but the blueprint could not be prepared. Retry blueprint.';if(restoredButton){restoredButton.disabled=false;restoredButton.textContent='Retry blueprint';}});}else{artifactRetryPending=true;if(restoredButton)restoredButton.textContent='Retry blueprint';if(restoredStatus)restoredStatus.textContent='Your answers are saved. Retry blueprint generation.';}}
     }).catch(function(){if(FAS.interview){interview=FAS.interview.create({agent:FAS.agent.current});initializeInterviewCoordinator();renderCurrentQuestion(interview.currentQuestion());}});
   }
-  var persistenceReady=Promise.all([FAS.authReady||Promise.resolve({mode:'local'}),FAS.agentAccessReady||Promise.resolve({allowed:true})]).then(function(results){if(results[1]&&results[1].allowed===false)return;return initializePersistence(results[0]);}).finally(function(){if(micBtn)micBtn.disabled=false;setVoiceStatus('Voice is ready when you are.',false);});
+  var persistenceReady=Promise.all([FAS.authReady||Promise.resolve({mode:'local'}),FAS.agentAccessReady||Promise.resolve({allowed:true})]).then(function(results){if(results[1]&&results[1].allowed===false)return;return initializePersistence(results[0]);}).finally(function(){setChatLoading(false);if(micBtn)micBtn.disabled=false;setVoiceStatus('Voice is ready when you are.',false);});
 
   function apiFetch(url,init){var config=window.FAS_CONFIG||{};if(!config.configured||!FAS.auth||!FAS.auth.requireSession)return fetch(url,init);return FAS.auth.requireSession().then(function(session){var next=Object.assign({},init||{}, {headers:Object.assign({},init&&init.headers||{},{Authorization:'Bearer '+session.accessToken})});return fetch(url,next);});}
 
