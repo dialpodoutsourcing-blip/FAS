@@ -419,14 +419,16 @@
     voiceStart=voiceInterviewer.start();
     Promise.all([voiceStart,persistenceReady]).then(function(){
       if(generation!==voiceGeneration||voiceIntent!=='talk')return;
-      if(completedConversation){if(!voiceOrientationSpoken){voiceOrientationSpoken=true;voiceInterviewer.speak('Your '+FAS.agent.current.name+' work is complete. You can ask me anything. I can also help you review or edit it, or start EXTRACT next.');}setVoiceStatus('ADAM is listening for your question.',false);return;}
+      if(completedConversation){if(!voiceOrientationSpoken){var completionAccepted=voiceInterviewer.speak('Your '+FAS.agent.current.name+' work is complete. You can ask me anything. I can also help you review or edit it, or start EXTRACT next.');if(completionAccepted===false)throw new Error('Voice opening was not accepted');voiceOrientationSpoken=true;}setVoiceStatus('ADAM is listening for your question.',false);return;}
       if(!interview||!interview.currentQuestion())throw new Error('Interview is not ready');
       if(voiceOrientationSpoken)return;
-      voiceOrientationSpoken=true;
       var orientation='You are in hands-free interview mode. Take your time. You can say repeat the question, pause, switch to typing, or end. ';
       var exactQuestion=interview.currentQuestion().question;
-      voiceInterviewer.speak(orientation+exactQuestion);
-      setVoiceStatus('Hands-free interview started. ADAM will listen after the question.',false);
+      var opening=restoredInterview?'Welcome back. Let’s continue where you left off. ':orientation;
+      var accepted=voiceInterviewer.speak(opening+exactQuestion);
+      if(accepted===false)throw new Error('Voice opening was not accepted');
+      voiceOrientationSpoken=true;
+      setVoiceStatus(restoredInterview?'Saved interview restored. ADAM will listen after the question.':'Hands-free interview started. ADAM will listen after the question.',false);
     }).catch(function(){if(generation===voiceGeneration&&voiceIntent==='talk')voiceFailed({code:'voice_connection_failed'});});
     return voiceStart;
     });
