@@ -79,6 +79,14 @@ test('a one-time restart clears only the selected agent from local project memor
  assert.match(adam,/query\.delete\('restart'\)/);
 });
 
+test('Type and Talk route retry through confirmation before scoped restart navigation',()=>{
+ assert.match(adam,/retryConfirmationPending/);
+ assert.match(adam,/FAS\.retry\.classify/);
+ assert.match(adam,/FAS\.retry\.classifyConfirmation/);
+ assert.match(adam,/params\.set\('restart','1'\)/);
+ assert.match(adam,/requestRetryConfirmation/);
+});
+
 test('Talk starts one Realtime interviewer only after durable interview context is ready',()=>{
  assert.match(html,/assets\/js\/realtime-interviewer\.js/);
  assert.ok(html.indexOf('realtime-interviewer.js')<html.indexOf('adam.js'));
