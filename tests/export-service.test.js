@@ -1,6 +1,7 @@
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');
 const {PDFDocument}=require('pdf-lib');
+const artifacts=require('../assets/js/artifacts.js');
 const JSZip=require('jszip');
 const artifact={schemaVersion:1,id:'expertise-map-p1',agentKey:'extract',type:'expertise_map',title:'Expertise Map',version:3,status:'user_approved',generatedAt:'2026-10-25T12:00:00.000Z',sections:[{title:'Origin story',blocks:[{kind:'evidence',text:'A specific source-grounded origin story.',sourceId:'s1'}]},{title:'Proof bank',blocks:[{kind:'evidence',text:'12 clients completed the process.',sourceId:'s2'}]}],sources:[{id:'s1',field:'origin',basis:'user'},{id:'s2',field:'proof',basis:'user'}],warnings:[]};
 
@@ -34,14 +35,28 @@ function premiumAnchor(){
  built.status='user_approved';return built;
 }
 
-test('premium Anchor renders a distinct five-page PDF in every approved theme',async()=>{
+test('premium Anchor renders a distinct nine-page PDF in every approved theme',async()=>{
  const service=require('../lib/export-service.js'),themes=['editorial-strategy','luxury-editorial','boardroom-consultancy'],buffers=[];
  for(const theme of themes){
   const pdf=await service.renderPdf(premiumAnchor(),{theme});buffers.push(pdf);
   assert.equal(pdf.subarray(0,5).toString(),'%PDF-');assert.ok(pdf.length>12000,theme+' should contain substantive designed content');
-  const document=await PDFDocument.load(pdf);assert.equal(document.getPageCount(),5);assert.equal(document.getTitle(),'Trusted Expert Blueprint');assert.match(document.getSubject(),/premium.*anchor/i);assert.ok((document.getKeywords()||'').includes(theme));
+  const document=await PDFDocument.load(pdf);assert.equal(document.getPageCount(),9);assert.equal(document.getTitle(),'Trusted Expert Blueprint');assert.match(document.getSubject(),/premium.*anchor/i);assert.ok((document.getKeywords()||'').includes(theme));
  }
  assert.notDeepEqual(buffers[0],buffers[1]);assert.notDeepEqual(buffers[1],buffers[2]);
+});
+
+function premiumExtract(){
+ const fields={context:'Technical service teams need a clearer delivery and sales process.',diagnostic:'The constraint is usually unclear decision flow.',origin:'The method emerged while repairing failed software projects.',timeline:'Developer to adviser to delivery lead.',method:'Diagnose, map, prototype, validate, transfer.',proof:'Clients adopted the mapped process and reduced avoidable rework.',point_of_view:'Clarity before automation.',boundaries:'No guaranteed commercial outcomes.',synthesis:'Package the method as a diagnostic workshop.'};
+ return artifacts.build('extract',{id:'premium-extract',answers:Object.entries(fields).map(([field,text])=>({id:'extract-'+field,field:'extract.'+field,text}))});
+}
+
+test('premium EXTRACT renders a distinct nine-page PDF in every approved theme',async()=>{
+ const service=require('../lib/export-service.js'),buffers=[];
+ for(const theme of ['editorial-strategy','luxury-editorial','boardroom-consultancy']){
+  const pdf=await service.renderPdf(premiumExtract(),{theme});buffers.push(pdf);
+  const document=await PDFDocument.load(pdf);assert.equal(document.getPageCount(),9);assert.equal(document.getTitle(),'Expertise Map');assert.match(document.getSubject(),/premium.*extract/i);assert.ok((document.getKeywords()||'').includes(theme));
+ }
+ assert.notEqual(buffers[0].toString('hex'),buffers[1].toString('hex'));
 });
 
 test('premium Anchor embeds the approved material artwork and closes with a recommendation instead of a question',async()=>{
@@ -71,6 +86,13 @@ test('premium Anchor DOCX uses the full report structure with professional Word 
  assert.match(footerXml,/PAGE/);
 });
 
+test('premium EXTRACT DOCX presents the complete specialist report',async()=>{
+ const service=require('../lib/export-service.js'),docx=await service.renderDocx(premiumExtract()),zip=await JSZip.loadAsync(docx);
+ const documentXml=await zip.file('word/document.xml').async('string'),footerXml=await zip.file('word/footer1.xml').async('string');
+ for(const heading of ['EXECUTIVE EXPERTISE BRIEF','ORIGIN &amp; EVOLUTION','EXPERTISE ARCHITECTURE','SIGNATURE METHOD','PROOF &amp; STORY BANK','POINT OF VIEW &amp; IP','BOUNDARIES, RISKS &amp; GAPS','ACTIVATION &amp; FINAL DECISION'])assert.match(documentXml,new RegExp(heading));
+ assert.match(footerXml,/FAS · EXTRACT · CONFIDENTIAL/);
+});
+
 test('export request normalizes unknown branding while preserving premium report data',()=>{
  const service=require('../lib/export-service.js'),artifact=premiumAnchor(),request=service.assertExportRequest({format:'pdf',theme:'malicious-theme',artifact});
  assert.equal(request.theme,'editorial-strategy');assert.deepEqual(request.artifact.premiumReport,artifact.premiumReport);assert.equal(request.artifact.sources.length,6);
@@ -79,6 +101,6 @@ test('export request normalizes unknown branding while preserving premium report
 test('premium rendering contains long Unicode content safely and legacy exports still work',async()=>{
  const service=require('../lib/export-service.js'),anchor=premiumAnchor();anchor.premiumReport.executiveBrief.opportunity+=' → café — '+('Unbroken'.repeat(90));
  const [premium,legacy,docx]=await Promise.all([service.renderPdf(anchor,{theme:'boardroom-consultancy'}),service.renderPdf(artifact,{theme:'luxury-editorial'}),service.renderDocx(anchor)]);
- assert.equal((await PDFDocument.load(premium)).getPageCount(),5);assert.equal(legacy.subarray(0,5).toString(),'%PDF-');assert.equal(docx.subarray(0,2).toString(),'PK');
+ assert.equal((await PDFDocument.load(premium)).getPageCount(),9);assert.equal(legacy.subarray(0,5).toString(),'%PDF-');assert.equal(docx.subarray(0,2).toString(),'PK');
 });
 

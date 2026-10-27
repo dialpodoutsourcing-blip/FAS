@@ -141,3 +141,12 @@ test('private or pending Anchor evidence is never included in a publishable rebu
   assert.equal(upgrade.collectAnswers(project),null);
   await assert.rejects(()=>upgrade.rebuild({project,artifacts,fetchImpl:async()=>{throw new Error('must not synthesize');}}),/six complete/i);
 });
+
+test('completed EXTRACT work is eligible for a premium deterministic upgrade',async()=>{
+  const fields=['context','diagnostic','origin','timeline','method','proof','point_of_view','boundaries','synthesis'];
+  const project={answers:fields.map((field,index)=>({id:'e'+index,agentKey:'extract',field:'extract.'+field,text:'Specific '+field+' evidence and detail for the expertise report.'}))};
+  const selected={id:'extract-map',artifactId:'extract-map',agentKey:'extract',version:1,sections:[{title:'Legacy',blocks:[{text:'Legacy'}]}]};
+  assert.equal(upgrade.needsUpgrade('extract',selected,project),true);
+  const rebuilt=await upgrade.rebuild({agentKey:'extract',project,artifacts,fetchImpl:async()=>({ok:false})});
+  assert.ok(rebuilt.premiumReport);assert.ok(rebuilt.premiumReport.signatureMethod.stages.length>=4);
+});
