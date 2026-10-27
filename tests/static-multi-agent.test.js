@@ -9,6 +9,8 @@ const chat = read('chat.html');
 assert.match(chat, /<body[^>]+class="chat-page"/, 'chat uses the one-screen shell');
 assert.match(chat, /data-chat-history-toggle/);
 assert.match(chat, /data-chat-saved-toggle/);
+assert.match(chat, /data-chat-retry/);
+assert.match(chat, /assets\/js\/retry-intent\.js/);
 assert.match(chat, /data-chat-trust-toggle/);
 assert.match(chat, /data-chat-history-drawer[^>]+hidden/);
 assert.match(chat, /data-chat-saved-drawer[^>]+hidden/);

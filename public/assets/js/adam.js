@@ -284,6 +284,7 @@
   var completedConversation = false;
   var completedSummary = '';
   var completedTurnIds = new Set();
+  var retryConfirmationPending = false;
   var lastCaptureActive = false;
   var turnSequence = 0;
   function createTurnId(source){turnSequence+=1;return(source||'type')+'-'+Date.now()+'-'+turnSequence;}
@@ -293,6 +294,10 @@
     return interviewCoordinator;
   }
   function getCompletionUrl(){var params=new URLSearchParams();params.set('asset',FAS.agent.current.key);if(projectId!=='local-default')params.set('project',projectId);if(sessionId)params.set('session',sessionId);return'review.html?'+params.toString();}
+  function restartCurrentAgent(){var params=new URLSearchParams(window.location.search);params.set('agent',FAS.agent.current.key);params.set('restart','1');window.location.assign('chat.html?'+params.toString());}
+  function retryReply(message,source){FAS.chat.addMessage({role:'agent',tag:'ADAM',text:message});if(source==='talk'&&voiceInterviewer){voiceInterviewer.resume();syncVoiceCaptureControl();return voiceInterviewer.speak(message);}return Promise.resolve(message);}
+  function requestRetryConfirmation(text,source){retryConfirmationPending=true;if(text)FAS.chat.addMessage({role:'user',tag:'YOU',text:text});var message='Retry '+FAS.agent.current.name+' from the beginning? This will replace this specialist\'s saved answers and blueprint. Say yes to retry or no to keep your work.';setVoiceStatus('Waiting for retry confirmation.',false);return retryReply(message,source);}
+  function handleRetryConfirmation(text,source){var decision=FAS.retry&&FAS.retry.classifyConfirmation(text);FAS.chat.addMessage({role:'user',tag:'YOU',text:text});if(decision===true){retryConfirmationPending=false;if(voiceInterviewer)voiceInterviewer.pause();setVoiceStatus('Restarting '+FAS.agent.current.name+'...',false);restartCurrentAgent();return Promise.resolve();}if(decision===false){retryConfirmationPending=false;setVoiceStatus('Retry cancelled. Your saved work is unchanged.',false);return retryReply('Okay. I kept your '+FAS.agent.current.name+' work and we can continue where we left off.',source);}return retryReply('Please say yes to restart '+FAS.agent.current.name+' or no to keep your current work.',source);}
   function buildCompletedSummary(project){var answers=(project&&project.answers||[]).filter(function(answer){return(answer.agentKey||answer.agent_key)===FAS.agent.current.key;}),latest={};answers.forEach(function(answer){latest[answer.field||answer.field_path]=answer.text||(answer.value&&answer.value.text)||answer.value||'';});return Object.keys(latest).map(function(field){return field+': '+latest[field];}).join('\n').slice(0,6000)||FAS.agent.current.name+' is complete.';}
   function latestAgentAnswers(project){var latest={};(project&&project.answers||[]).filter(function(answer){return(answer.agentKey||answer.agent_key)===FAS.agent.current.key;}).forEach(function(answer){latest[answer.field||answer.field_path]=answer;});return Object.keys(latest).map(function(field){return latest[field];});}
   function renderEditableSavedAnswers(project){var feed=$('[data-agent-saved]');if(!feed)return;var answers=latestAgentAnswers(project);if(!answers.length)return;feed.textContent='';answers.forEach(function(answer){var item=document.createElement('div'),top=document.createElement('div'),name=document.createElement('span'),status=document.createElement('span'),value=document.createElement('span'),edit=document.createElement('button');item.className='feed__item';top.className='feed__top';name.className='feed__name';name.textContent=(answer.field||answer.field_path||'Saved answer').replace(/[._-]+/g,' ');status.className='status status--draft';status.textContent='Saved';value.className='feed__value';value.textContent=answer.text||(answer.value&&answer.value.text)||answer.value||'';edit.className='btn btn--text';edit.type='button';edit.setAttribute('data-edit-answer',answer.id);edit.textContent='Edit';top.appendChild(name);top.appendChild(status);top.appendChild(edit);item.appendChild(top);item.appendChild(value);feed.appendChild(item);});}
@@ -462,6 +467,8 @@
   }
 
   function handleVoiceTurn(turn){
+    if(retryConfirmationPending)return handleRetryConfirmation(turn.text,'talk');
+    if(FAS.retry&&FAS.retry.classify(turn.text)==='request')return requestRetryConfirmation(turn.text,'talk');
     var command=classifyVoiceCommand(turn.text);
     if(command)return handleVoiceCommand(command);
     FAS.voice.setTranscript(turn.text);
@@ -680,7 +687,10 @@
   function send() {
     if (!input) return;
     if(form&&form.getAttribute('aria-busy')==='true')return;
-    if(completedConversation){var postText=input.value.trim();if(!postText){input.focus();return;}input.value='';input.focus();submitPostCompletionMessage(postText,'type',createTurnId('type'));return;}
+    var retryText=input.value.trim();
+    if(retryConfirmationPending){if(!retryText){input.focus();return;}input.value='';input.focus();handleRetryConfirmation(retryText,'type');return;}
+    if(FAS.retry&&FAS.retry.classify(retryText)==='request'){input.value='';input.focus();requestRetryConfirmation(retryText,'type');return;}
+    if(completedConversation){var postText=retryText;if(!postText){input.focus();return;}input.value='';input.focus();submitPostCompletionMessage(postText,'type',createTurnId('type'));return;}
     var completionUrl=getCompletionUrl();
     if (interview && !interview.currentQuestion()) {if(artifactRetryPending){var retryStatus=$('[data-answer-status]'),retryButton=form&&form.querySelector('[type="submit"]');announceCompletion();if(retryStatus)retryStatus.textContent='Generating your blueprint…';if(retryButton)retryButton.textContent='Building…';generateBlueprint(completionUrl,retryStatus).catch(function(){if(form)form.removeAttribute('aria-busy');if(retryStatus)retryStatus.textContent='Blueprint generation failed. Your answers are saved; try again.';if(retryButton){retryButton.disabled=false;retryButton.textContent='Retry blueprint';}});}else window.location.assign(completionUrl);return; }
     var text = input.value.trim();
@@ -721,8 +731,8 @@
     if(view){window.location.assign(view.getAttribute('data-href')||getCompletionUrl());return;}
     var editAnswers=event.target.closest('[data-edit-answers]');
     if(editAnswers){var savedToggle=$('[data-chat-saved-toggle]');if(savedToggle)savedToggle.click();return;}
-    var retry=event.target.closest('[data-retry-agent]');
-    if(retry){if(!window.confirm('Retry '+FAS.agent.current.name+'? Your current answers and blueprint will be replaced, while unrelated project work stays safe.'))return;var params=new URLSearchParams(window.location.search);params.set('agent',FAS.agent.current.key);params.set('restart','1');window.location.assign('chat.html?'+params.toString());return;}
+    var retry=event.target.closest('[data-retry-agent], [data-chat-retry]');
+    if(retry){requestRetryConfirmation('',voiceIntent==='talk'?'talk':'type');return;}
     var edit=event.target.closest('[data-edit-answer]');
     if(!edit||!projectStore)return;
     var item=edit.closest('.feed__item'),valueNode=item&&$('.feed__value',item),current=valueNode?valueNode.textContent.trim():'',revised=window.prompt('Edit this saved answer:',current);
