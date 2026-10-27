@@ -490,6 +490,7 @@
     conversationHistory.push({role:'user',content:turn.text,voiceTurnId:turn.turnId});
     FAS.orb.setState('thinking');
     setVoiceStatus('Saving your spoken answer…',false);
+    if(voiceInterviewer)voiceInterviewer.speak('Got it—let me capture that.');
     var answerSaved=false,status=$('[data-answer-status]'),completionUrl=getCompletionUrl();
     var work=interviewCoordinator.submit({text:turn.text,source:'talk',turnId:turn.turnId}).then(function(result){
       answerSaved=true;
