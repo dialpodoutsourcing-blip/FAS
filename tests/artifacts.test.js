@@ -79,6 +79,25 @@ test('EXTRACT artifact preserves evidence, exact language, permissions, and gaps
  assert.equal(artifacts.validate(artifact).valid,true);
 });
 
+test('EXTRACT builds a source-grounded premium expertise report',()=>{
+ const fields={context:'Custom software teams ask us to clarify delivery and sales.',diagnostic:'The real constraint is usually an unclear process.',origin:'I learned this while rebuilding failed client projects.',timeline:'I moved from developer to technical adviser and delivery lead.',method:'Diagnose, map, prototype, validate, then transfer.',proof:'Clients adopted the mapped process and reduced rework.',point_of_view:'Clarity before automation.',boundaries:'No guaranteed revenue or unsupported performance claims.',synthesis:'Package the method as a diagnostic workshop.'};
+ const artifact=artifacts.build('extract',{id:'premium-extract',answers:Object.entries(fields).map(([field,text])=>({id:'extract-'+field,agentKey:'extract',field:'extract.'+field,text}))});
+ const report=artifact.premiumReport,known=new Set(artifact.sources.map(source=>source.id));
+ assert.ok(report);for(const key of ['executiveBrief','expertiseThesis','originTimeline','expertiseArchitecture','signatureMethod','proofBank','pointOfView','risks','recommendations','finalDecision'])assert.ok(report[key],key);
+ assert.ok(report.expertiseArchitecture.pillars.length>=3);assert.ok(report.signatureMethod.stages.length>=4);assert.ok(report.proofBank.length>=2);assert.ok(report.risks.length>=2);assert.ok(report.recommendations.length>=3);
+ const ids=JSON.stringify(report).match(/extract-[a-z_]+/g)||[];assert.ok(ids.length>10);assert.ok(ids.every(id=>known.has(id)));
+ assert.match(report.expertiseThesis.external,/custom software/i);assert.doesNotMatch(JSON.stringify(report),/guaranteed revenue result|certified expert/i);
+});
+
+test('EXTRACT premium fallback excludes private proof and labels thin evidence',()=>{
+ const artifact=artifacts.build('extract',{id:'thin-extract',answers:[
+  {id:'context',field:'extract.context',text:'Teams ask for technical guidance.'},
+  {id:'method',field:'extract.method',text:'Assess and map.'},
+  {id:'proof-private',field:'extract.proof',text:'Secret client result.',permissionStatus:'private'}
+ ]});
+ assert.ok(artifact.premiumReport);assert.doesNotMatch(JSON.stringify(artifact.premiumReport),/Secret client result/);assert.match(JSON.stringify(artifact.premiumReport),/gap|needs|missing|validate/i);
+});
+
 test('artifact validation rejects an unsupported factual claim',()=>{
  const result=artifacts.validate({type:'expertise_map',title:'Map',version:1,sections:[{title:'Proof bank',blocks:[{kind:'claim',text:'Guaranteed revenue'}]}],sources:[]});
  assert.equal(result.valid,false);assert.ok(result.errors.some(error=>/source/i.test(error)));
