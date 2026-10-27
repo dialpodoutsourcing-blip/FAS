@@ -32,7 +32,7 @@
           <button type="button" data-auth-switch="signin">Sign in</button>
         </div>
 
-        <section data-auth-view="signup">
+        <section data-auth-view="signup" hidden>
           <h2>Create your workspace</h2>
           <p class="account-intro">Start with your identity. FAS will prepare a private project and a dedicated session for every specialist.</p>
           <form class="account-form" data-auth-form="signup" novalidate>
@@ -45,7 +45,7 @@
           </form>
         </section>
 
-        <section data-auth-view="signin" hidden>
+        <section data-auth-view="signin">
           <h2>Welcome back</h2><p class="account-intro">Return to your saved answers, decisions, and documents.</p>
           <form class="account-form" data-auth-form="signin" novalidate>
             <div class="account-field"><label for="signin-email">Email address</label><input id="signin-email" name="email" type="email" autocomplete="email" required></div>

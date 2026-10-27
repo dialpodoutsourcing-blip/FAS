@@ -3,7 +3,7 @@
   function clean(value){return typeof value==='string'?value.trim():'';}
   function clone(value){return JSON.parse(JSON.stringify(value));}
   function create(options){
-    options=options||{};var auth=options.auth||{},context=options.context||{},localImport=options.localImport||null,doc=options.document||(typeof document!=='undefined'?document:null),location=options.location||(typeof window!=='undefined'?window.location:{href:'',search:'',hash:'',assign:function(){}}),retryImport=null,state={mode:'signup',message:'',pending:false,authenticated:false,email:'',canRetryImport:false};
+    options=options||{};var auth=options.auth||{},context=options.context||{},localImport=options.localImport||null,doc=options.document||(typeof document!=='undefined'?document:null),location=options.location||(typeof window!=='undefined'?window.location:{href:'',search:'',hash:'',assign:function(){}}),retryImport=null,state={mode:'signin',message:'',pending:false,authenticated:false,email:'',canRetryImport:false};
     function render(){
       if(!doc)return;
       Array.prototype.forEach.call(doc.querySelectorAll('[data-auth-view]'),function(view){view.hidden=view.getAttribute('data-auth-view')!==state.mode;});
@@ -33,10 +33,10 @@
       if(config&&config.unavailable){set({mode:'error',message:'Account configuration could not be loaded. Check your connection and refresh to retry.',pending:false,authenticated:false});return Promise.resolve({mode:'config-error'});}
       if(!config||!config.configured){set({mode:'error',message:'Cloud accounts are not configured yet. You may continue in local preview mode.',pending:false,authenticated:false});return Promise.resolve({mode:'local'});}
       var callback=Boolean((location.hash&&location.hash.length>1)||/[?&](error|access_token|type)=/i.test(location.search||''));
-      if(callback&&auth.consumeCallback)return auth.consumeCallback(location.href).then(function(session){if(session.type==='recovery'){set({mode:'reset',message:'Choose a new password.',authenticated:true});return{mode:'reset'};}return finish(session);}).catch(function(error){return fail(error,false);});
+      if(callback&&auth.consumeCallback)return auth.consumeCallback(location.href).then(function(session){if(session.type==='recovery'){set({mode:'reset',message:'Choose a new password.',authenticated:true});return{mode:'reset'};}var clear=auth.signOut?auth.signOut():auth.clearSession&&auth.clearSession();return Promise.resolve(clear).catch(function(){if(auth.clearSession)auth.clearSession();}).then(function(){set({mode:'signin',message:'Your email is confirmed. Sign in to continue.',pending:false,authenticated:false});return{mode:'signin',confirmed:true};});}).catch(function(error){return fail(error,false);});
       var existing=auth.getSession&&auth.getSession();
       if(existing){var ready=auth.requireSession?auth.requireSession():Promise.resolve(existing);return ready.then(function(session){return finish(session);}).catch(function(error){return fail(error,false);});}
-      set({mode:'signup',message:'Create your private FAS workspace.'});return Promise.resolve({mode:'signup'});
+      set({mode:'signin',message:'Sign in to your private FAS workspace.'});return Promise.resolve({mode:'signin'});
     }
     function submitSignup(input){
       input=input||{};var password=String(input.password||''),confirmation=String(input.confirmation||'');

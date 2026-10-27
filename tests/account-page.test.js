@@ -94,13 +94,19 @@ test('successful sign-in bootstraps context and honors only its safe return path
   assert.equal(result.ok,true);assert.deepEqual(calls,['signin',{displayName:'Mike',projectName:'FAS Studio'}]);assert.deepEqual(assigned,['chat.html?agent=anchor']);
 });
 
-test('callback is consumed before confirmation bootstrap and recovery stays on reset mode',async()=>{
+test('email confirmation clears its temporary session and stays on sign in without opening the dashboard',async()=>{
   const api=optionalRequire('../assets/js/account.js');assert.ok(api,'account controller exists');
   const order=[],assigned=[];
-  const confirmation=api.create({auth:{consumeCallback:async()=>{order.push('callback');return{type:'signup',user:{user_metadata:{display_name:'Mike',project_name:'FAS'}}};},getSession:()=>null},context:{bootstrap:async()=>{order.push('bootstrap');return{};},safeReturnPath:()=> 'index.html'},location:{href:'https://app.example/account.html#access_token=x',search:'',hash:'#access_token=x',assign:value=>assigned.push(value)}});
-  await confirmation.start({configured:true});assert.deepEqual(order,['callback','bootstrap']);assert.deepEqual(assigned,['index.html']);
+  const confirmation=api.create({auth:{consumeCallback:async()=>{order.push('callback');return{type:'signup',user:{user_metadata:{display_name:'Mike',project_name:'FAS'}}};},signOut:async()=>{order.push('signout');},getSession:()=>null},context:{bootstrap:async()=>{order.push('bootstrap');return{};},safeReturnPath:()=> 'index.html'},location:{href:'https://app.example/account.html#access_token=x',search:'',hash:'#access_token=x',assign:value=>assigned.push(value)}});
+  const confirmed=await confirmation.start({configured:true});assert.deepEqual(order,['callback','signout']);assert.deepEqual(assigned,[]);assert.equal(confirmed.mode,'signin');assert.equal(confirmation.getState().mode,'signin');assert.match(confirmation.getState().message,/confirmed.*sign in/i);
   const recovery=api.create({auth:{consumeCallback:async()=>({type:'recovery',user:{}}),getSession:()=>null},context:{},location:{href:'https://app.example/account.html#type=recovery',search:'',hash:'#type=recovery',assign(){throw new Error('must not navigate');}}});
   const result=await recovery.start({configured:true});assert.equal(result.mode,'reset');assert.equal(recovery.getState().mode,'reset');
+});
+
+test('account access defaults to sign in instead of create account',async()=>{
+  const api=optionalRequire('../assets/js/account.js'),controller=api.create({auth:{getSession:()=>null},context:{},location:{href:'https://app.example/account.html',search:'',hash:'',assign(){}}});
+  const result=await controller.start({configured:true});assert.equal(result.mode,'signin');assert.equal(controller.getState().mode,'signin');
+  const html=fs.readFileSync(path.join(root,'account.html'),'utf8');assert.match(html,/<section data-auth-view="signup" hidden>/);assert.match(html,/<section data-auth-view="signin">/);
 });
 
 test('unconfigured deployments expose local preview without claiming authentication',async()=>{
