@@ -408,10 +408,10 @@
   }
 
   function startVoiceInterview(){
-    var recovery=$('[data-voice-recovery]');if(recovery)recovery.hidden=true;
     voiceIntent='talk';voiceGeneration+=1;var generation=voiceGeneration;
     return persistenceReady.then(function(){
     if(persistenceLoadError||!interview)throw persistenceLoadError||new Error('Interview is not ready');
+    var recovery=$('[data-voice-recovery]');if(recovery)recovery.hidden=true;
     if(!voiceInterviewer)voiceInterviewer=buildVoiceInterviewer();
     if(!voiceInterviewer){voiceFailed({code:'voice_unsupported'});return Promise.reject(new Error('Voice unsupported'));}
     if(voiceInterviewer.state()==='paused'){voiceInterviewer.resume();syncVoiceCaptureControl();return Promise.resolve(true);}

@@ -50,6 +50,8 @@ test('persistence restoration fails closed and retries without creating question
  assert.match(initialize,/persistenceLoadError=error/);
  assert.match(initialize,/Retry loading/);
  assert.match(adam,/if\(persistenceLoadError\)loadPersistence\(\)/);
+ const start=adam.slice(adam.indexOf('function startVoiceInterview'),adam.indexOf('function classifyVoiceCommand'));
+ assert.ok(start.indexOf('persistenceReady.then')<start.indexOf('recovery.hidden=true'),'Talk cannot hide Retry loading before restoration succeeds');
 });
 test('blueprint generation is single-flight and reopens the completed composer for advisory chat',()=>{
  assert.match(adam,/var blueprintPromise = null/);

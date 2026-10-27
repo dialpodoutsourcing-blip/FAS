@@ -281,6 +281,10 @@
   var voiceGeneration = 0;
   var voiceSaving = false;
   var voiceCompletionPromise = null;
+  var persistenceReady = null;
+  var persistenceLoadError = null;
+  var persistenceLoading = false;
+  var restoredInterview = false;
   var completedConversation = false;
   var completedSummary = '';
   var completedTurnIds = new Set();
@@ -327,13 +331,24 @@
       initializeInterviewCoordinator();
       renderCurrentQuestion(interview.currentQuestion());
       renderEditableSavedAnswers(project);
-      (project&&project.answers||[]).filter(function(answer){return answer.agentKey===FAS.agent.current.key||answer.agent_key===FAS.agent.current.key;}).forEach(function(answer){var savedText=answer.text||answer.value;FAS.chat.addMessage({role:'user',text:savedText,tag:'SAVED'});conversationHistory.push({role:'user',content:savedText});});
+      var restoredAnswers=(project&&project.answers||[]).filter(function(answer){return answer.agentKey===FAS.agent.current.key||answer.agent_key===FAS.agent.current.key;});
+      restoredInterview=restoredAnswers.length>0;
+      restoredAnswers.forEach(function(answer){var savedText=answer.text||answer.value;FAS.chat.addMessage({role:'user',text:savedText,tag:'SAVED'});conversationHistory.push({role:'user',content:savedText});});
       var hasArtifact=(project&&project.artifacts||[]).some(function(artifact){return artifact.agentKey===FAS.agent.current.key||artifact.agent_key===FAS.agent.current.key;});
       if(!interview.currentQuestion()&&hasArtifact){enterCompletedConversation(project);return;}
       if(!interview.currentQuestion()&&!hasArtifact){var restoredStatus=$('[data-answer-status]'),restoredButton=form&&form.querySelector('[type="submit"]');if(interview.completion().complete){announceCompletion();if(restoredStatus)restoredStatus.textContent='Generating your blueprint…';generateBlueprint(getCompletionUrl(),restoredStatus).catch(function(){artifactRetryPending=true;if(form)form.removeAttribute('aria-busy');if(restoredStatus)restoredStatus.textContent='Your answers are saved, but the blueprint could not be prepared. Retry blueprint.';if(restoredButton){restoredButton.disabled=false;restoredButton.textContent='Retry blueprint';}});}else{artifactRetryPending=true;if(restoredButton)restoredButton.textContent='Retry blueprint';if(restoredStatus)restoredStatus.textContent='Your answers are saved. Retry blueprint generation.';}}
-    }).catch(function(){if(FAS.interview){interview=FAS.interview.create({agent:FAS.agent.current});initializeInterviewCoordinator();renderCurrentQuestion(interview.currentQuestion());}});
+      return project;
+    });
   }
-  var persistenceReady=Promise.all([FAS.authReady||Promise.resolve({mode:'local'}),FAS.agentAccessReady||Promise.resolve({allowed:true})]).then(function(results){if(results[1]&&results[1].allowed===false)return;return initializePersistence(results[0]);}).finally(function(){setChatLoading(false);if(micBtn)micBtn.disabled=false;setVoiceStatus('Voice is ready when you are.',false);});
+  function loadPersistence(){
+    if(persistenceLoading&&persistenceReady)return persistenceReady;
+    persistenceLoading=true;persistenceLoadError=null;restoredInterview=false;interview=null;interviewCoordinator=null;
+    setChatLoading(true);if(micBtn)micBtn.disabled=true;
+    persistenceReady=Promise.all([FAS.authReady||Promise.resolve({mode:'local'}),FAS.agentAccessReady||Promise.resolve({allowed:true})]).then(function(results){if(results[1]&&results[1].allowed===false)throw new Error('Agent access unavailable');return initializePersistence(results[0]);}).then(function(result){var recovery=$('[data-voice-recovery]'),retry=$('[data-voice-retry]');if(recovery)recovery.hidden=true;if(retry)retry.textContent='Retry voice';if(micBtn)micBtn.disabled=false;setVoiceStatus('Voice is ready when you are.',false);return result;}).catch(function(error){persistenceLoadError=error;interview=null;interviewCoordinator=null;var recovery=$('[data-voice-recovery]'),retry=$('[data-voice-retry]');if(recovery)recovery.hidden=false;if(retry)retry.textContent='Retry loading';setVoiceStatus('Your saved interview could not be loaded. Retry loading before continuing.',true);throw error;}).finally(function(){persistenceLoading=false;setChatLoading(false);});
+    persistenceReady.catch(function(){});
+    return persistenceReady;
+  }
+  persistenceReady=loadPersistence();
 
   function apiFetch(url,init,timeoutMs){var config=window.FAS_CONFIG||{},controller=timeoutMs&&typeof AbortController!=='undefined'?new AbortController():null;function send(session){var next=Object.assign({},init||{});if(session)next.headers=Object.assign({},init&&init.headers||{},{Authorization:'Bearer '+session.accessToken});if(controller)next.signal=controller.signal;return fetch(url,next);}var work=!config.configured||!FAS.auth||!FAS.auth.requireSession?send(null):FAS.auth.requireSession().then(send);if(!timeoutMs)return work;return new Promise(function(resolve,reject){var settled=false,timer=setTimeout(function(){if(settled)return;settled=true;if(controller)controller.abort();var error=new Error('Request timed out');error.code='request_timeout';reject(error);},timeoutMs);work.then(function(response){if(settled)return;settled=true;clearTimeout(timer);resolve(response);},function(error){if(settled)return;settled=true;clearTimeout(timer);reject(error);});});}
 
@@ -393,8 +408,10 @@
   }
 
   function startVoiceInterview(){
-    var recovery=$('[data-voice-recovery]');if(recovery)recovery.hidden=true;
     voiceIntent='talk';voiceGeneration+=1;var generation=voiceGeneration;
+    return persistenceReady.then(function(){
+    if(persistenceLoadError||!interview)throw persistenceLoadError||new Error('Interview is not ready');
+    var recovery=$('[data-voice-recovery]');if(recovery)recovery.hidden=true;
     if(!voiceInterviewer)voiceInterviewer=buildVoiceInterviewer();
     if(!voiceInterviewer){voiceFailed({code:'voice_unsupported'});return Promise.reject(new Error('Voice unsupported'));}
     if(voiceInterviewer.state()==='paused'){voiceInterviewer.resume();syncVoiceCaptureControl();return Promise.resolve(true);}
@@ -402,16 +419,19 @@
     voiceStart=voiceInterviewer.start();
     Promise.all([voiceStart,persistenceReady]).then(function(){
       if(generation!==voiceGeneration||voiceIntent!=='talk')return;
-      if(completedConversation){if(!voiceOrientationSpoken){voiceOrientationSpoken=true;voiceInterviewer.speak('Your '+FAS.agent.current.name+' work is complete. You can ask me anything. I can also help you review or edit it, or start EXTRACT next.');}setVoiceStatus('ADAM is listening for your question.',false);return;}
+      if(completedConversation){if(!voiceOrientationSpoken){var completionAccepted=voiceInterviewer.speak('Your '+FAS.agent.current.name+' work is complete. You can ask me anything. I can also help you review or edit it, or start EXTRACT next.');if(completionAccepted===false)throw new Error('Voice opening was not accepted');voiceOrientationSpoken=true;}setVoiceStatus('ADAM is listening for your question.',false);return;}
       if(!interview||!interview.currentQuestion())throw new Error('Interview is not ready');
       if(voiceOrientationSpoken)return;
-      voiceOrientationSpoken=true;
       var orientation='You are in hands-free interview mode. Take your time. You can say repeat the question, pause, switch to typing, or end. ';
       var exactQuestion=interview.currentQuestion().question;
-      voiceInterviewer.speak(orientation+exactQuestion);
-      setVoiceStatus('Hands-free interview started. ADAM will listen after the question.',false);
+      var opening=restoredInterview?'Welcome back. Let’s continue where you left off. ':orientation;
+      var accepted=voiceInterviewer.speak(opening+exactQuestion);
+      if(accepted===false)throw new Error('Voice opening was not accepted');
+      voiceOrientationSpoken=true;
+      setVoiceStatus(restoredInterview?'Saved interview restored. ADAM will listen after the question.':'Hands-free interview started. ADAM will listen after the question.',false);
     }).catch(function(){if(generation===voiceGeneration&&voiceIntent==='talk')voiceFailed({code:'voice_connection_failed'});});
     return voiceStart;
+    });
   }
 
   function classifyVoiceCommand(text){
@@ -571,7 +591,7 @@
 
   var voiceTab=document.getElementById('tab-voice');if(voiceTab)voiceTab.addEventListener('click',function(){activateVoiceMode().catch(function(){});});
 
-  var voiceRetry=$('[data-voice-retry]');if(voiceRetry)voiceRetry.addEventListener('click',retryVoiceInterview);
+  var voiceRetry=$('[data-voice-retry]');if(voiceRetry)voiceRetry.addEventListener('click',function(){if(persistenceLoadError)loadPersistence().catch(function(){});else retryVoiceInterview();});
   var voiceTypeInstead=$('[data-voice-type-instead]');if(voiceTypeInstead)voiceTypeInstead.addEventListener('click',switchToTyping);
 
   function closeDrawers() {
