@@ -79,6 +79,28 @@ test('premium EXTRACT declares a distinct content-driven visual for every report
  assert.equal(new Set(EXTRACT_VISUALS).size,8);
 });
 
+test('EXTRACT visual models are grounded in their matching report content and include interpretations',()=>{
+ const {buildVisualModels}=require('../lib/extract-report-renderer.js'),report=premiumExtract().premiumReport;
+ const models=buildVisualModels(report);
+ assert.equal(models.length,8);
+ assert.ok(models.every(model=>model.interpretation&&model.interpretation.length>20));
+ assert.deepEqual(models[1].nodes.map(node=>node.detail),report.originTimeline.inflectionPoints);
+ assert.deepEqual(models[2].nodes.map(node=>node.label),report.expertiseArchitecture.pillars.map(item=>item.title));
+ assert.deepEqual(models[3].nodes.map(node=>node.label),report.signatureMethod.stages.map(item=>item.name));
+ assert.deepEqual(models[4].rows.map(row=>row.score),report.proofBank.map(item=>item.confidence));
+ assert.deepEqual(models[5].nodes.map(node=>node.label),report.pointOfView.frameworks.map(item=>item.name));
+ assert.deepEqual(models[6].rows.map(row=>row.label),report.risks.map(item=>item.risk));
+ assert.deepEqual(models[7].nodes.map(node=>node.label),report.recommendations.map(item=>item.title));
+});
+
+test('EXTRACT visual models turn sparse arrays into explicit open gaps',()=>{
+ const {buildVisualModels}=require('../lib/extract-report-renderer.js'),report=premiumExtract().premiumReport;
+ report.originTimeline.inflectionPoints=[];report.expertiseArchitecture.pillars=[];report.signatureMethod.stages=[];
+ report.proofBank=[];report.pointOfView.frameworks=[];report.risks=[];report.recommendations=[];
+ const models=buildVisualModels(report);
+ for(const model of models.slice(1))assert.match(JSON.stringify(model),/OPEN GAP/);
+});
+
 test('every later specialist renders a nine-page object-led report in all three themes',async()=>{
  const service=require('../lib/export-service.js'),themes=['editorial-strategy','luxury-editorial','boardroom-consultancy'];
  for(const key of ['radar','forge','architect','voice','launch']){
