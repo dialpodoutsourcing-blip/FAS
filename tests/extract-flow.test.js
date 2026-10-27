@@ -43,10 +43,12 @@ test('restored answers render before the completion announcement',()=>{
  const restoredCompletion=adam.indexOf('if(!interview.currentQuestion()&&!hasArtifact)',initialize);
  assert.ok(savedAnswers>initialize&&restoredCompletion>savedAnswers,'completion remains the final visible message after reload');
 });
-test('blueprint generation is single-flight and keeps the completed composer locked',()=>{
+test('blueprint generation is single-flight and reopens the completed composer for advisory chat',()=>{
  assert.match(adam,/var blueprintPromise = null/);
  assert.match(adam,/if\(blueprintPromise\)return blueprintPromise/);
- assert.doesNotMatch(adam,/input\.disabled=false/);
+ assert.match(adam,/completedConversation=true/);
+ assert.match(adam,/input\.disabled=false/);
+ assert.match(adam,/\/api\/advisory-response/);
  assert.match(adam,/finally\(function\(\)\{if\(!blueprintPromise\)/);
 });
 test('chat controller requests an AI acknowledgement while preserving the engine-selected question',()=>{

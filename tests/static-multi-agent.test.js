@@ -16,6 +16,8 @@ assert.match(chat, /data-chat-trust-drawer[^>]+hidden/);
 assert.match(chat, /data-download-saved[^>]+aria-label="Download saved work"/, 'saved work drawer exposes an accessible download action');
 assert.match(chat, /data-agent-stage-summary/);
 assert.match(chat, /data-answer-status[^>]+aria-live="polite"/);
+assert.match(chat, /data-completion-panel[^>]+hidden/, 'chat includes a hidden completed-work panel');
+for(const hook of ['data-view-blueprint','data-edit-answers','data-retry-agent','data-start-extract'])assert.match(chat,new RegExp(hook),`completion panel exposes ${hook}`);
 assert.match(chat, /data-voice-ambient[^>]+aria-hidden="true"/, 'voice panel includes decorative ambient wavelengths');
 assert.match(chat, /data-voice-hud[^>]+aria-hidden="true"/, 'voice panel includes a decorative processing HUD');
 assert.match(chat, /data-voice-hud-secondary[^>]+aria-hidden="true"/, 'voice panel includes a decorative right-side analysis HUD');
@@ -72,6 +74,8 @@ assert.match(adam, /\.wave span[\s\S]*Math\.random\(\)[\s\S]*--wave-height/s, 'v
 assert.match(adam, /--wave-speed/, 'voice ticker receives varied animation speeds');
 assert.match(adam, /--wave-floor/, 'voice ticker receives varied minimum pulse sizes');
 assert.match(adam, /tab-voice[\s\S]*activateVoiceMode/, 'selecting Talk starts or resumes the hands-free interview');
+assert.match(adam, /submitPostCompletionMessage/, 'completed Type and Talk messages use the advisory conversation path');
+assert.match(adam, /\/api\/advisory-response/, 'completed conversation calls the advisory endpoint');
 
 const pages = ['chat.html', 'review.html', 'vault.html', 'launch.html'];
 const keys = ['anchor', 'extract'];
@@ -142,6 +146,7 @@ assert.match(styles, /\.chat-shell__workspace\s*\{[^}]*min-height:\s*0/s);
 assert.match(styles, /\.chat-drawer\s*\{[^}]*position:\s*fixed/s);
 assert.match(styles, /\.chat-primary\s*\{[^}]*max-width:\s*1100px/s, 'the shared chat column matches the approved wide layout');
 assert.match(styles, /\.chat-page \.thread > \.msg\s*\{[^}]*width:\s*100%[^}]*max-width:\s*none/s, 'the prompt row spans the shared chat column');
+assert.match(styles, /\.chat-page \.thread\s*\{[^}]*overflow-y:\s*auto/s, 'the main conversation is vertically scrollable');
 assert.match(styles, /\.chat-page \.thread > \.msg \.bubble\s*\{[^}]*width:\s*100%[^}]*max-width:\s*none/s, 'the prompt card aligns with the composer edges');
 assert.match(styles, /\.chat-page \.bubble__text--q\s*\{[^}]*font-size:\s*clamp\(16px,\s*1\.1vw,\s*18px\)[^}]*font-weight:\s*600/s, 'the prompt uses compact semibold typography');
 assert.match(styles, /@keyframes voiceWaveDrift/, 'ambient voice wavelengths are animated');
