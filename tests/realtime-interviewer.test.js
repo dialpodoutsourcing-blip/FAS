@@ -59,7 +59,8 @@ function harness(overrides) {
     onPartialTranscript: value => partials.push(value),
     onFinalTranscript: value => { finals.push(value); },
     onError: error => errors.push(error),
-    onCaptureChange: active => captures.push(active)
+    onCaptureChange: active => captures.push(active),
+    transcriptSettleMs: 0
   }, overrides || {});
   return { peer, track, stream, mediaCalls, mediaDevices, audio, requests, states, partials, finals, errors, captures, lifecycle, options };
 }
@@ -137,6 +138,29 @@ test('maps Realtime events to truthful states and finalizes each normalized turn
   assert.doesNotMatch(h.errors[0].message, /private upstream detail/);
 });
 
+test('combines completed transcript segments when speech resumes during the settling window', async () => {
+  const { createRealtimeInterviewer } = load();
+  const timers = [];
+  const h = harness({
+    transcriptSettleMs: 1500,
+    setTimeout: fn => { const timer = { fn, cancelled: false }; timers.push(timer); return timer; },
+    clearTimeout: timer => { timer.cancelled = true; }
+  });
+  const controller = createRealtimeInterviewer(h.options);
+  await controller.start(); h.peer.channel.readyState = 'open'; h.peer.channel.emit('open');
+  h.peer.channel.emit('message', { type: 'conversation.item.input_audio_transcription.completed', item_id: 'item-1', transcript: 'I help consultants', turn_id: 'turn-1' });
+  assert.deepEqual(h.finals, [], 'the first segment waits for a possible continuation');
+  h.peer.channel.emit('message', { type: 'input_audio_buffer.speech_started' });
+  assert.equal(timers[0].cancelled, true, 'resumed speech cancels premature delivery');
+  h.peer.channel.emit('message', { type: 'conversation.item.input_audio_transcription.delta', item_id: 'item-2', delta: 'build a clear authority position.' });
+  h.peer.channel.emit('message', { type: 'input_audio_buffer.speech_stopped' });
+  assert.equal(timers.length, 1, 'the earlier segment still waits while continuation transcription is incomplete');
+  h.peer.channel.emit('message', { type: 'conversation.item.input_audio_transcription.completed', item_id: 'item-2', transcript: 'build a clear authority position.', turn_id: 'turn-2' });
+  assert.equal(timers.length, 2, 'settling begins only after the continuation is complete');
+  timers.at(-1).fn();
+  assert.deepEqual(h.finals, [{ turnId: 'turn-1+turn-2', itemId: 'item-1+item-2', text: 'I help consultants build a clear authority position.' }]);
+});
+
 test('speech interruption, explicit pause/resume, and background lifecycle control the microphone safely', async () => {
   const { createRealtimeInterviewer } = load();
   const h = harness();
@@ -208,6 +232,17 @@ test('stop preserves partial text, never finalizes it, waits for finalized work,
   assert.equal(h.peer.connectionState, 'closed');
   assert.equal(h.audio.srcObject, null);
   assert.equal(controller.state(), 'stopped');
+});
+
+test('stop flushes a completed transcript that is still inside the settling window', async () => {
+  const { createRealtimeInterviewer } = load();
+  const h = harness({ transcriptSettleMs: 1500, setTimeout: () => ({ pending: true }), clearTimeout: () => {} });
+  const controller = createRealtimeInterviewer(h.options);
+  await controller.start(); h.peer.channel.readyState = 'open'; h.peer.channel.emit('open');
+  h.peer.channel.emit('message', { type: 'conversation.item.input_audio_transcription.completed', item_id: 'item-ready', transcript: 'My complete answer.', turn_id: 'turn-ready' });
+  assert.deepEqual(h.finals, []);
+  await controller.stop();
+  assert.deepEqual(h.finals, [{ turnId: 'turn-ready', itemId: 'item-ready', text: 'My complete answer.' }]);
 });
 
 test('pause and stop remain authoritative when microphone permission resolves late', async () => {
