@@ -410,6 +410,7 @@
     if(/^(repeat|repeat the question|say that again|repeat that)$/.test(value))return'repeat';
     if(/^(pause|pause interview|pause the interview|stop listening)$/.test(value))return'pause';
     if(/^(switch to typing|switch to type|type instead|use typing)$/.test(value))return'switch_to_type';
+    if(/^(let s )?(move|go|continue|proceed) (on )?to extract$/.test(value)||/^(start|open) extract$/.test(value)||/^take me to extract$/.test(value))return'go_to_extract';
     if(/^(end|end interview|end the interview|stop interview|finish voice)$/.test(value))return'end';
     return null;
   }
@@ -424,6 +425,9 @@
       voiceIntent='paused';voiceInterviewer.pause();setVoiceStatus('Voice is paused. Press the mic to resume.',false);
     }else if(command==='switch_to_type'){
       switchToTyping();
+    }else if(command==='go_to_extract'){
+      var extract=$('[data-start-extract]');
+      if(extract){voiceIntent='stopped';voiceInterviewer.pause();setVoiceStatus('Opening EXTRACT...',false);window.location.assign(extract.href);}
     }else if(command==='end'){
       return endVoiceInterview();
     }

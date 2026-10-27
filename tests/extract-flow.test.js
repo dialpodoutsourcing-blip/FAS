@@ -105,6 +105,13 @@ test('standalone Talk commands are handled without saving answers',()=>{
  assert.match(adam,/stop\(\{waitFor:voiceTurnPromise\}\)/,'ending waits for a finalized in-flight turn');
 });
 
+test('Talk can navigate directly to EXTRACT after completion',()=>{
+ assert.match(adam,/return'go_to_extract'/);
+ assert.match(adam,/command==='go_to_extract'/);
+ assert.match(adam,/\[data-start-extract\]/);
+ assert.match(adam,/window\.location\.assign\(extract\.href\)/);
+});
+
 test('Talk completion announces, stops input, generates once, and keeps recovery truthful',()=>{
  assert.match(adam,/voiceCompletionCopy/);
  assert.match(adam,/voiceInterviewer\.pause\(\)[\s\S]*voiceInterviewer\.speak\(completionMessage\)/s);
