@@ -59,6 +59,41 @@ test('premium EXTRACT renders a distinct nine-page PDF in every approved theme',
  assert.notEqual(buffers[0].toString('hex'),buffers[1].toString('hex'));
 });
 
+test('premium EXTRACT embeds its material object and uses charts without ellipsis truncation',async()=>{
+ const fs=require('node:fs'),path=require('node:path'),service=require('../lib/export-service.js');
+ const pdf=await service.renderPdf(premiumExtract(),{theme:'editorial-strategy'}),document=await PDFDocument.load(pdf);
+ const imageObjects=document.context.enumerateIndirectObjects().filter(([,object])=>/\/Subtype\s*\/Image/.test(object.toString()));
+ assert.ok(imageObjects.length>=1,'the realistic EXTRACT diamond must be embedded');
+ const renderer=fs.readFileSync(path.join(__dirname,'..','lib','extract-report-renderer.js'),'utf8');
+ assert.match(renderer,/EVIDENCE CONFIDENCE/);
+ assert.match(renderer,/SIGNATURE METHOD FLOW/);
+ assert.doesNotMatch(renderer,/candidate\s*\+\s*["'](?:…|â€¦)/,'report copy must not be replaced with visible ellipsis');
+});
+
+test('every later specialist renders a nine-page object-led report in all three themes',async()=>{
+ const service=require('../lib/export-service.js'),themes=['editorial-strategy','luxury-editorial','boardroom-consultancy'];
+ for(const key of ['radar','forge','architect','voice','launch']){
+  const answers=[{id:key+'-one',field:key+'.strategy',text:'A specific, source-grounded strategic decision for '+key+'.'},{id:key+'-two',field:key+'.evidence',text:'The respondent supplied evidence and explicit operating constraints.'}];
+  const built=artifacts.build(key,{id:'premium-'+key,answers});
+  for(const theme of themes){
+   const pdf=await service.renderPdf(built,{theme}),document=await PDFDocument.load(pdf);
+   assert.equal(document.getPageCount(),9,key+' '+theme);
+   assert.equal(document.getTitle(),built.title);
+   assert.match(document.getSubject(),new RegExp('premium.*'+key,'i'));
+   assert.ok((document.getKeywords()||'').includes(theme));
+   const images=document.context.enumerateIndirectObjects().filter(([,object])=>/\/Subtype\s*\/Image/.test(object.toString()));
+   assert.ok(images.length>=1,key+' must embed its specialist object');
+  }
+ }
+});
+
+test('theme chooser preview follows the selected specialist instead of hard-coding Anchor',()=>{
+ const fs=require('node:fs'),path=require('node:path'),ui=fs.readFileSync(path.join(__dirname,'..','assets','js','artifact-ui.js'),'utf8');
+ assert.match(ui,/selected\.agentKey/);
+ assert.match(ui,/selected\.title/);
+ assert.doesNotMatch(ui,/FAS · ANCHOR<\/span>/);
+});
+
 test('premium Anchor embeds the approved material artwork and closes with a recommendation instead of a question',async()=>{
  const service=require('../lib/export-service.js');
  const {buildFinalDecision}=require('../lib/anchor-report-renderer.js');

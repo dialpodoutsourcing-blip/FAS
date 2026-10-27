@@ -100,14 +100,14 @@ for (const page of pages) {
 
 const dashboard = read('index.html');
 assert.match(dashboard, /class="[^"]*resume-cta[^"]*" href="chat\.html\?agent=extract"/);
-for (const key of keys) {
+for (const key of keys.filter(key=>key!=='extract')) {
   assert.match(dashboard, new RegExp(`class="spec[^"]*" href="chat\\.html\\?agent=${key}"`), `dashboard card opens ${key}`);
 }
+assert.match(dashboard,/class="spec[^"]*is-locked[^"]*"[^>]+data-unlocked-href="chat\.html\?agent=extract"/,'dashboard shows EXTRACT locked until ANCHOR is saved');
 for (const key of paidKeys) assert.match(dashboard,new RegExp(`class="spec[^"]*" href="chat\\.html\\?agent=${key}"`),`dashboard keeps unlockable ${key} markup`);
 assert.match(dashboard,/Your <span data-access-count>2<\/span>-step roadmap/,'dashboard starts with the two included products');
 assert.match(dashboard,/aria-label="Step 2 of 2"[^>]+aria-valuemax="2"/,'dashboard progress starts with two available steps');
-assert.doesNotMatch(dashboard, /class="spec is-locked"/, 'dashboard cards are not visually locked');
-assert.doesNotMatch(dashboard, />Locked<\//, 'dashboard cards do not announce a locked state');
+assert.match(dashboard, />Locked<\//, 'dashboard clearly announces the EXTRACT gate');
 
 const nav = read('assets/js/nav.js');
 assert.match(nav, /data-agent-link/);
