@@ -179,3 +179,19 @@ test('chat applies the database interview catalog before creating the interview'
  assert.ok(chat.indexOf('loadAgentCatalog()') < chat.indexOf('FAS.interview.create'), 'database catalog loads before interview creation');
 });
 
+test('Talk routes interview controls before saving and listens only after prompts finish',()=>{
+ const chat=fs.readFileSync(path.join(__dirname,'..','assets','js','adam.js'),'utf8');
+ assert.match(chat,/FAS\.interview\.classifyCommand\(text,FAS\.agent\.current\.key\)/);
+ assert.match(chat,/interview\.navigate\(command\.field\)/);
+ assert.match(chat,/voiceInterviewer\.speakThenListen\(message\)/);
+ assert.ok(chat.indexOf('classifyVoiceCommand(turn.text)') < chat.indexOf("interviewCoordinator.submit({text:turn.text"), 'commands are handled before durable answer submission');
+});
+
+test('Talk validates useful information before durable submission',()=>{
+ const chat=fs.readFileSync(path.join(__dirname,'..','assets','js','adam.js'),'utf8');
+ const handler=chat.slice(chat.indexOf('function handleVoiceTurn'),chat.indexOf('function switchToTyping'));
+ assert.match(handler,/FAS\.interview\.validateSpokenAnswer\(turn\.text/);
+ assert.match(handler,/validation\.valid/);
+ assert.ok(handler.indexOf('validateSpokenAnswer')<handler.indexOf('interviewCoordinator.submit'),'validation happens before persistence');
+});
+

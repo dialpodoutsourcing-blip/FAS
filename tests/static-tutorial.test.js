@@ -13,10 +13,11 @@ for (const page of pages) {
   assert.match(sidebar, /data-tutorial-trigger[^>]*>[\s\S]*?<svg[^>]*aria-hidden="true"[\s\S]*?Help me \/ Demo[\s\S]*?<\/button>/s, `${page} uses the shared tutorial label and icon`);
   assert.equal((html.match(/assets\/js\/tutorial\.js/g) || []).length, 1, `${page} loads tutorial.js once`);
   assert.equal((html.match(/assets\/js\/realtime-narrator\.js/g) || []).length, 1, `${page} loads realtime narrator once`);
+  assert.equal((html.match(/assets\/js\/clip-narrator\.js/g) || []).length, 1, `${page} loads interruptible clip narrator once`);
   assert.equal((html.match(/assets\/js\/tutorial-frame\.js/g) || []).length, 1, `${page} loads tutorial-frame.js once`);
   assert.equal((html.match(/assets\/js\/agent-access\.js/g) || []).length, 1, `${page} loads agent access once`);
   assert.match(html, /assets\/js\/nav\.js[\s\S]*assets\/js\/tutorial\.js/s, `${page} loads tutorial after nav`);
-  assert.match(html, /assets\/js\/realtime-narrator\.js[\s\S]*assets\/js\/tutorial\.js/s, `${page} loads narrator before tutorial`);
+  assert.match(html, /assets\/js\/clip-narrator\.js[\s\S]*assets\/js\/tutorial\.js/s, `${page} loads clip narrator before tutorial`);
   assert.match(html, /assets\/js\/nav\.js[\s\S]*assets\/js\/tutorial-frame\.js/s, `${page} loads frame bridge after nav`);
 }
 
@@ -38,13 +39,13 @@ assert.doesNotMatch(script, /getUserMedia|MediaRecorder/, 'tutorial never activa
 assert.match(script, /data-tour-mute[^>]*aria-pressed="false"/, 'tutorial exposes an accessible mute toggle');
 assert.match(script, /data-tour-replay/, 'tutorial exposes narration replay');
 assert.match(script, /AI-generated Cedar narration/, 'tutorial discloses that Cedar narration is AI-generated');
-assert.match(script, /createRealtimeNarrator\(/, 'tutorial controller uses the Realtime Cedar narrator');
+assert.match(script, /createClipNarrator\(/, 'tutorial controller uses interruptible browser-owned Cedar clips');
 assert.match(script, /function open\([^)]*\)[^{]*\{[^}]*narrator=makeNarrator\(\)/, 'each tutorial opening gets a fresh Cedar narrator');
 assert.match(script, /narrator=makeNarrator\(\);narrator\.unlockPlayback\(\);narrator\.connect\(\)/, 'tutorial unlocks audio during the opening click before connecting Realtime');
 assert.match(script, /function open\([^)]*\)[\s\S]*?muteButton\.textContent='Mute'[\s\S]*?muteButton\.setAttribute\('aria-pressed','false'\)/, 'reopening resets the visible mute state');
 assert.match(script, /data\.type==='target-ready'[\s\S]*?narrator\.speak\(state\.current\(\)\.speech\)/, 'automatic narration waits for the real target');
 assert.match(script, /data-tour-voice-status aria-live="polite"/, 'Realtime narration status is announced');
-assert.doesNotMatch(script, /speechSynthesis|SpeechSynthesisUtterance|\/api\/narration|createCedarNarrator/, 'robotic fallback and Speech API path are removed');
+assert.doesNotMatch(script, /speechSynthesis|SpeechSynthesisUtterance|createCedarNarrator/, 'robotic browser narration remains removed');
 assert.doesNotMatch(script,/seven specialist|Seven specialist/,'tutorial does not advertise unavailable paid products');
 assert.match(script, /function cleanupAndRestore\([^)]*\)[\s\S]*?narrator\.cancel\(\)/, 'closing the tutorial cancels narration');
 assert.match(script, /beforeunload[^\n]*narrator\.cancel\(\)/, 'unloading cancels narration');

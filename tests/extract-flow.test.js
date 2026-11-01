@@ -126,7 +126,7 @@ test('restored Talk welcomes the user back and marks orientation only after spee
  const start=adam.slice(adam.indexOf('function startVoiceInterview'),adam.indexOf('function classifyVoiceCommand'));
  assert.match(start,/restoredInterview[\s\S]*Welcome back\. Let[’']s continue where you left off\./);
  assert.match(start,/currentQuestion\(\)\.question/);
- const accepted=start.indexOf('var accepted=voiceInterviewer.speak');
+ const accepted=start.indexOf('var accepted=speakVoicePrompt');
  const marked=start.indexOf('voiceOrientationSpoken=true',accepted);
  assert.ok(accepted>=0&&marked>accepted,'orientation is marked only after speak accepts it');
 });
@@ -137,7 +137,7 @@ test('final spoken turns use the shared coordinator and proactively speak the gr
  assert.match(adam,/FAS\.voice\.setTranscript\(turn\.text\)/);
  assert.match(adam,/FAS\.orb\.setState\('thinking'\)/);
  assert.match(adam,/renderCurrentQuestion\(\{question:result\.nextQuestion\}/);
- assert.match(adam,/voiceInterviewer\.speak\(result\.message\)/);
+ assert.match(adam,/speakVoicePrompt\(result\.message\)/);
 });
 
 test('normal spoken answers receive an immediate bridge before durable processing',()=>{
@@ -158,8 +158,8 @@ test('standalone Talk commands are handled without saving answers',()=>{
 });
 
 test('Talk can navigate directly to EXTRACT after completion',()=>{
- assert.match(adam,/return'go_to_extract'/);
- assert.match(adam,/command==='go_to_extract'/);
+ assert.match(adam,/return\{type:'go_to_extract'\}/);
+ assert.match(adam,/command\.type==='go_to_extract'/);
  assert.match(adam,/\[data-start-extract\]/);
  assert.match(adam,/window\.location\.assign\(extract\.href\)/);
 });

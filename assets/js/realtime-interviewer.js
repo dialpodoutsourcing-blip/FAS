@@ -330,6 +330,16 @@
       return sendSpeech(currentSpeech);
     }
 
+    function speakThenListen(text) {
+      pause();
+      var spoken = speak(text);
+      if (spoken === false) return Promise.resolve(false);
+      return Promise.resolve(spoken).then(function (finished) {
+        if (!finished || stopped || stopRequested || cleaned) return false;
+        return resume();
+      });
+    }
+
     function repeat() { return currentSpeech ? speak(currentSpeech) : false; }
 
     function pause() {
@@ -375,6 +385,7 @@
     return Object.freeze({
       start: start,
       speak: speak,
+      speakThenListen: speakThenListen,
       repeat: repeat,
       pause: pause,
       resume: resume,

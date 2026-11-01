@@ -25,11 +25,13 @@ assert.match(logo, /<path\b/, 'logo uses geometric paths');
 assert.doesNotMatch(logo, /<text\b/, 'logo does not depend on font glyphs');
 
 const dashboard = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+assert.match(dashboard, /Welcome back, <span data-account-name>/, 'dashboard greeting uses the authenticated customer name');
+assert.match(dashboard, /assets\/js\/dashboard\.js/, 'dashboard loads live customer progress');
 assert.match(dashboard, /class="dashboard-progress"/, 'dashboard uses the compact current-step banner');
 assert.doesNotMatch(dashboard, /class="hero"/, 'dashboard does not regress to the tall ADAM hero');
 assert.match(dashboard, /class="[^"]*\bresume-cta\b[^"]*"/);
-assert.match(dashboard, /class="resume-cta__default">Continue to step 2<\//);
-assert.match(dashboard, /class="resume-cta__hover" aria-hidden="true">Resume with EXTRACT<\//);
+assert.match(dashboard, /class="resume-cta__default" data-dashboard-action>Continue to step 2<\//);
+assert.match(dashboard, /class="resume-cta__hover" data-dashboard-hover aria-hidden="true">Resume with EXTRACT<\//);
 
 const styles = fs.readFileSync(path.join(root, 'assets/css/styles.css'), 'utf8');
 assert.match(styles, /\.dashboard-progress__layout\s*\{[^}]*padding:\s*18px 30px 16px 24px/s, 'compact banner keeps its bounded desktop padding');

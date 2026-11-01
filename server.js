@@ -7,6 +7,7 @@ const {buildRuntimeConfig}=require('./lib/runtime-config');
 require('dotenv').config();
 const REALTIME_URL='https://api.openai.com/v1/realtime/calls';
 const RESPONSES_URL='https://api.openai.com/v1/responses';
+const SPEECH_URL='https://api.openai.com/v1/audio/speech';
 const MAX_SDP_LENGTH=16384;
 function extractResponseText(payload){const parts=[];for(const item of payload&&payload.output||[])for(const content of item&&item.content||[])if(content&&content.type==='output_text'&&typeof content.text==='string')parts.push(content.text);return parts.join('\n').trim();}
 function normalizeChatRequest(body){const value=body&&typeof body==='object'?body:{},agent=value.agent||{},answer=typeof value.answer==='string'?value.answer.trim():'',nextQuestion=typeof value.nextQuestion==='string'?value.nextQuestion.trim():'';if(!['key','name','title'].every(field=>typeof agent[field]==='string'&&agent[field].trim())||!answer||answer.length>6000||!nextQuestion||nextQuestion.length>1000)throw new Error('Invalid chat request.');const history=(Array.isArray(value.history)?value.history:[]).slice(-12).map(item=>({role:item&&item.role==='assistant'?'assistant':'user',content:typeof(item&&item.content)==='string'?item.content.slice(0,2000):''})).filter(item=>item.content);return{agent:{key:agent.key.trim(),name:agent.name.trim(),title:agent.title.trim()},answer,nextQuestion,history};}
@@ -67,6 +68,11 @@ function createApp({fetchImpl=globalThis.fetch,apiKey=process.env.OPENAI_API_KEY
  }
  app.use((req,res,next)=>{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','same-origin');next();});
  app.get('/api/runtime-config',(req,res)=>{res.setHeader('Cache-Control','no-store');return res.json(buildRuntimeConfig(runtimeEnv));});
+ app.post('/api/narration',express.json({limit:'16kb'}),async(req,res)=>{
+  const text=typeof(req.body&&req.body.text)==='string'?req.body.text.trim():'';if(!text||text.length>4000)return res.status(400).json({error:'Valid narration text is required.'});
+  if(!await authorizePaidRequest(req,res))return;if(!apiKey)return res.status(503).json({error:'Narration unavailable.'});
+  try{const upstream=await fetchImpl(SPEECH_URL,{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json','OpenAI-Safety-Identifier':'fas-guided-tutorial'},body:JSON.stringify({model:'gpt-4o-mini-tts',voice:'cedar',input:text,instructions:'Speak warmly, naturally, and concisely as the FAS guide ADAM. Preserve the supplied wording and add nothing.',response_format:'mp3',speed:1})});if(!upstream.ok)return res.status(502).json({error:'Narration unavailable.'});const bytes=Buffer.from(await upstream.arrayBuffer());if(!bytes.length)return res.status(502).json({error:'Narration unavailable.'});res.setHeader('Cache-Control','private, no-store');return res.type('audio/mpeg').send(bytes);}catch(_){return res.status(502).json({error:'Narration unavailable.'});}
+ });
  app.post('/api/exports',express.json({limit:'1mb'}),async(req,res)=>{
   const origin=req.get('origin'),forwardedHost=req.get('x-forwarded-host'),requestHost=forwardedHost||req.get('host'),requestProtocol=req.get('x-forwarded-proto')||req.protocol,sameOrigin=requestHost?`${requestProtocol}://${requestHost}`:'';if(origin&&origin!==allowedOrigin&&origin!==sameOrigin)return res.status(403).json({error:'Origin not allowed.'});
   let request;try{request=exportsService.assertExportRequest(req.body);}catch(error){return res.status(400).json({error:error&&error.message||'Export failed.'});}

@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const retry = require('../assets/js/retry-intent.js');
 
 test('classifies explicit restart requests without treating ordinary retry language as destructive', () => {
-  for (const phrase of ['retry', 'start over', "let's start from the start", 'start again', 'restart this step']) {
+  for (const phrase of ['retry', 'retry anchor', 'restart Anchor', 'start Anchor over', 'start over', "let's start from the start", 'start again', 'restart this step']) {
     assert.equal(retry.classify(phrase), 'request', phrase);
   }
   for (const phrase of ['retry the API call', 'start the next question', 'I tried again yesterday']) {

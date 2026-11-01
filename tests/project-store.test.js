@@ -113,6 +113,24 @@ test('Supabase store loads the ordered dynamic agent interview catalog', async (
   assert.deepEqual(catalog[0].chapters[0].questions[0].hints, ['Start at the beginning']);
 });
 
+test('Supabase loads answers oldest-first so corrections are authoritative', async () => {
+  const stores=require('../assets/js/project-store.js'),calls=[];
+  const projectId='11111111-1111-4111-8111-111111111111';
+  const fetchImpl=async url=>{calls.push(url);if(url.includes('/projects?'))return{ok:true,json:async()=>[{id:projectId}]};return{ok:true,json:async()=>[]};};
+  const store=stores.create({configured:true,supabaseUrl:'https://example.supabase.co',anonKey:'anon-public',accessToken:'user-token',projectId,userId:'33333333-3333-4333-8333-333333333333',sessionId:'44444444-4444-4444-8444-444444444444',fetchImpl});
+  await store.loadProject();
+  assert.match(calls.find(url=>url.includes('/answers?')),/order=created_at\.asc/);
+});
+
+test('Supabase retry clears interview work without deleting immutable blueprint history', async()=>{
+  const stores=require('../assets/js/project-store.js'),calls=[];
+  const store=stores.create({configured:true,supabaseUrl:'https://example.supabase.co',anonKey:'anon-public',accessToken:'user-token',projectId:'11111111-1111-4111-8111-111111111111',userId:'33333333-3333-4333-8333-333333333333',sessionId:'44444444-4444-4444-8444-444444444444',fetchImpl:async(url,init={})=>{calls.push({url,init});return{ok:true,json:async()=>[]};}});
+  await store.resetAgent('anchor');
+  assert.ok(calls.some(call=>call.url.includes('/answers?')&&call.init.method==='DELETE'));
+  assert.ok(calls.some(call=>call.url.includes('/interview_sessions?')&&call.init.method==='PATCH'));
+  assert.equal(calls.some(call=>call.url.includes('/artifacts?')&&call.init.method==='DELETE'),false);
+});
+
 test('Supabase store hydrates saved artifact content and project-scopes persisted export themes', async () => {
   const stores=require('../assets/js/project-store.js'),calls=[];
   const projectId='11111111-1111-4111-8111-111111111111',artifactId='22222222-2222-4222-8222-222222222222';

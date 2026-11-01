@@ -202,6 +202,21 @@ test('application copy can still be spoken while microphone input is paused', as
   assert.equal(h.track.enabled, false);
 });
 
+test('speakThenListen keeps capture off until the exact prompt finishes', async () => {
+  const { createRealtimeInterviewer } = load();
+  const h = harness();
+  const controller = createRealtimeInterviewer(h.options);
+  await controller.start(); h.peer.channel.readyState = 'open'; h.peer.channel.emit('open');
+  const turn = controller.speakThenListen('Who most needs that result right now?');
+  assert.equal(h.track.enabled, false);
+  assert.equal(controller.captureActive(), false);
+  assert.equal(h.peer.channel.sent.at(-1).type, 'response.create');
+  h.peer.channel.emit('message', { type:'response.done' });
+  assert.equal(await turn, true);
+  assert.equal(h.track.enabled, true);
+  assert.equal(controller.captureActive(), true);
+});
+
 test('speech playback failure is reported without disabling the Type fallback', async () => {
   const { createRealtimeInterviewer } = load();
   const h = harness();

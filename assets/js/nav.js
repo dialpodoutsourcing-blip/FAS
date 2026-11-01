@@ -176,6 +176,7 @@
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || link.target === '_blank') return;
       if (!window.FAS || !window.FAS.agents) return;
       var destination = new URL(link.href, window.location.href);
+      if (!/\/chat\.html$/.test(destination.pathname) || !destination.searchParams.get('agent')) return;
       var agent = window.FAS.agents.get(destination.searchParams.get('agent'));
       var linkEmblem = link.querySelector('.em');
       if (linkEmblem) linkEmblem.setAttribute('data-agent-motion', agent.key);

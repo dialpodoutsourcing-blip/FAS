@@ -159,6 +159,44 @@ test('restore returns an interview to the exact checkpoint before a rejected dur
   assert.equal(interview.currentQuestion().field,'anchor.authority');
 });
 
+test('voice control phrases are commands and never profile answers', () => {
+  const classify = interviews.classifyCommand;
+  assert.deepEqual(classify('Stop', 'anchor'), { type:'pause' });
+  assert.deepEqual(classify('repeat the question', 'anchor'), { type:'repeat' });
+  assert.deepEqual(classify("That's not the question that's on the screen", 'anchor'), { type:'repeat' });
+  assert.deepEqual(classify("I don't understand what you're doing", 'anchor'), { type:'repeat' });
+  assert.deepEqual(classify('Go back to Arena', 'anchor'), { type:'navigate', field:'anchor.arena' });
+  assert.deepEqual(classify('Start at the beginning', 'anchor'), { type:'navigate', field:'anchor.authority' });
+});
+
+test('spoken-answer validation rejects filler, greetings, unknowns, and cut fragments',()=>{
+  const validate=interviews.validateSpokenAnswer;
+  for(const text of ['Ahmm','um uh hmm','Hello','Okay','Unknown',"I don't know",'not sure','I help','because the']){
+    const result=validate(text);
+    assert.equal(result.valid,false,text);
+    assert.match(result.message,/clarify|useful information|caught/i,text);
+  }
+});
+
+test('spoken-answer validation accepts substantive answers including concise evidence',()=>{
+  const validate=interviews.validateSpokenAnswer;
+  for(const text of ['I help brick and mortar owners move their businesses online.','Helped over 200 people','Brick and mortar business owners'])assert.equal(validate(text).valid,true,text);
+});
+
+test('revisiting an Anchor field replaces its saved value without leaving a conflict', () => {
+  const interview = interviews.create({ agent: agents.get('anchor') });
+  interview.acceptAnswer({ text:'I package expertise into digital products.' });
+  interview.acceptAnswer({ text:'Stop' });
+  interview.acceptAnswer({ text:'Old evidence' });
+  assert.equal(interview.navigate('anchor.arena').field, 'anchor.arena');
+  const corrected = interview.acceptAnswer({ text:'Brick-and-mortar owners moving online.' });
+  assert.equal(corrected.answer.supersedesId, 'answer-2');
+  assert.equal(corrected.conflict, null);
+  assert.equal(interview.currentQuestion().field, 'anchor.evidence');
+  assert.equal(interview.checkpoint().answers.at(-1).text, 'Brick-and-mortar owners moving online.');
+  assert.equal(interview.completion().conflicts.length, 0);
+});
+
 test('reconcileAnswer replaces local identities with durable UUIDs for later clarifications',()=>{
   const interview=interviews.create({agent:agents.get('anchor')}),first=interview.acceptAnswer({text:'Many clients ask for help.'});
   interview.reconcileAnswer(first.answer.id,{id:'55555555-5555-4555-8555-555555555555'});

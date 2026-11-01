@@ -280,6 +280,7 @@
   var voiceIntent = 'idle';
   var voiceGeneration = 0;
   var voiceSaving = false;
+  var voicePrompting = false;
   var voiceCompletionPromise = null;
   var persistenceReady = null;
   var persistenceLoadError = null;
@@ -301,7 +302,7 @@
   function getCompletionUrl(){var params=new URLSearchParams();params.set('asset',FAS.agent.current.key);if(projectId!=='local-default')params.set('project',projectId);if(sessionId)params.set('session',sessionId);return'review.html?'+params.toString();}
   function restartCurrentAgent(){var params=new URLSearchParams(window.location.search);params.set('agent',FAS.agent.current.key);params.set('restart','1');window.location.assign('chat.html?'+params.toString());}
   function retryReply(message,source){FAS.chat.addMessage({role:'agent',tag:'ADAM',text:message});if(source==='talk'&&voiceInterviewer){voiceInterviewer.resume();syncVoiceCaptureControl();return voiceInterviewer.speak(message);}return Promise.resolve(message);}
-  function requestRetryConfirmation(text,source){retryConfirmationPending=true;if(text)FAS.chat.addMessage({role:'user',tag:'YOU',text:text});var message='Retry '+FAS.agent.current.name+' from the beginning? This will replace this specialist\'s saved answers and blueprint. Say yes to retry or no to keep your work.';setVoiceStatus('Waiting for retry confirmation.',false);return retryReply(message,source);}
+  function requestRetryConfirmation(text,source){retryConfirmationPending=true;if(text)FAS.chat.addMessage({role:'user',tag:'YOU',text:text});var message='Retry '+FAS.agent.current.name+' from the beginning? This will clear this specialist\'s saved interview answers. Your existing blueprint stays in history until the completed retry creates its replacement. Say yes to retry or no to keep your work.';setVoiceStatus('Waiting for retry confirmation.',false);return retryReply(message,source);}
   function handleRetryConfirmation(text,source){var decision=FAS.retry&&FAS.retry.classifyConfirmation(text);FAS.chat.addMessage({role:'user',tag:'YOU',text:text});if(decision===true){retryConfirmationPending=false;if(voiceInterviewer)voiceInterviewer.pause();setVoiceStatus('Restarting '+FAS.agent.current.name+'...',false);restartCurrentAgent();return Promise.resolve();}if(decision===false){retryConfirmationPending=false;setVoiceStatus('Retry cancelled. Your saved work is unchanged.',false);return retryReply('Okay. I kept your '+FAS.agent.current.name+' work and we can continue where we left off.',source);}return retryReply('Please say yes to restart '+FAS.agent.current.name+' or no to keep your current work.',source);}
   function buildCompletedSummary(project){var answers=(project&&project.answers||[]).filter(function(answer){return(answer.agentKey||answer.agent_key)===FAS.agent.current.key;}),latest={};answers.forEach(function(answer){latest[answer.field||answer.field_path]=answer.text||(answer.value&&answer.value.text)||answer.value||'';});return Object.keys(latest).map(function(field){return field+': '+latest[field];}).join('\n').slice(0,6000)||FAS.agent.current.name+' is complete.';}
   function latestAgentAnswers(project){var latest={};(project&&project.answers||[]).filter(function(answer){return(answer.agentKey||answer.agent_key)===FAS.agent.current.key;}).forEach(function(answer){latest[answer.field||answer.field_path]=answer;});return Object.keys(latest).map(function(field){return latest[field];});}
@@ -380,7 +381,7 @@
 
   function voiceStateChanged(state){
     if(LABELS[state])FAS.orb.setState(state);
-    if(state==='paused'&&!voiceSaving&&voiceIntent!=='type'&&voiceIntent!=='ended'&&voiceIntent!=='completing')voiceIntent='paused';
+    if(state==='paused'&&!voiceSaving&&!voicePrompting&&voiceIntent!=='type'&&voiceIntent!=='ended'&&voiceIntent!=='completing')voiceIntent='paused';
     var copy={connecting:'Connecting your voice session…',listening:'Listening. Answer naturally when you are ready.',thinking:'Saving your answer and preparing the next question…',speaking:'ADAM is responding. You can interrupt at any time.',paused:'Voice is paused. Press the mic to resume.',stopped:'Voice session ended. Continue with Type whenever you like.',error:'The voice connection needs attention.',unsupported:'Voice is unavailable in this browser. Type mode is still ready.'};
     if(copy[state])setVoiceStatus(copy[state],state==='error'||state==='unsupported');
     syncVoiceCaptureControl();
@@ -410,6 +411,18 @@
     });
   }
 
+  function speakVoicePrompt(message){
+    if(!voiceInterviewer||voiceIntent!=='talk')return Promise.resolve(false);
+    var generation=voiceGeneration;
+    voicePrompting=true;
+    syncVoiceCaptureControl();
+    return voiceInterviewer.speakThenListen(message).then(function(resumed){
+      if(generation!==voiceGeneration||voiceIntent!=='talk')return false;
+      syncVoiceCaptureControl();
+      return resumed;
+    }).finally(function(){voicePrompting=false;});
+  }
+
   function startVoiceInterview(){
     voiceIntent='talk';voiceGeneration+=1;var generation=voiceGeneration;
     return persistenceReady.then(function(){
@@ -428,7 +441,7 @@
       var orientation='You are in hands-free interview mode. Take your time. You can say repeat the question, pause, switch to typing, or end. ';
       var exactQuestion=interview.currentQuestion().question;
       var opening=restoredInterview?'Welcome back. Let’s continue where you left off. ':orientation;
-      var accepted=voiceInterviewer.speak(opening+exactQuestion);
+      var accepted=speakVoicePrompt(opening+exactQuestion);
       if(accepted===false)throw new Error('Voice opening was not accepted');
       voiceOrientationSpoken=true;
       setVoiceStatus(restoredInterview?'Saved interview restored. ADAM will listen after the question.':'Hands-free interview started. ADAM will listen after the question.',false);
@@ -438,29 +451,32 @@
   }
 
   function classifyVoiceCommand(text){
+    var interviewCommand=FAS.interview&&FAS.interview.classifyCommand&&FAS.interview.classifyCommand(text,FAS.agent.current.key);
+    if(interviewCommand)return interviewCommand;
     var value=String(text||'').toLowerCase().replace(/[^a-z\s]/g,' ').replace(/\s+/g,' ').trim();
-    if(/^(repeat|repeat the question|say that again|repeat that)$/.test(value))return'repeat';
-    if(/^(pause|pause interview|pause the interview|stop listening)$/.test(value))return'pause';
-    if(/^(switch to typing|switch to type|type instead|use typing)$/.test(value))return'switch_to_type';
-    if(/^(let s )?(move|go|continue|proceed) (on )?to extract$/.test(value)||/^(start|open) extract$/.test(value)||/^take me to extract$/.test(value))return'go_to_extract';
-    if(/^(end|end interview|end the interview|stop interview|finish voice)$/.test(value))return'end';
+    if(/^(switch to typing|switch to type|type instead|use typing)$/.test(value))return{type:'switch_to_type'};
+    if(/^(let s )?(move|go|continue|proceed) (on )?to extract$/.test(value)||/^(start|open) extract$/.test(value)||/^take me to extract$/.test(value))return{type:'go_to_extract'};
+    if(/^(end|end interview|end the interview|stop interview|finish voice)$/.test(value))return{type:'end'};
     return null;
   }
 
   function handleVoiceCommand(command){
     if(!voiceInterviewer)return Promise.resolve();
-    if(command==='repeat'){
+    if(command.type==='repeat'){
       var question=interview&&interview.currentQuestion();
-      if(question&&voiceIntent==='talk')voiceInterviewer.speak(question.question);
+      if(question&&voiceIntent==='talk')speakVoicePrompt(question.question);
       setVoiceStatus('Repeating the current question.',false);
-    }else if(command==='pause'){
+    }else if(command.type==='navigate'){
+      var target=interview&&interview.navigate(command.field);
+      if(target){renderCurrentQuestion(target,false);setVoiceStatus('Returning to '+command.field.split('.').pop()+'.',false);return speakVoicePrompt(target.question);}
+    }else if(command.type==='pause'){
       voiceIntent='paused';voiceInterviewer.pause();setVoiceStatus('Voice is paused. Press the mic to resume.',false);
-    }else if(command==='switch_to_type'){
+    }else if(command.type==='switch_to_type'){
       switchToTyping();
-    }else if(command==='go_to_extract'){
+    }else if(command.type==='go_to_extract'){
       var extract=$('[data-start-extract]');
       if(extract){voiceIntent='stopped';voiceInterviewer.pause();setVoiceStatus('Opening EXTRACT...',false);window.location.assign(extract.href);}
-    }else if(command==='end'){
+    }else if(command.type==='end'){
       return endVoiceInterview();
     }
     return Promise.resolve();
@@ -501,6 +517,13 @@
     FAS.voice.setTranscript(turn.text);
     if(completedConversation)return submitPostCompletionMessage(turn.text,'talk',turn.turnId);
     if(voiceIntent!=='talk'){preserveVoiceDraft(turn.text);return Promise.resolve();}
+    var validation=FAS.interview.validateSpokenAnswer(turn.text,interview&&interview.currentQuestion());
+    if(!validation.valid){
+      var currentQuestion=interview&&interview.currentQuestion(),clarification=validation.message+(currentQuestion?' '+currentQuestion.question:'');
+      FAS.chat.addMessage({role:'agent',tag:'ADAM',text:clarification});
+      setVoiceStatus('I need more useful information before saving this answer.',false);
+      return speakVoicePrompt(clarification);
+    }
     if(voiceTurnPromise){
       if(voiceInterviewer)voiceInterviewer.pause();
       preserveVoiceDraft(turn.text);
@@ -525,7 +548,7 @@
         renderCurrentQuestion({question:result.nextQuestion},true);
         setVoiceStatus('Answer saved. ADAM is continuing the interview.',false);
         voiceSaving=false;
-        if(generation===voiceGeneration&&voiceIntent==='talk'&&voiceInterviewer){voiceInterviewer.resume();syncVoiceCaptureControl();voiceInterviewer.speak(result.message);}
+        if(generation===voiceGeneration&&voiceIntent==='talk'&&voiceInterviewer)speakVoicePrompt(result.message);
       }
       if(result.summary)FAS.chat.addMessage({role:'note',text:'Checkpoint saved · Review recent answers anytime in History.',tag:'CHECKPOINT',variant:'checkpoint'});
       if(result.completion.gaps.length)emit('fas:interview-gap',{gaps:result.completion.gaps});
