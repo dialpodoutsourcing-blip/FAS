@@ -100,6 +100,26 @@ test('fallback uses the open attribute and skips a disconnected trigger', () => 
   assert.equal(trigger.focusCount, 0);
 });
 
+test('fallback traps button focus and applies mode-aware Escape handling', () => {
+  const typed = setup('type', false);
+  typed.controller.open({ agentName: 'ANCHOR' });
+  assert.equal(typed.dialog.hasAttribute('data-fallback-modal'), true);
+  const forwardTab = typed.dialog.dispatch('keydown', { key: 'Tab', target: typed.confirmButton });
+  assert.equal(forwardTab.defaultPrevented, true);
+  assert.equal(typed.cancelButton.focusCount, 2);
+  const backwardTab = typed.dialog.dispatch('keydown', { key: 'Tab', shiftKey: true, target: typed.cancelButton });
+  assert.equal(backwardTab.defaultPrevented, true);
+  assert.equal(typed.confirmButton.focusCount, 1);
+  typed.dialog.dispatch('keydown', { key: 'Escape', target: typed.cancelButton });
+  assert.deepEqual(typed.decisions, [[false, 'dismiss']]);
+
+  const talked = setup('talk', false);
+  talked.controller.open({ agentName: 'ANCHOR' });
+  talked.dialog.dispatch('keydown', { key: 'Escape', target: talked.cancelButton });
+  assert.deepEqual(talked.decisions, []);
+  assert.equal(talked.controller.isOpen(), true);
+});
+
 test('spoken decisions use the same one-shot decision path as buttons', () => {
   const ui = setup('talk');
   ui.controller.open({ agentName: 'ANCHOR' });

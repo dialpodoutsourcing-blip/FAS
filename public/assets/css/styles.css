@@ -645,6 +645,8 @@ body.src-off .part__src { display: none; }
 .export-theme-dialog.is-pending .export-theme-dialog__status::before { content: ''; display: inline-block; width: 9px; height: 9px; margin-right: 8px; border: 2px solid var(--gold); border-right-color: transparent; border-radius: 50%; animation: export-spin .7s linear infinite; }
 .retry-confirmation { width: min(520px, calc(100vw - 32px)); padding: 0; border: 1px solid var(--gold-line); border-radius: 18px; background: #0b0b08; color: var(--text); box-shadow: 0 28px 90px rgba(0,0,0,.78); }
 .retry-confirmation::backdrop { background: rgba(0,0,0,.8); backdrop-filter: blur(7px); }
+.retry-confirmation[data-fallback-modal] { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; width: 100vw; max-width: none; height: 100vh; max-height: none; margin: 0; padding: 16px; border: 0; border-radius: 0; background: rgba(0,0,0,.8); box-sizing: border-box; }
+.retry-confirmation[data-fallback-modal] .retry-confirmation__panel { width: min(520px, 100%); border: 1px solid var(--gold-line); border-radius: 18px; background-color: #0b0b08; box-shadow: 0 28px 90px rgba(0,0,0,.78); box-sizing: border-box; }
 .retry-confirmation__panel { padding: clamp(24px, 5vw, 38px); background: radial-gradient(circle at 90% 0, rgba(211,181,124,.13), transparent 38%); }
 .retry-confirmation h2 { margin-top: 6px; font-family: var(--font-heading); font-size: clamp(28px, 5vw, 40px); line-height: 1.05; }
 .retry-confirmation [data-retry-confirmation-description] { margin-top: 14px; color: var(--text-2); line-height: 1.6; }
