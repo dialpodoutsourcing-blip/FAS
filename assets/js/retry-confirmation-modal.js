@@ -26,6 +26,6 @@
     dialog.addEventListener('cancel',function(event){event.preventDefault();if(mode==='type')decide(false,'dismiss');});
     dialog.addEventListener('click',function(event){if(event.target===dialog&&mode==='type')decide(false,'dismiss');});
 
-    return{open:open,close:close,isOpen:isOpen};
+    return{open:open,close:close,isOpen:isOpen,resolve:decide};
   };
 });

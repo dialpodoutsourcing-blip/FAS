@@ -49,6 +49,7 @@ assert.match(chat, /cannot guarantee business results/, 'trust drawer includes a
 const agentsScript = chat.indexOf('<script src="assets/js/agents.js"></script>');
 const accessScript = chat.indexOf('<script src="assets/js/agent-access.js"></script>');
 const adamScript = chat.indexOf('<script src="assets/js/adam.js"></script>');
+const retryModalScript = chat.indexOf('<script src="assets/js/retry-confirmation-modal.js"></script>');
 const coordinatorScript = chat.indexOf('<script src="assets/js/interview-coordinator.js"></script>');
 const interviewerScript = chat.indexOf('<script src="assets/js/realtime-interviewer.js"></script>');
 assert.ok(agentsScript >= 0, 'chat loads the specialist registry');
@@ -56,6 +57,7 @@ assert.ok(accessScript >= 0 && accessScript < adamScript, 'chat resolves product
 assert.ok(adamScript > agentsScript, 'specialist registry loads before the chat controller');
 assert.ok(coordinatorScript > agentsScript && coordinatorScript < adamScript, 'durable coordinator loads before the chat controller');
 assert.ok(interviewerScript > coordinatorScript && interviewerScript < adamScript, 'Realtime interviewer loads before the chat controller');
+assert.ok(retryModalScript > coordinatorScript && retryModalScript < adamScript, 'retry modal controller loads before the chat controller');
 
 [
   'data-agent-name', 'data-agent-title', 'data-agent-step', 'data-agent-chip',
@@ -82,6 +84,8 @@ assert.match(adam, /--wave-floor/, 'voice ticker receives varied minimum pulse s
 assert.match(adam, /tab-voice[\s\S]*activateVoiceMode/, 'selecting Talk starts or resumes the hands-free interview');
 assert.match(adam, /submitPostCompletionMessage/, 'completed Type and Talk messages use the advisory conversation path');
 assert.match(adam, /\/api\/advisory-response/, 'completed conversation calls the advisory endpoint');
+assert.match(adam, /createRetryConfirmationModal/, 'chat controller initializes the shared retry modal');
+assert.doesNotMatch(adam, /Say yes to retry or no to keep your work/, 'retry warning is presented by the modal instead of the chat thread');
 
 const pages = ['chat.html', 'review.html', 'vault.html', 'launch.html'];
 const keys = ['anchor', 'extract'];

@@ -99,3 +99,12 @@ test('fallback uses the open attribute and skips a disconnected trigger', () => 
   assert.equal(ui.dialog.hasAttribute('open'), false);
   assert.equal(trigger.focusCount, 0);
 });
+
+test('spoken decisions use the same one-shot decision path as buttons', () => {
+  const ui = setup('talk');
+  ui.controller.open({ agentName: 'ANCHOR' });
+  ui.controller.resolve(true, 'voice');
+  ui.cancelButton.dispatch('click');
+  assert.deepEqual(ui.decisions, [[true, 'voice']]);
+  assert.equal(ui.controller.isOpen(), false);
+});

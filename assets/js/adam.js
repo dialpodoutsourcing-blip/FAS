@@ -290,6 +290,16 @@
   var completedSummary = '';
   var completedTurnIds = new Set();
   var retryConfirmationPending = false;
+  var retryConfirmationSource = 'type';
+  var retryConfirmationModal = FAS.createRetryConfirmationModal({
+    dialog:$('[data-retry-confirmation]'),
+    title:$('[data-retry-confirmation-title]'),
+    description:$('[data-retry-confirmation-description]'),
+    confirmButton:$('[data-retry-confirm]'),
+    cancelButton:$('[data-retry-cancel]'),
+    getMode:function(){return retryConfirmationSource;},
+    onDecision:function(decision){handleRetryDecision(decision,retryConfirmationSource);}
+  });
   var lastCaptureActive = false;
   var turnSequence = 0;
   function setChatLoading(active){var loading=$('[data-chat-loading]'),workspace=$('.chat-shell__workspace');if(loading)loading.hidden=!active;if(workspace)workspace.setAttribute('aria-busy',String(Boolean(active)));}
@@ -302,8 +312,9 @@
   function getCompletionUrl(){var params=new URLSearchParams();params.set('asset',FAS.agent.current.key);if(projectId!=='local-default')params.set('project',projectId);if(sessionId)params.set('session',sessionId);return'review.html?'+params.toString();}
   function restartCurrentAgent(){var params=new URLSearchParams(window.location.search);params.set('agent',FAS.agent.current.key);params.set('restart','1');window.location.assign('chat.html?'+params.toString());}
   function retryReply(message,source){FAS.chat.addMessage({role:'agent',tag:'ADAM',text:message});if(source==='talk'&&voiceInterviewer){voiceInterviewer.resume();syncVoiceCaptureControl();return voiceInterviewer.speak(message);}return Promise.resolve(message);}
-  function requestRetryConfirmation(text,source){retryConfirmationPending=true;if(text)FAS.chat.addMessage({role:'user',tag:'YOU',text:text});var message='Retry '+FAS.agent.current.name+' from the beginning? This will clear this specialist\'s saved interview answers. Your existing blueprint stays in history until the completed retry creates its replacement. Say yes to retry or no to keep your work.';setVoiceStatus('Waiting for retry confirmation.',false);return retryReply(message,source);}
-  function handleRetryConfirmation(text,source){var decision=FAS.retry&&FAS.retry.classifyConfirmation(text);FAS.chat.addMessage({role:'user',tag:'YOU',text:text});if(decision===true){retryConfirmationPending=false;if(voiceInterviewer)voiceInterviewer.pause();setVoiceStatus('Restarting '+FAS.agent.current.name+'...',false);restartCurrentAgent();return Promise.resolve();}if(decision===false){retryConfirmationPending=false;setVoiceStatus('Retry cancelled. Your saved work is unchanged.',false);return retryReply('Okay. I kept your '+FAS.agent.current.name+' work and we can continue where we left off.',source);}return retryReply('Please say yes to restart '+FAS.agent.current.name+' or no to keep your current work.',source);}
+  function requestRetryConfirmation(text,source,trigger){if(retryConfirmationPending)return Promise.resolve();retryConfirmationPending=true;retryConfirmationSource=source==='talk'?'talk':'type';if(text)FAS.chat.addMessage({role:'user',tag:'YOU',text:text});retryConfirmationModal.open({agentName:FAS.agent.current.name,trigger:trigger});setVoiceStatus('Waiting for retry confirmation. Choose yes or no.',false);if(retryConfirmationSource==='talk'&&voiceInterviewer){voiceInterviewer.resume();syncVoiceCaptureControl();}return Promise.resolve();}
+  function handleRetryDecision(decision,source){if(!retryConfirmationPending)return Promise.resolve();retryConfirmationPending=false;if(decision===true){if(voiceInterviewer)voiceInterviewer.pause();setVoiceStatus('Restarting '+FAS.agent.current.name+'...',false);restartCurrentAgent();return Promise.resolve();}setVoiceStatus('Retry cancelled. Your saved work is unchanged.',false);return retryReply('Okay. I kept your '+FAS.agent.current.name+' work and we can continue where we left off.',source);}
+  function handleRetryConfirmation(text,source){var decision=FAS.retry&&FAS.retry.classifyConfirmation(text);FAS.chat.addMessage({role:'user',tag:'YOU',text:text});if(decision!==null){retryConfirmationModal.resolve(decision,source==='talk'?'voice':'type');return Promise.resolve();}return retryReply('Please say yes to restart '+FAS.agent.current.name+' or no to keep your current work.',source);}
   function buildCompletedSummary(project){var answers=(project&&project.answers||[]).filter(function(answer){return(answer.agentKey||answer.agent_key)===FAS.agent.current.key;}),latest={};answers.forEach(function(answer){latest[answer.field||answer.field_path]=answer.text||(answer.value&&answer.value.text)||answer.value||'';});return Object.keys(latest).map(function(field){return field+': '+latest[field];}).join('\n').slice(0,6000)||FAS.agent.current.name+' is complete.';}
   function latestAgentAnswers(project){var latest={};(project&&project.answers||[]).filter(function(answer){return(answer.agentKey||answer.agent_key)===FAS.agent.current.key;}).forEach(function(answer){latest[answer.field||answer.field_path]=answer;});return Object.keys(latest).map(function(field){return latest[field];});}
   function renderEditableSavedAnswers(project){var feed=$('[data-agent-saved]');if(!feed)return;var answers=latestAgentAnswers(project);if(!answers.length)return;feed.textContent='';answers.forEach(function(answer){var item=document.createElement('div'),top=document.createElement('div'),name=document.createElement('span'),status=document.createElement('span'),value=document.createElement('span'),edit=document.createElement('button');item.className='feed__item';top.className='feed__top';name.className='feed__name';name.textContent=(answer.field||answer.field_path||'Saved answer').replace(/[._-]+/g,' ');status.className='status status--draft';status.textContent='Saved';value.className='feed__value';value.textContent=answer.text||(answer.value&&answer.value.text)||answer.value||'';edit.className='btn btn--text';edit.type='button';edit.setAttribute('data-edit-answer',answer.id);edit.textContent='Edit';top.appendChild(name);top.appendChild(status);top.appendChild(edit);item.appendChild(top);item.appendChild(value);feed.appendChild(item);});}
@@ -784,7 +795,7 @@
     var editAnswers=event.target.closest('[data-edit-answers]');
     if(editAnswers){var savedToggle=$('[data-chat-saved-toggle]');if(savedToggle)savedToggle.click();return;}
     var retry=event.target.closest('[data-retry-agent], [data-chat-retry]');
-    if(retry){requestRetryConfirmation('',voiceIntent==='talk'?'talk':'type');return;}
+    if(retry){requestRetryConfirmation('',voiceIntent==='talk'?'talk':'type',retry);return;}
     var edit=event.target.closest('[data-edit-answer]');
     if(!edit||!projectStore)return;
     var item=edit.closest('.feed__item'),valueNode=item&&$('.feed__value',item),current=valueNode?valueNode.textContent.trim():'',revised=window.prompt('Edit this saved answer:',current);

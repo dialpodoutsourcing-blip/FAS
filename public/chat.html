@@ -343,6 +343,18 @@
     </main>
   </div>
 
+  <dialog class="retry-confirmation" data-retry-confirmation aria-labelledby="retry-confirmation-title" aria-describedby="retry-confirmation-description">
+    <div class="retry-confirmation__panel">
+      <p class="eyebrow">CONFIRM RETRY</p>
+      <h2 id="retry-confirmation-title" data-retry-confirmation-title>Retry this specialist?</h2>
+      <p id="retry-confirmation-description" data-retry-confirmation-description>This will clear this specialist's saved interview answers.</p>
+      <div class="retry-confirmation__actions">
+        <button class="btn btn--gold" type="button" data-retry-cancel>No, keep my work</button>
+        <button class="btn retry-confirmation__confirm" type="button" data-retry-confirm>Yes, retry</button>
+      </div>
+    </div>
+  </dialog>
+
   <script src="assets/js/runtime-config.js"></script>
   <script src="assets/js/auth-client.js"></script>
   <script src="assets/js/account-context.js"></script>
@@ -353,6 +365,7 @@
   <script src="assets/js/interview-engine.js"></script>
   <script src="assets/js/interview-coordinator.js"></script>
   <script src="assets/js/retry-intent.js"></script>
+  <script src="assets/js/retry-confirmation-modal.js"></script>
   <script src="assets/js/realtime-interviewer.js"></script>
   <script src="assets/js/artifacts.js"></script>
   <script src="assets/js/progression.js"></script>
