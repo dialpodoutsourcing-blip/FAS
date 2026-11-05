@@ -643,6 +643,15 @@ body.src-off .part__src { display: none; }
 .export-theme-card__body span { margin-top: 12px; color: var(--text-2); font-size: 12px; line-height: 1.55; }
 .export-theme-dialog__status { min-height: 20px; margin-top: 18px; color: var(--gold); font-size: 12px; text-align: center; }
 .export-theme-dialog.is-pending .export-theme-dialog__status::before { content: ''; display: inline-block; width: 9px; height: 9px; margin-right: 8px; border: 2px solid var(--gold); border-right-color: transparent; border-radius: 50%; animation: export-spin .7s linear infinite; }
+.retry-confirmation { width: min(520px, calc(100vw - 32px)); padding: 0; border: 1px solid var(--gold-line); border-radius: 18px; background: #0b0b08; color: var(--text); box-shadow: 0 28px 90px rgba(0,0,0,.78); }
+.retry-confirmation::backdrop { background: rgba(0,0,0,.8); backdrop-filter: blur(7px); }
+.retry-confirmation__panel { padding: clamp(24px, 5vw, 38px); background: radial-gradient(circle at 90% 0, rgba(211,181,124,.13), transparent 38%); }
+.retry-confirmation h2 { margin-top: 6px; font-family: var(--font-heading); font-size: clamp(28px, 5vw, 40px); line-height: 1.05; }
+.retry-confirmation [data-retry-confirmation-description] { margin-top: 14px; color: var(--text-2); line-height: 1.6; }
+.retry-confirmation__actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 28px; }
+.retry-confirmation__confirm { border-color: rgba(224,95,82,.55); color: #ffb2aa; }
+.retry-confirmation__confirm:hover { border-color: #e05f52; background: rgba(224,95,82,.12); color: #ffd2cd; }
+@media (max-width: 520px) { .retry-confirmation { width: calc(100vw - 16px); }.retry-confirmation__actions { flex-direction: column; }.retry-confirmation__actions .btn { width: 100%; } }
 @keyframes export-spin { to { transform: rotate(360deg); } }
 @media (max-width: 820px) { .export-theme-grid { grid-template-columns: 1fr; }.export-theme-card { display: grid; grid-template-columns: 150px minmax(0,1fr); }.export-theme-card__preview { height: 160px; }.export-theme-card__body { min-height: 160px; } }
 @media (max-width: 520px) { .export-theme-dialog { width: calc(100vw - 16px); }.export-theme-dialog__panel { padding: 24px 16px; }.export-theme-card { display: block; }.export-theme-card__preview { height: 145px; }.export-theme-card__body { min-height: auto; }.export-theme-dialog__close { top: 10px; right: 10px; } }

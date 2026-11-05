@@ -22,6 +22,8 @@ assert.match(chat, /data-agent-stage-summary/);
 assert.match(chat, /data-answer-status[^>]+aria-live="polite"/);
 assert.match(chat, /data-completion-panel[^>]+hidden/, 'chat includes a hidden completed-work panel');
 for(const hook of ['data-view-blueprint','data-edit-answers','data-retry-agent','data-start-extract'])assert.match(chat,new RegExp(hook),`completion panel exposes ${hook}`);
+assert.match(chat, /<dialog[^>]+data-retry-confirmation[^>]+aria-labelledby="retry-confirmation-title"[^>]+aria-describedby="retry-confirmation-description"/, 'chat includes an accessible retry confirmation dialog');
+for(const hook of ['data-retry-confirm','data-retry-cancel'])assert.match(chat,new RegExp(hook),`retry dialog exposes ${hook}`);
 assert.match(chat, /data-voice-ambient[^>]+aria-hidden="true"/, 'voice panel includes decorative ambient wavelengths');
 assert.match(chat, /data-voice-hud[^>]+aria-hidden="true"/, 'voice panel includes a decorative processing HUD');
 assert.match(chat, /data-voice-hud-secondary[^>]+aria-hidden="true"/, 'voice panel includes a decorative right-side analysis HUD');
