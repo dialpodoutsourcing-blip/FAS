@@ -79,10 +79,12 @@ test('render preserves the locked destination and authenticated Anchor session',
 function renderNode(){
   const classes=new Set();
   const action={textContent:''};
+  const iconClasses=new Set(['is-locked']);
+  const icon={classList:{toggle(name,on){if(on)iconClasses.add(name);else iconClasses.delete(name);}}};
   return{
-    href:'',action,classes,
+    href:'',action,classes,iconClasses,
     classList:{toggle(name,on){if(on)classes.add(name);else classes.delete(name);}},
-    querySelector(selector){return selector==='[data-home-sidebar-action]'?action:null;},
+    querySelector(selector){return selector==='[data-home-sidebar-action]'?action:selector==='.em'?icon:null;},
     setAttribute(){},removeAttribute(){}
   };
 }
@@ -100,6 +102,7 @@ test('render keeps sidebar specialist rows aligned with live roadmap state',()=>
     for(const [key,className,label] of scenario.want){
       assert.ok(nodes[key].classes.has(className),`${key} receives ${className}`);
       assert.equal(nodes[key].action.textContent,label);
+      assert.equal(nodes[key].iconClasses.has('is-locked'),className==='is-locked',`${key} emblem lock follows ${className}`);
     }
   }
 });

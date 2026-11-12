@@ -1360,7 +1360,7 @@ body[data-page="home"] .home-main::before { inset: -100px 0 auto 28%; height: 36
 .home-hero__eyebrow { margin: 0 0 27px; color: #ededeb; font-size: 13px; letter-spacing: 7px; }
 .home-hero__eyebrow::after { width: 90px; height: 3px; }
 .home-hero__copy { max-width: calc(100% - 280px); }
-.home-hero__title { max-width: 1120px; color: #f0f1ef; font: 700 clamp(44px,3.45vw,67px)/1.02 var(--font-sub); letter-spacing: -.045em; white-space: normal; }
+.home-hero__title { display: block; max-width: 1120px; overflow: hidden; color: #f0f1ef; font: 700 clamp(44px,3.45vw,67px)/1.02 var(--font-sub); letter-spacing: -.045em; white-space: nowrap; text-overflow: ellipsis; }
 .home-hero__title [data-account-name] { color: #edc45d; }
 .home-hero__copy > p:last-child { margin-top: 11px; color: #bdbdbb; font-size: 18px; line-height: 1.35; }
 .home-hero__controls { padding-top: 15px; gap: 16px; }
@@ -1418,7 +1418,18 @@ body[data-page="home"] .home-content { min-height: 0; padding-top: 54px; grid-te
 .home-quick b { width: 50px; height: 50px; }
 .home-quick span { font-size: 15px; }
 .home-quick small { font-size: 12px; }
-.home-encouragement { min-height: 142px; }
+.home-encouragement { height: 82px; min-height: 82px; padding-block: 12px; }
+
+@media (max-height: 900px) and (min-width: 1441px) {
+  body[data-page="home"] { height: auto; min-height: 100dvh; overflow-x: hidden; overflow-y: auto; }
+  body[data-page="home"] .home-main { height: auto; min-height: 100dvh; padding: 28px 30px 40px; display: flex; gap: 26px; overflow: visible; }
+  .home-hero { height: auto; min-height: 160px; }
+  body[data-page="home"] .home-focus { height: auto; min-height: 205px; }
+  body[data-page="home"] .home-content { padding-top: 12px; grid-template-columns: 1fr; }
+  .home-roadmap__grid { height: auto; }
+  .home-utility { grid-template-columns: repeat(2,minmax(0,1fr)); padding-top: 0; }
+  .home-quick { height: auto; }
+}
 
 @media (max-width: 1440px) {
   body[data-page="home"] { height: auto; min-height: 100dvh; overflow-x: hidden; }
@@ -1451,5 +1462,5 @@ body[data-page="home"] .home-content { min-height: 0; padding-top: 54px; grid-te
   .home-focus__identity { padding: 0; }
   .home-focus__action { display: grid; grid-template-columns: 1fr; padding: 16px 0 0; }
   .home-roadmap__grid,.home-utility { grid-template-columns: 1fr; }
-  .home-roadmap-card { height: 350px; }
+  .home-roadmap-card { height: auto; min-height: 370px; }
 }

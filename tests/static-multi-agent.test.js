@@ -209,6 +209,7 @@ assert.match(dashboard,/class="sidebar"[^>]*data-home-sidebar/, 'dashboard uses 
 assert.match(dashboard,/class="home-sidebar__brand"/, 'dashboard has the compact reference logo lockup');
 assert.match(dashboard,/class="nav-group home-sidebar__primary"[\s\S]*Dashboard[\s\S]*Help me \/ Demo[\s\S]*Talk to ADAM[\s\S]*My vault/, 'dashboard keeps the four primary reference actions');
 assert.match(dashboard,/class="home-sidebar__specialists"[\s\S]*data-home-sidebar-card="anchor"[\s\S]*data-home-sidebar-card="extract"/, 'dashboard sidebar has the two included specialist rows');
+assert.equal((dashboard.match(/data-home-sidebar-action/g)||[]).length,2,'both visible sidebar rows expose live action hooks');
 assert.match(dashboard,/class="home-sidebar__footer"[\s\S]*data-save-status[\s\S]*class="user home-sidebar__account"/, 'dashboard pins save state and account identity together');
 assert.match(dashboard,/class="home-hero__title"[\s\S]*data-account-name/, 'dashboard exposes the two-tone live greeting');
 assert.match(dashboard,/class="home-focus__progress"[\s\S]*class="home-focus__identity"[\s\S]*class="home-focus__action"/, 'dashboard focus panel has three reference zones');

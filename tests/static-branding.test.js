@@ -3,6 +3,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
+const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+assert.ok(pkg.devDependencies&&pkg.devDependencies['playwright-core'], 'browser geometry dependency is declared by the repository');
+const geometryTest = fs.readFileSync(path.join(root, 'tests/dashboard-geometry.test.js'), 'utf8');
+assert.doesNotMatch(geometryTest, /C:\/vibec\/review\/node_modules/, 'geometry tests never import from another checkout');
 const pages = ['index.html', 'chat.html', 'review.html', 'vault.html', 'launch.html'];
 
 for (const page of pages) {
