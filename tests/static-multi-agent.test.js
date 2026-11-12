@@ -42,6 +42,8 @@ const controllerScript=chat.indexOf('assets/js/adam.js');
 assert.ok(upgradeScript>=0&&upgradeScript<controllerScript,'chat loads artifact upgrade support before generation controller');
 const completionModalScript=chat.indexOf('assets/js/completion-modal.js');
 assert.ok(completionModalScript>=0&&completionModalScript<controllerScript,'chat loads completion modal compatibility before its controller');
+const restorationScript=chat.indexOf('assets/js/interview-restoration.js');
+assert.ok(restorationScript>=0&&restorationScript<controllerScript,'chat loads durable interview restoration before its controller');
 assert.match(chat, /<dialog[^>]+data-retry-confirmation[^>]+aria-labelledby="retry-confirmation-title"[^>]+aria-describedby="retry-confirmation-description"/, 'chat includes an accessible retry confirmation dialog');
 for(const hook of ['data-retry-confirm','data-retry-cancel'])assert.match(chat,new RegExp(hook),`retry dialog exposes ${hook}`);
 assert.match(chat, /data-voice-ambient[^>]+aria-hidden="true"/, 'voice panel includes decorative ambient wavelengths');

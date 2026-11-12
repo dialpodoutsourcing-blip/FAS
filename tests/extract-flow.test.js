@@ -84,6 +84,9 @@ test('final saved answer opens the completion modal without generating automatic
 });
 test('restored complete answers reopen the completion modal without background generation',()=>{
  const initialize=adam.slice(adam.indexOf('function initializePersistence'),adam.indexOf('function loadPersistence'));
+ assert.match(initialize,/FAS\.interviewRestoration\.reconcile/);
+ assert.match(adam,/function renderRestoredConversation[\s\S]*FAS\.interviewRestoration\.transcript/);
+ assert.match(adam,/function renderRestoredConversation[\s\S]*renderCurrentQuestion\(currentQuestion,true\)/);
  const pending=initialize.slice(initialize.indexOf('if(!interview.currentQuestion()&&!hasArtifact&&interview.completion().complete)'));
  assert.match(pending,/presentCompletionChoice\(/);
  assert.doesNotMatch(pending,/generateBlueprint\(/);
