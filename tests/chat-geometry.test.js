@@ -213,3 +213,32 @@ for(const viewport of [{width:1680,height:945},{width:390,height:844}]){
     });
   });
 }
+
+browserTest('Talk wraps long question and transcript content without moving controls offscreen',async()=>{
+  await withPage({width:1680,height:945},async page=>{
+    await page.evaluate(()=>{document.documentElement.classList.add('fas-access-ready');document.getElementById('panel-text').hidden=true;document.getElementById('panel-voice').hidden=false;document.querySelector('[data-agent-question]').textContent='Q'.repeat(1000);document.querySelector('[data-voice-transcript]').textContent='T'.repeat(1000);});
+    const result=await page.evaluate(()=>{
+      const measure=selector=>{const node=document.querySelector(selector),r=node.getBoundingClientRect();return{left:r.left,right:r.right,client:node.clientWidth,scroll:node.scrollWidth,wrap:getComputedStyle(node).overflowWrap};};
+      return{question:measure('[data-agent-question]'),transcript:measure('[data-voice-transcript]'),mic:measure('[data-voice-mic]'),workspace:measure('.chat-shell__workspace')};
+    });
+    assert.ok(result.question.scroll<=result.question.client+1,'long Talk question overflows its card');
+    assert.ok(result.transcript.scroll<=result.transcript.client+1,'long Talk transcript scrolls horizontally');
+    assert.equal(result.question.wrap,'anywhere');
+    assert.ok(result.mic.left>=result.workspace.left&&result.mic.right<=result.workspace.right,'long Talk content moves microphone offscreen');
+  });
+});
+
+for(const viewport of [{width:390,height:667},{width:320,height:568}]){
+  browserTest(`short Talk viewport keeps voice recovery controls reachable at ${viewport.width}x${viewport.height}`,async()=>{
+    await withPage(viewport,async page=>{
+      await page.evaluate(()=>{document.documentElement.classList.add('fas-access-ready');document.getElementById('panel-text').hidden=true;document.getElementById('panel-voice').hidden=false;document.querySelector('[data-voice-recovery]').hidden=false;const panel=document.getElementById('panel-voice');panel.scrollTop=panel.scrollHeight;});
+      const result=await page.evaluate(()=>{
+        const box=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return{top:r.top,bottom:r.bottom,left:r.left,right:r.right};};
+        const panel=document.getElementById('panel-voice');
+        return{panel:box('#panel-voice'),mic:box('[data-voice-mic]'),retry:box('[data-voice-retry]'),type:box('[data-voice-type-instead]'),overflow:getComputedStyle(panel).overflowY,scrollHeight:panel.scrollHeight,clientHeight:panel.clientHeight};
+      });
+      for(const key of ['mic','retry','type']){assert.ok(result[key].top>=result.panel.top-1&&result[key].bottom<=result.panel.bottom+1,`${key} is clipped outside short Talk panel`);}
+      assert.ok(result.scrollHeight<=result.clientHeight+1||result.overflow==='auto','overflowing short Talk panel is not scrollable');
+    });
+  });
+}
