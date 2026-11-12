@@ -90,27 +90,35 @@ browserTest('scaled desktop preserves the polished reference details at 1508x782
       return{
         scrollHeight:document.documentElement.scrollHeight,
         progress:rect('.home-focus__progress'),gauge:rect('.home-focus__gauge'),gaugeNumber:rect('.home-focus__gauge strong'),gaugeDenominator:rect('.home-focus__gauge span'),gaugeLabel:rect('.home-focus__progress small'),
-        sidebarAccount:rect('.home-sidebar__account'),signout:rect('.home-sidebar__signout'),sidebarFooter:rect('.home-sidebar__footer'),
+        sidebarAccount:rect('.home-sidebar__account'),signout:rect('.home-sidebar__signout'),sidebarFooter:rect('.home-sidebar__footer'),sidebarAtmosphere:rect('.home-sidebar__atmosphere'),
+        specialistActions:[...document.querySelectorAll('[data-home-sidebar-action]')].map(node=>{const value=node.getBoundingClientRect();return{top:value.top,bottom:value.bottom,left:value.left,right:value.right,width:value.width,height:value.height,label:Boolean(node.querySelector('.step-link__action-label')),arrow:Boolean(node.querySelector('.step-link__action-arrow'))};}),
         cardArtwork:[...document.querySelectorAll('.home-roadmap-card__art')].map(node=>{const value=node.getBoundingClientRect();return{top:value.top,bottom:value.bottom,height:value.height};}),
         cardArtworkImages:[...document.querySelectorAll('.home-roadmap-card__art img')].map(node=>{const value=node.getBoundingClientRect();return{top:value.top,bottom:value.bottom,height:value.height};}),
         cardDescriptions:[...document.querySelectorAll('.home-roadmap-card__copy h3 + p')].map(node=>{const value=node.getBoundingClientRect();return{top:value.top,bottom:value.bottom,height:value.height};}),
         cardFooters:[...document.querySelectorAll('.home-roadmap-card footer')].map(node=>{const value=node.getBoundingClientRect();return{top:value.top,bottom:value.bottom,height:value.height};}),
         cards:[...document.querySelectorAll('.home-roadmap-card')].map(node=>{const value=node.getBoundingClientRect();return{top:value.top,bottom:value.bottom,height:value.height};}),
-        quick:rect('.home-quick'),encouragement:rect('.home-encouragement')
+        cardActions:[...document.querySelectorAll('[data-home-card-action]')].map(node=>{const value=node.getBoundingClientRect();return{top:value.top,bottom:value.bottom,height:value.height};}),
+        quick:rect('.home-quick'),encouragement:rect('.home-encouragement'),flourish:rect('.home-encouragement__flourish'),encouragementOverflow:getComputedStyle(document.querySelector('.home-encouragement')).overflow
       };
     });
     assert.ok(geometry.gauge&&geometry.gaugeNumber&&geometry.gaugeDenominator&&geometry.gaugeLabel,'progress gauge details exist');
     assert.ok(geometry.gaugeNumber.top>=geometry.gauge.top&&geometry.gaugeNumber.bottom<=geometry.gauge.bottom,'progress number stays inside its gauge');
     assert.ok(geometry.gaugeDenominator.top>=geometry.gauge.top&&geometry.gaugeDenominator.bottom<=geometry.gauge.bottom,'progress denominator stays inside its gauge');
+    assert.ok(Math.abs(geometry.gaugeNumber.bottom-geometry.gaugeDenominator.bottom)<=6,'progress number and denominator share a clean baseline');
     assert.ok(geometry.gaugeLabel.height>10&&geometry.gaugeLabel.bottom<=geometry.progress.bottom,'progress label remains visible inside the progress panel');
     assert.ok(geometry.signout&&geometry.signout.height>=32,'dedicated Sign Out control remains visible');
     assert.ok(geometry.signout.bottom<=geometry.sidebarFooter.bottom,'Sign Out remains inside the sidebar footer');
+    assert.ok(geometry.sidebarAtmosphere&&geometry.sidebarAtmosphere.bottom<=geometry.sidebarFooter.bottom,'sidebar atmosphere remains inside the footer');
+    geometry.specialistActions.forEach((action,index)=>{assert.ok(action.label&&action.arrow,`specialist action ${index+1} uses separate label and arrow details`);assert.ok(action.height>20&&action.right<=geometry.sidebarFooter.right,`specialist action ${index+1} remains contained`);});
     geometry.cardArtworkImages.forEach((image,index)=>assert.ok(image.bottom<=geometry.cardArtwork[index].bottom,`card ${index+1} artwork overflows its wrapper by ${image.bottom-geometry.cardArtwork[index].bottom}px`));
     assert.equal(geometry.cardDescriptions.length,2,'both roadmap descriptions exist');
     geometry.cardDescriptions.forEach((description,index)=>assert.ok(description.height>20&&description.bottom<=geometry.cardFooters[index].top,`card ${index+1} description remains visible above its actions`));
     geometry.cardFooters.forEach((footer,index)=>assert.ok(footer.bottom<=geometry.cards[index].bottom-6,`card ${index+1} actions remain inside the card`));
+    geometry.cardActions.forEach((action,index)=>assert.ok(action.height>12&&action.bottom<=geometry.cardFooters[index].bottom,`card ${index+1} detail action remains visible`));
     assert.ok(geometry.quick.bottom<geometry.encouragement.top,'utility panels retain their reference separation');
     assert.ok(geometry.encouragement.bottom<=778,'Keep Going remains fully visible');
+    assert.equal(geometry.encouragementOverflow,'hidden','Keep Going clips its decorative curve');
+    assert.ok(geometry.flourish&&geometry.flourish.top<geometry.encouragement.bottom,'Keep Going lower curve remains visible');
     assert.ok(geometry.scrollHeight<=782,`polished dashboard overflowed to ${geometry.scrollHeight}px`);
   });
 });

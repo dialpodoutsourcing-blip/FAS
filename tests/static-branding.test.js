@@ -38,6 +38,10 @@ assert.match(dashboardRef,/class="home-sidebar__signout"[^>]*data-account-signou
 assert.match(dashboardRef,/class="home-hero__artwork"[^>]*aria-hidden="true"/, 'dashboard includes a non-interactive hero artwork layer');
 assert.match(dashboardRef,/class="home-encouragement__icon"[^>]*aria-hidden="true"/, 'encouragement panel uses the reference chart icon hook');
 assert.match(dashboardRef,/class="home-encouragement__flourish"[^>]*aria-hidden="true"/, 'encouragement panel exposes its decorative lower flourish');
+assert.match(dashboardRef,/class="home-sidebar__atmosphere"[^>]*aria-hidden="true"/, 'sidebar footer exposes an inaccessible atmospheric flourish');
+assert.match(dashboardRef,/class="step-link__action-label"[\s\S]*class="step-link__action-arrow"[^>]*aria-hidden="true"/, 'specialist actions separate their label and diagonal arrow');
+assert.match(dashboardRef,/class="resume-cta__arrow"[^>]*aria-hidden="true"/, 'focus CTA exposes a dedicated arrow detail');
+assert.match(dashboardRef,/class="home-focus__details"[\s\S]*class="home-focus__chevron"[^>]*aria-hidden="true"/, 'focus detail link exposes its underline and chevron hooks');
 
 const logo = fs.readFileSync(path.join(root, 'assets/images/fas-monogram.svg'), 'utf8');
 assert.match(logo, /<svg[^>]+viewBox="0 0 120 72"[^>]+role="img"/);
