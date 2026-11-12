@@ -171,7 +171,9 @@ test('Vault renders current library items and uses the exact saved version for v
  const ui=fs.readFileSync(path.join(__dirname,'..','assets','js','artifact-ui.js'),'utf8');
  assert.match(ui,/store\.loadProject\(\)/);
  assert.match(ui,/FAS\.vaultLibrary\.buildItems\(project,FAS\.agents&&FAS\.agents\.keys\|\|\[\]\)/);
- assert.match(ui,/download\(item\.version,'pdf',item\.version\.exportTheme\)/);
+ assert.match(ui,/runVaultExport\(item\.version,'pdf',item\.version\.exportTheme\)/);
+ assert.match(ui,/runVaultExport\(selected,/);
+ assert.match(ui,/runVaultExport\(item\.version,/);
  assert.match(ui,/buildReview\(item\.version,/);
  assert.match(ui,/origin&&origin\.isConnected&&typeof origin\.focus==='function'/);
  assert.match(ui,/You do not have any completed work yet/);

@@ -36,7 +36,7 @@ test('buildItems selects only each active artifact exact current version',()=>{
 
 test('buildItems suppresses duplicate version rows and never falls back to stale content',()=>{
   const current=version(),duplicate=version({title:'Duplicate row'}),project={
-    artifacts:[{id:'anchor-artifact',agentKey:'anchor',currentVersion:2},{id:'missing',agentKey:'extract',currentVersion:2}],
+    artifacts:[{id:'anchor-artifact',agentKey:'anchor',currentVersion:2},{id:'anchor-artifact',agentKey:'anchor',currentVersion:2},{id:'missing',agentKey:'extract',currentVersion:2}],
     artifactVersions:[current,duplicate,version({artifactId:'missing',agentKey:'extract',version:1,title:'Old Extract'})]
   };
 
@@ -45,6 +45,22 @@ test('buildItems suppresses duplicate version rows and never falls back to stale
   assert.equal(items.length,1);
   assert.equal(items[0].artifact.id,'anchor-artifact');
   assert.equal(items[0].version,duplicate);
+});
+
+test('createExportGate shares one in-flight export and clears after it settles',async()=>{
+  const gate=vault.createExportGate();
+  let starts=0,release;
+  const task=()=>{starts+=1;return new Promise(resolve=>{release=resolve;});};
+
+  const first=gate.run('anchor-artifact:2',task);
+  const duplicate=gate.run('anchor-artifact:2',task);
+  assert.equal(first,duplicate);
+  assert.equal(starts,1);
+
+  release('saved.pdf');
+  assert.equal(await first,'saved.pdf');
+  assert.equal(await gate.run('anchor-artifact:2',()=>{starts+=1;return Promise.resolve('again.pdf');}),'again.pdf');
+  assert.equal(starts,2);
 });
 
 test('buildItems orders known specialists first and derives a safe meaningful summary',()=>{
