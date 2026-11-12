@@ -80,3 +80,30 @@ browserTest('premium chat stops decorative motion for reduced-motion users',asyn
     assert.deepEqual(animations,{orb:'none',typing:'none',spinner:'none'});
   });
 });
+
+browserTest('premium chat exposes utility actions through a pointer-accessible overflow control',async()=>{
+  await withPage({width:1680,height:945},async page=>{
+    const summary=page.locator('.chat-utilitybar > summary');
+    assert.equal(await summary.isVisible(),true,'utility overflow trigger is visible');
+    await summary.click();
+    const result=await page.locator('[data-chat-history-toggle]').evaluate(node=>({visible:Boolean(node.offsetWidth&&node.offsetHeight),pointer:getComputedStyle(node).pointerEvents}));
+    assert.deepEqual(result,{visible:true,pointer:'auto'});
+  });
+});
+
+browserTest('premium chat preserves stage meaning on mobile',async()=>{
+  await withPage({width:390,height:844},async page=>{
+    const summary=page.locator('[data-agent-stage-summary]');
+    assert.equal(await summary.isVisible(),true);
+    assert.match((await summary.textContent()).trim(),/Stage\s+\d+\s+of\s+\d+/i);
+  });
+});
+
+browserTest('premium chat wraps long unbroken agent and customer messages',async()=>{
+  await withPage({width:390,height:844},async page=>{
+    await page.locator('.msg:not(.msg--user) .bubble__text').first().evaluate((node,text)=>node.textContent=text,'A'.repeat(1000));
+    await page.locator('.msg--user .bubble__text').evaluate((node,text)=>node.textContent=text,'B'.repeat(1000));
+    const messages=await page.locator('.bubble__text').evaluateAll(nodes=>nodes.slice(0,2).map(node=>({client:node.clientWidth,scroll:node.scrollWidth,wrap:getComputedStyle(node).overflowWrap})));
+    messages.forEach(message=>{assert.ok(message.scroll<=message.client+1,`message clips ${message.scroll-message.client}px`);assert.equal(message.wrap,'anywhere');});
+  });
+});

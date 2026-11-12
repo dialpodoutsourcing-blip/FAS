@@ -160,12 +160,13 @@
         <li class="stage"><span class="stage__bar"></span><span class="stage__label"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"></path></svg> Summary</span></li>
       </ol>
 
-      <div class="chat-utilitybar" aria-label="Chat tools">
+      <details class="chat-utilitybar" aria-label="Chat tools">
+        <summary aria-label="Open chat tools">More</summary>
         <button class="chat-tool" type="button" data-chat-history-toggle data-drawer-target="chat-history-drawer">History</button>
         <button class="chat-tool" type="button" data-chat-saved-toggle data-drawer-target="chat-saved-drawer" data-tour-id="saved-work">Saved work</button>
         <button class="chat-tool" type="button" data-chat-retry>Retry</button>
         <button class="chat-tool" type="button" data-chat-trust-toggle data-drawer-target="chat-trust-drawer" data-tour-id="trust">Why you can trust ADAM</button>
-      </div>
+      </details>
 
       <div class="main__body chat-shell__workspace" aria-busy="true">
         <div class="chat-loading" data-chat-loading role="status" aria-live="polite">
