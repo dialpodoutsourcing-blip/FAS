@@ -1090,3 +1090,33 @@ html:not(.fas-access-ready) #panel-forge,
 html:not(.fas-access-ready) #panel-architect,
 html:not(.fas-access-ready) #panel-voice,
 html:not(.fas-access-ready) #panel-launch { display: none !important; }
+
+.vault-main { max-width: 1180px; margin: 0 auto; }
+.vault-head { align-items: end; }
+.vault-library-root { display: block; }
+.vault-library { display: grid; gap: 16px; }
+.vault-card { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 28px; align-items: center; padding: 26px 28px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); }
+.vault-card__body { min-width: 0; }
+.vault-card__meta { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.vault-card__agent { color: var(--gold); font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.vault-card__title { margin: 0; font-size: clamp(22px,3vw,30px); }
+.vault-card__version { margin: 7px 0 0; color: var(--muted); font-size: 13px; }
+.vault-card__summary { max-width: 760px; margin: 14px 0 0; color: var(--text-soft); line-height: 1.65; }
+.vault-card__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; max-width: 420px; }
+.vault-card__actions .btn { white-space: nowrap; }
+.vault-state { display: flex; justify-content: center; align-items: center; gap: 18px; min-height: 240px; padding: 40px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); text-align: left; }
+.vault-state h2 { margin: 0 0 8px; }
+.vault-state p { margin: 0; color: var(--muted); }
+.vault-state > .btn { margin-left: 14px; }
+.vault-detail { display: grid; gap: 18px; }
+.vault-detail__back { justify-self: start; }
+.vault-detail .artifact-live__restart,.vault-detail .artifact-live__approval-note { display: none; }
+
+@media (max-width: 720px) {
+  .vault-main { padding-inline: 16px; }
+  .vault-card { grid-template-columns: 1fr; padding: 22px 18px; }
+  .vault-card__actions { display: grid; max-width: none; }
+  .vault-card__actions .btn { width: 100%; }
+  .vault-state { flex-direction: column; align-items: flex-start; padding: 28px 20px; }
+  .vault-state > .btn { margin-left: 0; }
+}

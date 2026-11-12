@@ -5,46 +5,26 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const vault = fs.readFileSync(path.join(root, 'vault.html'), 'utf8');
 const styles = fs.readFileSync(path.join(root, 'assets/css/styles.css'), 'utf8');
-const generator = fs.readFileSync(path.join(root, 'tools/generate_demo_pdfs.py'), 'utf8');
-const agents = ['anchor', 'extract', 'radar', 'forge', 'architect', 'voice', 'launch'];
 
-assert.match(vault, /Available vault complete/, 'vault announces the completed available-product state');
-assert.doesNotMatch(vault, /status--empty|status--draft/, 'demo vault contains no unfinished assets');
-assert.doesNotMatch(vault, /\[(?:Name|Years|Buyer|Current state|Desired state|Objections|Promise|Tone|Outcome|Phases|Core claim|Copy packs|Milestones)\]/, 'demo content has no legacy placeholders');
+assert.match(vault, /data-vault-root/, 'vault provides one live library root');
+assert.match(vault, /YOUR COMPLETED WORK/, 'vault explains that it contains completed work');
+assert.match(vault, /View and download your finished or approved documents/, 'vault gives a simple navigation instruction');
+assert.match(vault, /Loading your completed work/, 'vault has an accessible loading state');
+assert.doesNotMatch(vault, /Trusted Expert Blueprint|Strength and longevity coaching/i, 'vault contains no fictional artifact content');
+assert.doesNotMatch(vault, /role="tab"|data-vault-tab|id="panel-/, 'vault contains no static specialist tabs or panels');
+assert.doesNotMatch(vault, /Download everything/i, 'vault has no generic portfolio download');
+assert.doesNotMatch(vault, /assets\/pdfs\/fas-.*-demo\.pdf/, 'vault has no bundled demo PDF links');
 
-for (const agent of agents) {
-  assert.match(vault, new RegExp(`id="panel-${agent}"`), `${agent} has its own vault document`);
-  assert.match(vault, new RegExp(`href="chat\\.html\\?agent=${agent}"[^>]*>[^<]*(?:<[^>]+>[^<]*</[^>]+>[^<]*)*Edit with`, 's'), `${agent} has an edit route`);
-  assert.match(vault, new RegExp(`href="assets/pdfs/fas-${agent}-demo\\.pdf"[^>]*target="_blank"[^>]*rel="noopener"`), `${agent} PDF opens safely in a new tab`);
-  assert.match(vault, new RegExp(`href="chat\\.html\\?agent=${agent}"(?![^>]*target=)`), `${agent} edit route remains in the current tab`);
-  const pdfPath = path.join(root, 'assets', 'pdfs', `fas-${agent}-demo.pdf`);
-  assert.ok(fs.existsSync(pdfPath), `${agent} PDF exists`);
-  const pdf = fs.readFileSync(pdfPath);
-  assert.equal(pdf.subarray(0, 5).toString(), '%PDF-', `${agent} download is a real PDF`);
-  const pages = pdf.toString('latin1').match(/\/Type \/Page\b/g) || [];
-  assert.ok(pages.length >= 8, `${agent} PDF contains at least eight substantive pages`);
-  assert.ok(pdf.length > 20000, `${agent} PDF contains expanded text and visual content`);
-}
+const libraryIndex = vault.indexOf('assets/js/vault-library.js');
+const uiIndex = vault.indexOf('assets/js/artifact-ui.js');
+assert.ok(libraryIndex >= 0, 'vault loads the library selector');
+assert.ok(uiIndex > libraryIndex, 'vault loads the library selector before the controller');
 
-const portfolioPath = path.join(root, 'assets', 'pdfs', 'fas-complete-blueprint-demo.pdf');
-assert.match(vault, /href="assets\/pdfs\/fas-complete-blueprint-demo\.pdf"[^>]*target="_blank"[^>]*rel="noopener"/, 'combined portfolio opens safely in a new tab');
-assert.ok(fs.existsSync(portfolioPath), 'combined portfolio PDF exists');
-const portfolio = fs.readFileSync(portfolioPath);
-assert.ok((portfolio.toString('latin1').match(/\/Type \/Page\b/g) || []).length >= 56, 'combined portfolio contains the full expanded blueprint');
-assert.ok(portfolio.length > 140000, 'combined portfolio includes substantial text and visual content');
+assert.match(styles, /\.vault-library\s*\{/, 'vault has a dynamic library layout');
+assert.match(styles, /\.vault-card\s*\{/, 'vault has artifact card styles');
+assert.match(styles, /\.vault-card__actions\s*\{/, 'vault has clear action styles');
+assert.match(styles, /\.vault-state\s*\{/, 'vault has loading, empty, and error state styles');
+assert.match(styles, /\.vault-detail\s*\{/, 'vault has an expanded document view');
+assert.match(styles, /@media[^\{]*\(max-width:\s*720px\)[\s\S]*\.vault-card__actions/, 'vault actions stack on narrow screens');
 
-assert.match(generator, /name="DocTitle"[^\n]*textColor=INK/, 'light cover uses a high-contrast dark title');
-assert.match(generator, /class StrategyMatrix/, 'PDFs contain strategy-matrix visuals');
-assert.match(generator, /c\.bezier\(/, 'decision matrix connects its circular nodes with a smooth curve');
-assert.match(generator, /for i,label in enumerate\(self\.labels\[:4\]\):[\s\S]*c\.circle\(px,py,radius/, 'decision graph keeps the labeled circular nodes');
-assert.match(generator, /class SignalChart/, 'PDFs contain data visualization');
-assert.match(generator, /class TimelineDiagram/, 'PDFs contain implementation timelines');
-['Decision rationale', 'Evidence and assumptions', 'Risks and safeguards', 'Recommended next actions'].forEach(section => {
-  assert.ok(generator.includes(section), `PDF generator includes ${section} context`);
-});
-
-assert.match(styles, /\.vault-asset__preview/, 'vault assets include visual previews');
-assert.match(styles, /\.vault-metric/, 'vault assets include designed metrics');
-assert.match(styles, /\.vault-actions/, 'vault assets include consistent controls');
-
-console.log('Static vault demo and PDF checks passed.');
+console.log('Dynamic Vault shell and styles checks passed.');
