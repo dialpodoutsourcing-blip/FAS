@@ -43,7 +43,18 @@ function synthesizedReport() {
     messagingArchitecture: { pillars: [{ title: 'Pillar.' }] },
     risks: [{ risk: 'Risk.' }],
     activationPlan: [{ week: 1, objective: 'Objective.', actions: ['Action.'], successIndicator: 'Indicator.' }],
-    recommendations: [{ priority: 1, title: 'Recommendation.' }]
+    recommendations: [{ priority: 1, title: 'Recommendation.' }],
+    expandedAnalysis: {
+      credibilityParagraphs: ['Credibility paragraph one.', 'Credibility paragraph two.'],
+      decisionParagraphs: ['Decision paragraph one.', 'Decision paragraph two.'],
+      statementInterpretation: ['Interpretation paragraph one.', 'Interpretation paragraph two.'],
+      audienceAnalysis: ['Audience paragraph one.', 'Audience paragraph two.'],
+      problemAnalysis: ['Problem paragraph one.', 'Problem paragraph two.'],
+      proofStrategy: ['Proof move one.', 'Proof move two.'],
+      messagingApplications: [{ channel: 'Homepage', copy: 'Homepage copy.' }, { channel: 'Proposal', copy: 'Proposal copy.' }, { channel: 'Conversation', copy: 'Conversation copy.' }],
+      objectionResponses: [{ objection: 'Objection one?', response: 'Response one.' }, { objection: 'Objection two?', response: 'Response two.' }],
+      activationScorecard: [{ metric: 'Metric one', target: 'Target one' }, { metric: 'Metric two', target: 'Target two' }, { metric: 'Metric three', target: 'Target three' }]
+    }
   };
 }
 
@@ -98,6 +109,12 @@ test('needsUpgrade accepts only a complete legacy Anchor artifact', () => {
   assert.equal(upgrade.needsUpgrade('anchor', { ...selected, sections: [] }, project), false);
   assert.equal(upgrade.needsUpgrade('anchor', { ...selected, premiumReport: synthesizedReport() }, project), false);
   assert.equal(upgrade.needsUpgrade('anchor', selected, { answers: project.answers.slice(0, 5) }), false);
+});
+
+test('needsUpgrade rebuilds a saved Anchor premium report when expanded pages are missing', () => {
+  const selected = { ...legacyArtifact(), premiumReport: { ...synthesizedReport(), expandedAnalysis: undefined } };
+
+  assert.equal(upgrade.needsUpgrade('anchor', selected, completeProject()), true);
 });
 
 test('upgrade synthesizes from saved answers and appends one themed version to the existing artifact', async () => {

@@ -36,7 +36,10 @@
   }
 
   function needsUpgrade(agentKey,selected,project){
-    return Boolean(fieldsByAgent[agentKey])&&Boolean(selected)&&Array.isArray(selected.sections)&&selected.sections.length>0&&!selected.premiumReport&&Boolean(collectAnswers(project,agentKey));
+    var expanded=selected&&selected.premiumReport&&selected.premiumReport.expandedAnalysis;
+    var completeExpanded=expanded&&['credibilityParagraphs','decisionParagraphs','statementInterpretation','audienceAnalysis','problemAnalysis','proofStrategy','messagingApplications','objectionResponses','activationScorecard'].every(function(key){return Array.isArray(expanded[key])&&expanded[key].length>0;});
+    var reportNeedsUpgrade=!selected.premiumReport||(agentKey==='anchor'&&!completeExpanded);
+    return Boolean(fieldsByAgent[agentKey])&&Boolean(selected)&&Array.isArray(selected.sections)&&selected.sections.length>0&&reportNeedsUpgrade&&Boolean(collectAnswers(project,agentKey));
   }
 
   function requestSynthesis(agentKey,answers,fetchImpl){
