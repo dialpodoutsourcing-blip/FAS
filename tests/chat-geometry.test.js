@@ -47,6 +47,49 @@ browserTest('premium chat matches the one-screen reference geometry at 1680x945'
   });
 });
 
+browserTest('short conversations keep the input actions aligned to the workspace bottom',async()=>{
+  await withPage({width:1680,height:945},async page=>{
+    await page.locator('.thread > .msg').evaluateAll(nodes=>nodes.slice(1).forEach(node=>node.remove()));
+    const result=await page.evaluate(()=>{
+      const box=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return{top:r.top,bottom:r.bottom,height:r.height};};
+      const workspace=document.querySelector('.chat-shell__workspace'),paddingBottom=parseFloat(getComputedStyle(workspace).paddingBottom)||0;
+      return{shell:box('.chat-shell'),workspace:box('.chat-shell__workspace'),paddingBottom,thread:box('.thread'),suggestions:box('.chat-suggestions-bar'),composer:box('.chat-reference-composer'),lastAction:box('[data-agent-completion]')};
+    });
+    assert.ok(Math.abs(result.workspace.bottom-result.shell.bottom)<=1,`workspace ends ${result.shell.bottom-result.workspace.bottom}px above shell bottom`);
+    assert.ok(Math.abs(result.lastAction.bottom-(result.workspace.bottom-result.paddingBottom))<=1,`input actions do not align to the workspace content bottom`);
+    assert.ok(result.thread.bottom<=result.suggestions.top,'conversation stays above input actions');
+    assert.ok(result.composer.top>=result.suggestions.bottom,'composer stays below suggestions');
+  });
+});
+
+for(const viewport of [{width:768,height:1024},{width:390,height:844}]){
+  browserTest(`short mobile conversations keep the input actions at the bottom at ${viewport.width}x${viewport.height}`,async()=>{
+    await withPage(viewport,async page=>{
+      await page.locator('.thread > .msg').evaluateAll(nodes=>nodes.slice(1).forEach(node=>node.remove()));
+      const result=await page.evaluate(()=>{
+        const shell=document.querySelector('.chat-shell').getBoundingClientRect(),workspace=document.querySelector('.chat-shell__workspace').getBoundingClientRect();
+        return{shellBottom:shell.bottom,workspaceBottom:workspace.bottom};
+      });
+      assert.ok(Math.abs(result.workspaceBottom-result.shellBottom)<=1,`workspace ends ${result.shellBottom-result.workspaceBottom}px above shell bottom`);
+    });
+  });
+}
+
+for(const viewport of [{width:1680,height:945},{width:768,height:1024},{width:390,height:844}]){
+  browserTest(`saved-answer status never overlaps composer controls at ${viewport.width}x${viewport.height}`,async()=>{
+    await withPage(viewport,async page=>{
+      await page.locator('[data-answer-status]').evaluate(node=>node.textContent='Answer saved.');
+      const result=await page.evaluate(()=>{
+        const rect=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom};};
+        return{status:rect('[data-answer-status]'),mic:rect('.chat-reference-composer .icon-btn'),send:rect('.chat-reference-composer .btn--gold')};
+      });
+      const overlaps=(a,b)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
+      assert.equal(overlaps(result.status,result.mic),false,'saved status overlaps microphone control');
+      assert.equal(overlaps(result.status,result.send),false,'saved status overlaps Send control');
+    });
+  });
+}
+
 browserTest('premium chat keeps long identity content inside the desktop toolbar',async()=>{
   await withPage({width:1508,height:782},async page=>{
     await page.locator('[data-agent-title]').evaluate(node=>node.textContent='A'.repeat(140));
@@ -153,3 +196,49 @@ browserTest('cached legacy completion shell is moved out of the hidden Type pane
     assert.deepEqual(result,{parent:'BODY',hidden:false,open:true,rects:1});
   });
 });
+
+for(const viewport of [{width:1680,height:945},{width:390,height:844}]){
+  browserTest(`premium Talk composition remains contained at ${viewport.width}x${viewport.height}`,async()=>{
+    await withPage(viewport,async page=>{
+      await page.evaluate(()=>{document.documentElement.classList.add('fas-access-ready');document.getElementById('panel-text').hidden=true;document.getElementById('panel-voice').hidden=false;});
+      const result=await page.evaluate(()=>{
+        const box=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
+        const consoleStyle=getComputedStyle(document.querySelector('.voice-console'));
+        return{pageWidth:document.documentElement.scrollWidth,workspace:box('.chat-shell__workspace'),panel:box('#panel-voice'),panelDisplay:getComputedStyle(document.getElementById('panel-voice')).display,console:box('.voice-console'),consoleDisplay:consoleStyle.display,stage:box('.voice__stage'),leftHud:box('[data-voice-hud]'),rightHud:box('[data-voice-hud-secondary]'),dock:box('.voice-bottom-dock'),columns:consoleStyle.gridTemplateColumns};
+      });
+      assert.ok(result.pageWidth<=viewport.width,`Talk causes horizontal overflow ${result.pageWidth}`);
+      assert.ok(result.console.left>=result.workspace.left&&result.console.right<=result.workspace.right+1,`voice console ${result.console.left}..${result.console.right} (${result.consoleDisplay}) exceeds workspace ${result.workspace.left}..${result.workspace.right}; panel ${result.panel.left}..${result.panel.right} (${result.panelDisplay})`);
+      assert.ok(result.dock.bottom<=result.workspace.bottom+1,'voice dock remains inside workspace');
+      if(viewport.width>900){assert.ok(result.leftHud.right<result.stage.left,'live-process HUD stays left of the orb');assert.ok(result.stage.right<result.rightHud.left,'analysis HUD stays right of the orb');assert.notEqual(result.columns,'none');}
+    });
+  });
+}
+
+browserTest('Talk wraps long question and transcript content without moving controls offscreen',async()=>{
+  await withPage({width:1680,height:945},async page=>{
+    await page.evaluate(()=>{document.documentElement.classList.add('fas-access-ready');document.getElementById('panel-text').hidden=true;document.getElementById('panel-voice').hidden=false;document.querySelector('[data-agent-question]').textContent='Q'.repeat(1000);document.querySelector('[data-voice-transcript]').textContent='T'.repeat(1000);});
+    const result=await page.evaluate(()=>{
+      const measure=selector=>{const node=document.querySelector(selector),r=node.getBoundingClientRect();return{left:r.left,right:r.right,client:node.clientWidth,scroll:node.scrollWidth,wrap:getComputedStyle(node).overflowWrap};};
+      return{question:measure('[data-agent-question]'),transcript:measure('[data-voice-transcript]'),mic:measure('[data-voice-mic]'),workspace:measure('.chat-shell__workspace')};
+    });
+    assert.ok(result.question.scroll<=result.question.client+1,'long Talk question overflows its card');
+    assert.ok(result.transcript.scroll<=result.transcript.client+1,'long Talk transcript scrolls horizontally');
+    assert.equal(result.question.wrap,'anywhere');
+    assert.ok(result.mic.left>=result.workspace.left&&result.mic.right<=result.workspace.right,'long Talk content moves microphone offscreen');
+  });
+});
+
+for(const viewport of [{width:390,height:667},{width:320,height:568}]){
+  browserTest(`short Talk viewport keeps voice recovery controls reachable at ${viewport.width}x${viewport.height}`,async()=>{
+    await withPage(viewport,async page=>{
+      await page.evaluate(()=>{document.documentElement.classList.add('fas-access-ready');document.getElementById('panel-text').hidden=true;document.getElementById('panel-voice').hidden=false;document.querySelector('[data-voice-recovery]').hidden=false;const panel=document.getElementById('panel-voice');panel.scrollTop=panel.scrollHeight;});
+      const result=await page.evaluate(()=>{
+        const box=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return{top:r.top,bottom:r.bottom,left:r.left,right:r.right};};
+        const panel=document.getElementById('panel-voice');
+        return{panel:box('#panel-voice'),mic:box('[data-voice-mic]'),retry:box('[data-voice-retry]'),type:box('[data-voice-type-instead]'),overflow:getComputedStyle(panel).overflowY,scrollHeight:panel.scrollHeight,clientHeight:panel.clientHeight};
+      });
+      for(const key of ['mic','retry','type']){assert.ok(result[key].top>=result.panel.top-1&&result[key].bottom<=result.panel.bottom+1,`${key} is clipped outside short Talk panel`);}
+      assert.ok(result.scrollHeight<=result.clientHeight+1||result.overflow==='auto','overflowing short Talk panel is not scrollable');
+    });
+  });
+}
