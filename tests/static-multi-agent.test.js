@@ -6,6 +6,14 @@ const root = path.resolve(__dirname, '..');
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const chat = read('chat.html');
 
+assert.match(chat, /class="[^"]*chat-reference-header[^"]*"/, 'premium chat shell has the reference identity header');
+assert.match(chat, /class="[^"]*chat-reference-progress[^"]*"[^>]+aria-label="Progress in this step"/, 'premium chat shell exposes its numbered progress rail');
+assert.match(chat, /class="[^"]*chat-suggestions[^"]*"[^>]+data-agent-hints[^>]+aria-label="Quick Suggestions"/, 'live agent hints form the Quick Suggestions strip');
+assert.match(chat, /class="[^"]*chat-reference-composer[^"]*"[^>]+data-chat-form/, 'premium chat shell has the reference composer');
+assert.equal((chat.match(/data-tour-id="input-modes"/g)||[]).length,1,'Type and Talk use one accessible mode switch');
+assert.equal((chat.match(/data-save-exit/g)||[]).length,1,'chat exposes one save and exit action');
+assert.equal((chat.match(/data-agent-messages/g)||[]).length,1,'chat exposes one live conversation');
+
 assert.match(chat, /<body[^>]+class="chat-page"/, 'chat uses the one-screen shell');
 assert.match(chat, /data-chat-history-toggle/);
 assert.match(chat, /data-chat-saved-toggle/);
