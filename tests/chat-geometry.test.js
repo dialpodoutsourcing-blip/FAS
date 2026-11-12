@@ -5,6 +5,8 @@ const path=require('node:path');
 const {chromium}=require('playwright-core');
 
 const root=path.resolve(__dirname,'..');
+const completionModalControllerPath=path.join(root,'assets/js/completion-modal.js');
+const completionModalController=fs.existsSync(completionModalControllerPath)?fs.readFileSync(completionModalControllerPath,'utf8'):'';
 const edge=[process.env.PLAYWRIGHT_EXECUTABLE_PATH,'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe','C:/Program Files/Google/Chrome/Application/chrome.exe','/usr/bin/chromium'].find(candidate=>candidate&&fs.existsSync(candidate));
 const browserTest=edge?test:test.skip;
 const html=fs.readFileSync(path.join(root,'chat.html'),'utf8')
@@ -132,5 +134,22 @@ browserTest('completion modal stays visible in Talk and native modality keeps fo
     await page.keyboard.press('Shift+Tab');
     const result=await page.evaluate(()=>{const modal=document.querySelector('[data-completion-panel]');return{visible:modal.getClientRects().length>0,open:modal.open,backgroundFocused:Boolean(document.activeElement.closest&&document.activeElement.closest('#panel-text,#panel-voice'))};});
     assert.deepEqual(result,{visible:true,open:true,backgroundFocused:false});
+  });
+});
+
+browserTest('cached legacy completion shell is moved out of the hidden Type panel before opening',async()=>{
+  await withPage({width:1280,height:800},async page=>{
+    await page.addScriptTag({content:completionModalController});
+    const result=await page.evaluate(()=>{
+      const current=document.querySelector('[data-completion-panel]');
+      const legacy=document.createElement('section');
+      legacy.className='completion-panel';legacy.setAttribute('data-completion-panel','');legacy.hidden=true;
+      legacy.innerHTML='<div class="completion-panel__card"><button data-completion-generate>Generate Trusted Expert Statement</button></div>';
+      document.querySelector('#panel-text').appendChild(legacy);current.remove();
+      document.querySelector('#panel-text').hidden=true;document.querySelector('#panel-voice').hidden=false;
+      window.FAS.completionModal.create(legacy).open();
+      return{parent:legacy.parentElement.tagName,hidden:legacy.hidden,open:legacy.hasAttribute('open'),rects:legacy.getClientRects().length};
+    });
+    assert.deepEqual(result,{parent:'BODY',hidden:false,open:true,rects:1});
   });
 });

@@ -35,11 +35,13 @@ assert.ok(completionModal>textPanelClose,'completion modal is outside the Type p
 assert.match(chat, /id="completion-title"[^>]+data-completion-title/, 'completion modal has a labelled title');
 assert.match(chat, /You(?:’|â€™|')ve completed ANCHOR\. Your answers are safely saved\. Let(?:’|â€™|')s turn them into your Trusted Expert Statement\./, 'completion modal explains the saved final step');
 assert.match(chat, /data-completion-status[^>]+aria-live="polite"/, 'completion modal announces generation status');
-assert.match(chat, /data-completion-generate[^>]*>\s*Generate &amp; Review My Trusted Expert Statement\s*</, 'completion modal exposes one explicit generation action');
+assert.match(chat, /data-completion-generate[^>]*>\s*Generate Trusted Expert Statement\s*</, 'completion modal exposes one explicit generation action');
 assert.doesNotMatch(chat, /data-completion-close/, 'required completion modal has no accidental close control');
 const upgradeScript=chat.indexOf('assets/js/anchor-artifact-upgrade.js');
 const controllerScript=chat.indexOf('assets/js/adam.js');
 assert.ok(upgradeScript>=0&&upgradeScript<controllerScript,'chat loads artifact upgrade support before generation controller');
+const completionModalScript=chat.indexOf('assets/js/completion-modal.js');
+assert.ok(completionModalScript>=0&&completionModalScript<controllerScript,'chat loads completion modal compatibility before its controller');
 assert.match(chat, /<dialog[^>]+data-retry-confirmation[^>]+aria-labelledby="retry-confirmation-title"[^>]+aria-describedby="retry-confirmation-description"/, 'chat includes an accessible retry confirmation dialog');
 for(const hook of ['data-retry-confirm','data-retry-cancel'])assert.match(chat,new RegExp(hook),`retry dialog exposes ${hook}`);
 assert.match(chat, /data-voice-ambient[^>]+aria-hidden="true"/, 'voice panel includes decorative ambient wavelengths');

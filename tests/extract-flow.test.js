@@ -1,6 +1,7 @@
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');
 const html=fs.readFileSync(path.join(__dirname,'..','chat.html'),'utf8');const adam=fs.readFileSync(path.join(__dirname,'..','assets','js','adam.js'),'utf8');const coordinator=fs.readFileSync(path.join(__dirname,'..','assets','js','interview-coordinator.js'),'utf8');const projectStore=fs.readFileSync(path.join(__dirname,'..','assets','js','project-store.js'),'utf8');
+const completionModal=fs.readFileSync(path.join(__dirname,'..','assets','js','completion-modal.js'),'utf8');
 const agents=require('../assets/js/agents.js');
 test('chat loads production domain modules before its controller',()=>{
  for(const file of ['project-store.js','interview-engine.js','interview-coordinator.js','artifacts.js'])assert.match(html,new RegExp(`<script src="assets/js/${file.replace('.','\\.')}"`));
@@ -40,7 +41,7 @@ test('completion is clearly announced before user-confirmed blueprint generation
  assert.ok(choice>=0&&generate>choice,'completion choice is defined before the explicit generation action');
 });
 test('successful completion redirects to review and leaves a specialist review action for restored chat',()=>{
- assert.match(adam,/Generate & Review My '\+deliverable/);
+ assert.match(adam,/Generate '\+deliverable/);
  assert.match(adam,/generateBlueprint\(completionUrl,status\)[\s\S]*window\.location\.assign\(completionUrl\)/);
  assert.match(adam,/enterCompletedConversation\(project\)/);
  assert.match(adam,/hideCompletionChoice\(\)/);
@@ -93,7 +94,13 @@ test('completion action is single-flight and exposes retry without losing the mo
  assert.match(adam,/\[data-completion-generate\]/);
  assert.match(adam,/Generating your '\+completionDeliverable\(\)/);
  assert.match(adam,/Retry Generation/);
- assert.match(adam,/completionPanel\.showModal\(\)/);
+ assert.match(adam,/completionModalControl\.open\(\)/);
+});
+test('completion modal opens across cached native and legacy page shells',()=>{
+ assert.match(completionModal,/typeof panel\.showModal==='function'/);
+ assert.match(completionModal,/panel\.setAttribute\('open',''\)/);
+ assert.match(completionModal,/document\.body\.appendChild\(panel\)/);
+ assert.match(html,/data-completion-generate[^>]*>\s*Generate Trusted Expert Statement\s*</);
 });
 test('completion modal traps focus and cannot be dismissed with Escape',()=>{
  assert.match(adam,/completionModalKeydown/);
