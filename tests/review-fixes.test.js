@@ -180,6 +180,32 @@ test('Vault renders current library items and uses the exact saved version for v
  assert.match(ui,/We could not load your Vault/);
 });
 
+test('Vault switches remembered card and list layouts without reloading project data',()=>{
+ const ui=fs.readFileSync(path.join(__dirname,'..','assets','js','artifact-ui.js'),'utf8');
+ assert.match(ui,/createViewPreference\(window\.localStorage,'fas\.vault\.view'\)/);
+ assert.match(ui,/preference\.load\(\)/);
+ assert.match(ui,/preference\.save\(view\)/);
+ assert.match(ui,/data-vault-toolbar/);
+ assert.match(ui,/aria-pressed/);
+ assert.match(ui,/vault-library--'\+view/);
+});
+
+test('Vault previews the exact saved version in one removable focus-safe dialog',()=>{
+ const ui=fs.readFileSync(path.join(__dirname,'..','assets','js','artifact-ui.js'),'utf8');
+ assert.match(ui,/vault-preview-dialog/);
+ assert.match(ui,/buildReview\(item\.version,versions\)/);
+ assert.match(ui,/Preview/);
+ assert.match(ui,/Download PDF/);
+ assert.match(ui,/Edit with /);
+ assert.match(ui,/Close preview/);
+ assert.match(ui,/dialog\.showModal\(\)/);
+ assert.match(ui,/event\.target===dialog/);
+ assert.match(ui,/event\.preventDefault\(\)/);
+ assert.match(ui,/dialog\.remove\(\)/);
+ assert.match(ui,/origin&&origin\.isConnected&&typeof origin\.focus==='function'/);
+ assert.match(ui,/runVaultExport\(item\.version,'pdf',item\.version\.exportTheme\)/);
+});
+
 test('shared navigation uses the reviewed artifact agent when selecting a specialist',()=>{
  const nav=fs.readFileSync(path.join(__dirname,'..','assets','js','nav.js'),'utf8');
  assert.match(nav,/query\.get\('agent'\)\s*\|\|\s*query\.get\('asset'\)/);

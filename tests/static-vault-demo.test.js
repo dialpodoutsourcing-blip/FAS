@@ -26,5 +26,13 @@ assert.match(styles, /\.vault-card__actions\s*\{/, 'vault has clear action style
 assert.match(styles, /\.vault-state\s*\{/, 'vault has loading, empty, and error state styles');
 assert.match(styles, /\.vault-detail\s*\{/, 'vault has an expanded document view');
 assert.match(styles, /@media[^\{]*\(max-width:\s*720px\)[\s\S]*\.vault-card__actions/, 'vault actions stack on narrow screens');
+assert.match(styles, /\.vault-library--cards\s*\{/, 'vault has a responsive card grid');
+assert.match(styles, /\.vault-library--list\s*\{/, 'vault has a compact list layout');
+assert.match(styles, /\.vault-view-toggle\s*\{/, 'vault has a clear view toggle');
+assert.match(styles, /\.vault-card__summary\s*\{[^}]*-webkit-line-clamp/s, 'library summaries are clamped');
+assert.match(styles, /\.vault-preview-dialog\s*\{/, 'vault has a modal preview surface');
+assert.match(styles, /\.vault-preview-dialog::backdrop\s*\{/, 'modal preview has a backdrop');
+assert.match(styles, /\.vault-preview-dialog__head\s*\{[^}]*position:\s*sticky/s, 'preview actions stay visible');
+assert.match(styles, /@media[^\{]*\(max-width:\s*720px\)[\s\S]*\.vault-preview-dialog/, 'preview adapts on narrow screens');
 
 console.log('Dynamic Vault shell and styles checks passed.');
