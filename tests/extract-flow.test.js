@@ -27,8 +27,8 @@ test('completed Anchor interviews request structured synthesis before saving the
  assert.ok(adam.indexOf("apiFetch('/api/artifact-synthesis'")<adam.indexOf('projectStore.saveArtifact',adam.indexOf("apiFetch('/api/artifact-synthesis'")));
 });
 
-test('completion generation permits saved pending answers only for the private draft',()=>{
- assert.match(adam,/collectAnswers\(project,FAS\.agent\.current\.key,\{includePending:true\}\)/);
+test('completion generation permits saved pending and incomplete answers only for the private draft',()=>{
+ assert.match(adam,/collectAnswers\(project,FAS\.agent\.current\.key,\{includePending:true,includeIncomplete:true\}\)/);
 });
 test('completed interviews open the saved blueprint and reject extra chat answers',()=>{
  const completionGuard=adam.indexOf('if (interview && !interview.currentQuestion())');

@@ -180,6 +180,14 @@ test('private draft generation can use saved pending answers while still excludi
   assert.equal(upgrade.collectAnswers(project,'anchor',{includePending:true}),null);
 });
 
+test('private draft generation can use saved incomplete answers after the interview is exhausted',()=>{
+  const project=completeProject();
+  project.answers.find(answer=>answer.field==='anchor.position').incomplete=true;
+  const draft=upgrade.collectAnswers(project,'anchor',{includePending:true,includeIncomplete:true});
+  assert.ok(draft);
+  assert.match(draft.find(answer=>answer.field==='anchor.position').text,/Saved position answer/);
+});
+
 test('completed EXTRACT work is eligible for a premium deterministic upgrade',async()=>{
   const fields=['context','diagnostic','origin','timeline','method','proof','point_of_view','boundaries','synthesis'];
   const project={answers:fields.map((field,index)=>({id:'e'+index,agentKey:'extract',field:'extract.'+field,text:'Specific '+field+' evidence and detail for the expertise report.'}))};
