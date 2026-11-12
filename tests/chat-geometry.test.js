@@ -47,6 +47,21 @@ browserTest('premium chat matches the one-screen reference geometry at 1680x945'
   });
 });
 
+browserTest('short conversations keep the input actions aligned to the workspace bottom',async()=>{
+  await withPage({width:1680,height:945},async page=>{
+    await page.locator('.thread > .msg').evaluateAll(nodes=>nodes.slice(1).forEach(node=>node.remove()));
+    const result=await page.evaluate(()=>{
+      const box=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return{top:r.top,bottom:r.bottom,height:r.height};};
+      const workspace=document.querySelector('.chat-shell__workspace'),paddingBottom=parseFloat(getComputedStyle(workspace).paddingBottom)||0;
+      return{shell:box('.chat-shell'),workspace:box('.chat-shell__workspace'),paddingBottom,thread:box('.thread'),suggestions:box('.chat-suggestions-bar'),composer:box('.chat-reference-composer'),lastAction:box('[data-agent-completion]')};
+    });
+    assert.ok(Math.abs(result.workspace.bottom-result.shell.bottom)<=1,`workspace ends ${result.shell.bottom-result.workspace.bottom}px above shell bottom`);
+    assert.ok(Math.abs(result.lastAction.bottom-(result.workspace.bottom-result.paddingBottom))<=1,`input actions do not align to the workspace content bottom`);
+    assert.ok(result.thread.bottom<=result.suggestions.top,'conversation stays above input actions');
+    assert.ok(result.composer.top>=result.suggestions.bottom,'composer stays below suggestions');
+  });
+});
+
 browserTest('premium chat keeps long identity content inside the desktop toolbar',async()=>{
   await withPage({width:1508,height:782},async page=>{
     await page.locator('[data-agent-title]').evaluate(node=>node.textContent='A'.repeat(140));
