@@ -75,3 +75,31 @@ test('render preserves the locked destination and authenticated Anchor session',
   dashboard.render(state,doc,{projectId:'p',sessions:{anchor:'anchor-session',extract:'extract-session'}});
   assert.equal(extractCard.href,'chat.html?agent=anchor&notice=extract-locked&project=p&session=anchor-session');
 });
+
+function renderNode(){
+  const classes=new Set();
+  const action={textContent:''};
+  return{
+    href:'',action,classes,
+    classList:{toggle(name,on){if(on)classes.add(name);else classes.delete(name);}},
+    querySelector(selector){return selector==='[data-home-sidebar-action]'?action:null;},
+    setAttribute(){},removeAttribute(){}
+  };
+}
+
+test('render keeps sidebar specialist rows aligned with live roadmap state',()=>{
+  const cases=[
+    {project:{answers:[],checkpoints:{},artifacts:[]},want:[['anchor','is-current','Start →'],['extract','is-locked','🔒']]},
+    {project:{answers:[],checkpoints:{anchor:{questionIndex:6,insufficientFields:[],conflicts:[]}},artifacts:[{agentKey:'anchor'}]},want:[['anchor','is-complete','Review →'],['extract','is-current','Start →']]},
+    {project:{answers:[],checkpoints:{},artifacts:[{agentKey:'anchor'},{agentKey:'extract'}]},want:[['anchor','is-complete','Review →'],['extract','is-complete','Review →']]}
+  ];
+  for(const scenario of cases){
+    const nodes={anchor:renderNode(),extract:renderNode()};
+    const doc={querySelector(selector){const match=selector.match(/^\[data-home-sidebar-card="(anchor|extract)"\]$/);return match?nodes[match[1]]:null;}};
+    dashboard.render(dashboard.derive(scenario.project,['anchor','extract']),doc,null);
+    for(const [key,className,label] of scenario.want){
+      assert.ok(nodes[key].classes.has(className),`${key} receives ${className}`);
+      assert.equal(nodes[key].action.textContent,label);
+    }
+  }
+});
