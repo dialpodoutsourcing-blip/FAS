@@ -1184,7 +1184,7 @@ body.src-off .part__src { display: none; }
 
 @media (max-width: 900px) {
   .chat-page .app { height: calc(100dvh - 67px); }
-  .chat-shell { height: calc(100dvh - 67px); grid-template-rows: auto auto minmax(0, 1fr); }
+  .chat-shell { height: calc(100dvh - 67px); grid-template-rows: auto minmax(0, 1fr); }
   .chat-page .stages { display: none; }
   .toolbar__stage-summary { display: block; }
   .chat-page .toolbar { padding: 8px 12px; }

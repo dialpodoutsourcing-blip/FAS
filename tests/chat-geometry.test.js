@@ -62,6 +62,19 @@ browserTest('short conversations keep the input actions aligned to the workspace
   });
 });
 
+for(const viewport of [{width:768,height:1024},{width:390,height:844}]){
+  browserTest(`short mobile conversations keep the input actions at the bottom at ${viewport.width}x${viewport.height}`,async()=>{
+    await withPage(viewport,async page=>{
+      await page.locator('.thread > .msg').evaluateAll(nodes=>nodes.slice(1).forEach(node=>node.remove()));
+      const result=await page.evaluate(()=>{
+        const shell=document.querySelector('.chat-shell').getBoundingClientRect(),workspace=document.querySelector('.chat-shell__workspace').getBoundingClientRect();
+        return{shellBottom:shell.bottom,workspaceBottom:workspace.bottom};
+      });
+      assert.ok(Math.abs(result.workspaceBottom-result.shellBottom)<=1,`workspace ends ${result.shellBottom-result.workspaceBottom}px above shell bottom`);
+    });
+  });
+}
+
 browserTest('premium chat keeps long identity content inside the desktop toolbar',async()=>{
   await withPage({width:1508,height:782},async page=>{
     await page.locator('[data-agent-title]').evaluate(node=>node.textContent='A'.repeat(140));
