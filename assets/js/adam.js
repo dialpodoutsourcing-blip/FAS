@@ -373,8 +373,8 @@
       interview=FAS.interview.create({agent:FAS.agent.current,state:restoredState});
       initializeInterviewCoordinator();
       renderEditableSavedAnswers(project);
-      restoredInterview=restoredAnswers.length>0;
-      if(restoredInterview)renderRestoredConversation(restoredAnswers,interview.currentQuestion());else renderCurrentQuestion(interview.currentQuestion());
+      restoredInterview=restoredState.answers.length>0;
+      if(restoredInterview)renderRestoredConversation(restoredState.answers,interview.currentQuestion());else renderCurrentQuestion(interview.currentQuestion());
       var hasArtifact=(project&&project.artifacts||[]).some(function(artifact){return artifact.agentKey===FAS.agent.current.key||artifact.agent_key===FAS.agent.current.key;});
       if(!interview.currentQuestion()&&hasArtifact){enterCompletedConversation(project);return;}
       if(!interview.currentQuestion()&&!hasArtifact&&interview.completion().complete){presentCompletionChoice('',false);return project;}

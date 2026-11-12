@@ -14,7 +14,9 @@
   function reconcile(agent,checkpoint,durableAnswers){
     var saved=(durableAnswers||[]).map(normalizeAnswer).filter(function(answer){return answer.field&&answer.text;}),state=Object.assign({chapterIndex:0,questionIndex:0,answers:[],conflicts:[],summaries:[],phases:[],probeAttempts:{},insufficientFields:[]},clone(checkpoint||{}));
     if(!saved.length)return state;
-    state.answers=saved;
+    var checkpointAnswers=(state.answers||[]).map(normalizeAnswer).filter(function(answer){return answer.field&&answer.text;}),durableFields={};saved.forEach(function(answer){durableFields[answer.field]=true;});
+    state.answers=checkpointAnswers.filter(function(answer){return!durableFields[answer.field];}).concat(saved).sort(function(left,right){var list=questions(agent),leftIndex=list.findIndex(function(question){return question.field===left.field;}),rightIndex=list.findIndex(function(question){return question.field===right.field;});return leftIndex-rightIndex;});
+    saved=state.answers;
     var latest={};saved.forEach(function(answer){latest[answer.field]=answer;});
     state.probeAttempts=Object.assign({},state.probeAttempts||{});Object.keys(latest).forEach(function(key){if(latest[key].incomplete&&latest[key].trigger)state.probeAttempts[key]=state.probeAttempts[key]||1;});
     var list=questions(agent),next=list.findIndex(function(question){var answer=latest[question.field];return question.required&&(!answer||!answer.text||answer.incomplete);});

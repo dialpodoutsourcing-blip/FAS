@@ -18,6 +18,15 @@ test('durable completed answers override a stale checkpoint and restore completi
  assert.equal(state.answers.length,6);
 });
 
+test('checkpoint answers fill durable gaps so a completed interview opens completion',()=>{
+ const checkpoint={questionIndex:6,answers:answers};
+ const state=restoration.reconcile(anchor,checkpoint,answers.slice(0,1));
+ const restored=interview.create({agent:anchor,state});
+ assert.equal(restored.currentQuestion(),null);
+ assert.deepEqual(restored.completion(),{complete:true,gaps:[],conflicts:[]});
+ assert.deepEqual(state.answers.map(answer=>answer.field),fields.map(field=>'anchor.'+field));
+});
+
 test('durable answers rebuild the visible question and answer conversation in order',()=>{
  const transcript=restoration.transcript(anchor,answers);
  assert.equal(transcript.length,12);
