@@ -1184,10 +1184,7 @@ body[data-page="home"] .nav-link[aria-current="page"] {
   filter: blur(10px);
 }
 .home-hero { position: relative; display: flex; align-items: flex-start; justify-content: space-between; gap: 30px; margin-bottom: 28px; }
-.home-hero__artwork { position: absolute; z-index: -1; top: -38px; right: 0; width: 68%; height: 230px; overflow: hidden; pointer-events: none; background: radial-gradient(ellipse at 58% 15%,rgba(0,213,164,.17),transparent 54%); }
-.home-hero__artwork::before,.home-hero__artwork::after { content: ""; position: absolute; right: -7%; width: 92%; height: 155px; border: 1px solid; border-radius: 50%; transform: rotate(-11deg); }
-.home-hero__artwork::before { top: -72px; border-color: #e7c55d; box-shadow: 0 0 24px rgba(231,197,93,.18); }
-.home-hero__artwork::after { top: -22px; border-color: #04b995; box-shadow: 0 0 27px rgba(4,185,149,.25); }
+.home-hero__artwork { position: absolute; z-index: -1; top: -38px; right: 0; width: 72%; height: 230px; overflow: hidden; pointer-events: none; background-image: url("../images/dashboard-hero-waves.png"),radial-gradient(ellipse at 58% 15%,rgba(0,213,164,.17),transparent 54%); background-repeat: no-repeat; background-position: right top,center; background-size: cover,auto; opacity: .78; }
 .home-hero__copy { min-width: 0; }
 .home-hero__eyebrow { display: flex; align-items: center; gap: 16px; margin: 0 0 10px; color: #f4f0e9; font: 700 12px/1 var(--font-sub); letter-spacing: 6px; text-transform: uppercase; }
 .home-hero__eyebrow::after { content: ""; width: 70px; height: 3px; background: linear-gradient(90deg,#f4ce66,#a77112); }
@@ -1202,8 +1199,8 @@ body[data-page="home"] .nav-link[aria-current="page"] {
   --home-progress: 50%; position: relative; isolation: isolate; display: grid; grid-template-columns: 190px minmax(0,1fr) 250px; align-items: center; min-height: 178px; margin-bottom: 30px; overflow: hidden;
   border: 1px solid rgba(230,220,196,.35); border-radius: 20px; background: linear-gradient(115deg,rgba(10,11,9,.98),rgba(20,22,18,.94) 56%,rgba(20,15,7,.96)); box-shadow: 0 24px 70px rgba(0,0,0,.48), inset 0 0 35px rgba(255,225,154,.035);
 }
-.home-focus__landscape { position: absolute; z-index: -1; inset: 0 0 0 36%; opacity: .45; background: radial-gradient(ellipse at 70% 35%,rgba(205,170,91,.25),transparent 46%), linear-gradient(152deg,transparent 45%,rgba(71,55,28,.6) 45.5%,transparent 61%); }
-.home-focus__landscape::after { content: ""; position: absolute; inset: 36% 8% 0 17%; background: linear-gradient(145deg,transparent 37%,#1f1b12 38% 47%,transparent 48%),linear-gradient(35deg,transparent 45%,#17150f 46% 61%,transparent 62%); clip-path: polygon(0 100%,34% 22%,50% 63%,68% 6%,100% 100%); opacity: .95; }
+.home-focus__landscape { position: absolute; z-index: -1; inset: 0 0 0 36%; opacity: .62; background-image: radial-gradient(ellipse at 70% 35%,rgba(205,170,91,.18),transparent 48%),url("../images/dashboard-focus-landscape.png"); background-repeat: no-repeat; background-position: center,bottom center; background-size: auto,100% 100%; }
+.home-focus__landscape::after { display: none; }
 .home-focus__progress { align-self: stretch; display: grid; place-content: center; text-align: center; border-right: 1px solid rgba(255,255,255,.14); }
 .home-focus__gauge { position: relative; box-sizing: border-box; display: flex; align-items: baseline; justify-content: center; width: 125px; padding: 22px 0 2px; overflow: hidden; border-radius: 80px 80px 0 0; background: conic-gradient(from 275deg at 50% 100%,#f8d45f var(--home-progress),#242520 0 50%,transparent 0); filter: drop-shadow(0 0 9px rgba(244,199,61,.3)); }
 .home-focus__gauge::before { content: ""; position: absolute; width: 104px; height: 57px; border-radius: 70px 70px 0 0; background: #0a0b09; }
