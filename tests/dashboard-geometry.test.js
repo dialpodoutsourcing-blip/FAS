@@ -176,7 +176,7 @@ browserTest('1680 reference keeps glass cards, balanced number capsules, and sid
       const lockupWord=document.querySelector('.home-sidebar__lockup-word');
       const specialistTitle=document.querySelector('.home-sidebar__specialists > .nav-group__title');
       return{
-        cards:cards.map(card=>({box:box(card),background:getComputedStyle(card).backgroundImage,backdrop:getComputedStyle(card).backdropFilter})),
+        cards:cards.map(card=>({box:box(card),background:getComputedStyle(card).backgroundImage,backdrop:getComputedStyle(card).backdropFilter,shadow:getComputedStyle(card).boxShadow})),
         steps:steps.map(step=>({box:box(step),display:getComputedStyle(step).display,lineHeight:getComputedStyle(step).lineHeight})),
         active:box(active),
         lockup:box(lockup),
@@ -186,7 +186,7 @@ browserTest('1680 reference keeps glass cards, balanced number capsules, and sid
         scrollHeight:document.documentElement.scrollHeight
       };
     });
-    result.cards.forEach((card,index)=>{assert.ok(card.background.split('gradient').length>=4,`card ${index+1} lacks layered glass: ${card.background}`);assert.notEqual(card.backdrop,'none',`card ${index+1} lacks backdrop blur`);});
+    result.cards.forEach((card,index)=>{assert.ok(card.background.split('gradient').length>=4,`card ${index+1} lacks layered glass: ${card.background}`);assert.notEqual(card.backdrop,'none',`card ${index+1} lacks backdrop blur`);assert.match(card.shadow,/rgba\(255, 255, 255, 0\.16\)/,`card ${index+1} lost its bright glass edge: ${card.shadow}`);assert.match(card.shadow,/rgba\((222, 174, 53|0, 205, 157), 0\.2\)/,`card ${index+1} lost its colored lower edge: ${card.shadow}`);});
     result.steps.forEach((step,index)=>{assert.ok(Math.abs(step.box.width-54)<=1&&Math.abs(step.box.height-34)<=1,`step ${index+1} capsule is ${step.box.width}x${step.box.height}`);assert.equal(step.display,'grid');});
     assert.ok(Math.abs(result.steps[0].box.width-result.steps[1].box.width)<=.5&&Math.abs(result.steps[0].box.height-result.steps[1].box.height)<=.5,'number capsule borders are not balanced');
     assert.equal(result.specialists.borderTop,'1px');
