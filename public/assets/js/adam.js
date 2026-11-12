@@ -377,8 +377,7 @@
       if(restoredInterview)renderRestoredConversation(restoredState.answers,interview.currentQuestion());else renderCurrentQuestion(interview.currentQuestion());
       var hasArtifact=(project&&project.artifacts||[]).some(function(artifact){return artifact.agentKey===FAS.agent.current.key||artifact.agent_key===FAS.agent.current.key;});
       if(!interview.currentQuestion()&&hasArtifact){enterCompletedConversation(project);return;}
-      if(!interview.currentQuestion()&&!hasArtifact&&interview.completion().complete){presentCompletionChoice('',false);return project;}
-      if(!interview.currentQuestion()&&!hasArtifact){var restoredStatus=$('[data-answer-status]'),restoredButton=form&&form.querySelector('[type="submit"]');artifactRetryPending=true;if(restoredButton)restoredButton.textContent='Review saved answers';if(restoredStatus)restoredStatus.textContent='Your saved interview still needs a required answer before generation.';}
+      if(!interview.currentQuestion()&&!hasArtifact){presentCompletionChoice('',false);return project;}
       return project;
     });
   }
@@ -591,7 +590,7 @@
       }
       if(result.summary)FAS.chat.addMessage({role:'note',text:'Checkpoint saved · Review recent answers anytime in History.',tag:'CHECKPOINT',variant:'checkpoint'});
       if(result.completion.gaps.length)emit('fas:interview-gap',{gaps:result.completion.gaps});
-      if(result.completion.complete)return runVoiceCompletion(completionUrl,status);
+      if(!interview.currentQuestion())return runVoiceCompletion(completionUrl,status);
       return result;
     }).catch(function(){
       if(!answerSaved){
@@ -815,7 +814,7 @@
       if (result.summary) FAS.chat.addMessage({ role: 'note', text: 'Checkpoint saved · Review recent answers anytime in History.', tag: 'CHECKPOINT', variant: 'checkpoint' });
       var completion = result.completion;
       if (completion.gaps.length) emit('fas:interview-gap', { gaps: completion.gaps });
-      if (completion.complete) {presentCompletionChoice('',false);return;}
+      if(!interview.currentQuestion()){presentCompletionChoice('',false);return;}
     }).catch(function () {if(!durableSaved){if (status) status.textContent = 'Save failed. Your answer is ready to retry and has not been stored.';if(input&&!input.value)input.value=text;}else{artifactRetryPending=true;if(status)status.textContent='Your answers are saved, but the blueprint could not be prepared. Retry blueprint.';if(submitButton)submitButton.textContent='Retry blueprint';}}).finally(function(){if(!blueprintPromise&&!completionModalOpen()){if(form)form.removeAttribute('aria-busy');if(submitButton)submitButton.disabled=false;}});
   }
 

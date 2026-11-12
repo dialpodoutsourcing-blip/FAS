@@ -81,17 +81,23 @@ test('blueprint generation is single-flight and reopens the completed composer f
 });
 test('final saved answer opens the completion modal without generating automatically',()=>{
  const submit=adam.slice(adam.indexOf("interviewCoordinator.submit({text:text,source:'type'"),adam.indexOf("if (form) form.addEventListener"));
- const complete=submit.slice(submit.indexOf('if (completion.complete)'),submit.indexOf('}).catch'));
+ const complete=submit.slice(submit.indexOf('if(!interview.currentQuestion())'),submit.indexOf('}).catch'));
  assert.match(complete,/presentCompletionChoice\(/);
  assert.doesNotMatch(complete,/generateBlueprint\(/);
- assert.ok(complete.indexOf('presentCompletionChoice')>complete.indexOf('completion.complete'));
+ assert.ok(complete.indexOf('presentCompletionChoice')>complete.indexOf('!interview.currentQuestion()'));
+});
+test('end of required questions opens completion even when older gap metadata remains',()=>{
+ const initialize=adam.slice(adam.indexOf('function initializePersistence'),adam.indexOf('function loadPersistence'));
+ assert.match(initialize,/if\(!interview\.currentQuestion\(\)&&!hasArtifact\)\{presentCompletionChoice\('',false\);return project;\}/);
+ const voice=adam.slice(adam.indexOf('function handleVoiceTurn'),adam.indexOf('function switchToTyping'));
+ assert.match(voice,/if\(!interview\.currentQuestion\(\)\)return runVoiceCompletion\(completionUrl,status\)/);
 });
 test('restored complete answers reopen the completion modal without background generation',()=>{
  const initialize=adam.slice(adam.indexOf('function initializePersistence'),adam.indexOf('function loadPersistence'));
  assert.match(initialize,/FAS\.interviewRestoration\.reconcile/);
  assert.match(adam,/function renderRestoredConversation[\s\S]*FAS\.interviewRestoration\.transcript/);
  assert.match(adam,/function renderRestoredConversation[\s\S]*renderCurrentQuestion\(currentQuestion,true\)/);
- const pending=initialize.slice(initialize.indexOf('if(!interview.currentQuestion()&&!hasArtifact&&interview.completion().complete)'));
+ const pending=initialize.slice(initialize.indexOf('if(!interview.currentQuestion()&&!hasArtifact)'));
  assert.match(pending,/presentCompletionChoice\(/);
  assert.doesNotMatch(pending,/generateBlueprint\(/);
 });
