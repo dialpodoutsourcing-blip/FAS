@@ -55,3 +55,12 @@ test('restoration rebuilds pending clarification state from an incomplete durabl
  assert.equal(result.conflict,null);
  assert.equal(restored.checkpoint().conflicts.length,0);
 });
+
+test('saved artifact keeps a fully answered Anchor interview complete after refresh',()=>{
+ const completedAnswers=answers.map(answer=>answer.field==='anchor.position'?{...answer,incomplete:true,trigger:'abstract_principle'}:answer);
+ const state=restoration.reconcile(anchor,{questionIndex:0,answers:[]},completedAnswers,{completed:true});
+ const restored=interview.create({agent:anchor,state});
+
+ assert.equal(restored.currentQuestion(),null);
+ assert.deepEqual(state.insufficientFields,['anchor.position']);
+});

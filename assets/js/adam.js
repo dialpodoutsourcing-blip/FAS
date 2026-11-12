@@ -369,13 +369,12 @@
       if(FAS.progression)FAS.progression.apply(project,document);
       if(FAS.progression&&!FAS.progression.canEnter(FAS.agent.current.key,project)){var locked=new URLSearchParams();locked.set('agent','anchor');locked.set('notice','extract-locked');if(projectId!=='local-default')locked.set('project',projectId);window.location.assign('chat.html?'+locked.toString());return project;}
       if(query.get('notice')==='extract-locked'){FAS.chat.addMessage({role:'note',tag:'NEXT STEP',text:'Finish ANCHOR and save your Trusted Expert Blueprint to unlock EXTRACT.'});query.delete('notice');window.history.replaceState({},'',window.location.pathname+'?'+query.toString());}
-      var restoredAnswers=(project&&project.answers||[]).filter(function(answer){return answer.agentKey===FAS.agent.current.key||answer.agent_key===FAS.agent.current.key;}),checkpoint=project&&project.checkpoints&&project.checkpoints[FAS.agent.current.key],restoredState=FAS.interviewRestoration.reconcile(FAS.agent.current,checkpoint,restoredAnswers);
+      var restoredAnswers=(project&&project.answers||[]).filter(function(answer){return answer.agentKey===FAS.agent.current.key||answer.agent_key===FAS.agent.current.key;}),checkpoint=project&&project.checkpoints&&project.checkpoints[FAS.agent.current.key],hasArtifact=(project&&project.artifacts||[]).some(function(artifact){return artifact.agentKey===FAS.agent.current.key||artifact.agent_key===FAS.agent.current.key;}),restoredState=FAS.interviewRestoration.reconcile(FAS.agent.current,checkpoint,restoredAnswers,{completed:hasArtifact});
       interview=FAS.interview.create({agent:FAS.agent.current,state:restoredState});
       initializeInterviewCoordinator();
       renderEditableSavedAnswers(project);
       restoredInterview=restoredState.answers.length>0;
       if(restoredInterview)renderRestoredConversation(restoredState.answers,interview.currentQuestion());else renderCurrentQuestion(interview.currentQuestion());
-      var hasArtifact=(project&&project.artifacts||[]).some(function(artifact){return artifact.agentKey===FAS.agent.current.key||artifact.agent_key===FAS.agent.current.key;});
       if(!interview.currentQuestion()&&hasArtifact){enterCompletedConversation(project);return;}
       if(!interview.currentQuestion()&&!hasArtifact){presentCompletionChoice('',false);return project;}
       return project;
