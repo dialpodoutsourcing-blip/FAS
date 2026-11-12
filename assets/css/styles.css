@@ -1947,3 +1947,35 @@ body[data-page="home"] .home-content { min-height: 0; padding-top: 54px; grid-te
   .chat-page .chat-reference-composer .composer__input { min-height:45px; max-height:45px; }
   .chat-page .chat-reference-composer .btn--gold { min-height:40px; }
 }
+
+@media (max-width:900px) {
+  .chat-page .app { display:block; }
+  .chat-page .sidebar { width:min(84vw,270px); padding:22px 16px 16px; gap:18px; }
+  .chat-page .chat-reference-header { min-height:84px; padding:11px 12px 10px; }
+  .chat-page .chat-reference-header::after { left:12px; right:12px; bottom:7px; height:3px; }
+  .chat-page .orb-wrap--md { width:48px; height:48px; }
+  .chat-page .orb--md { width:35px; height:35px; }
+  .chat-page .toolbar__title .h-2 { font-size:23px!important; }
+  .chat-page .chat-reference-header > .row { gap:7px; }
+  .chat-page [data-save-exit] { min-height:38px; padding:0 11px; }
+  .chat-page .chat-shell__workspace { padding:9px 10px 10px; }
+  .chat-page .thread > .msg,.chat-page .thread > .msg.msg--user { width:94%; }
+  .chat-page .thread > .msg .bubble { padding:12px 14px; }
+  .chat-suggestions-bar { min-height:54px; padding:7px 9px; gap:8px; }
+  .chat-suggestions-bar__title { display:none; }
+  .chat-page .chat-suggestions { display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; }
+  .chat-page .chat-suggestions::-webkit-scrollbar { display:none; }
+  .chat-page .composer__chips .pill,.chat-page .composer__chips .pill:nth-child(2) { display:inline-flex; min-width:118px; flex:0 0 auto; }
+  .chat-page .chat-reference-composer { min-height:112px; padding:9px 11px; }
+  .chat-page .chat-reference-composer .composer__input { min-height:46px; max-height:46px; }
+  .chat-page .chat-reference-composer .btn--gold { min-width:105px; min-height:42px; }
+  .chat-page .composer__status { right:132px; bottom:16px; }
+}
+
+@media (max-width:520px) {
+  .chat-page .toolbar__title .chip-agent { display:none; }
+  .chat-page .chat-reference-header > .row { flex:0 0 auto; }
+  .chat-page [data-save-exit] { max-width:92px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .chat-page .thread > .msg .em { display:none; }
+  .chat-page .thread > .msg,.chat-page .thread > .msg.msg--user { width:100%; }
+}

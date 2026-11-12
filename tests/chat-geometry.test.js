@@ -54,3 +54,29 @@ browserTest('premium chat keeps long identity content inside the desktop toolbar
     assert.ok(result.saveRight<=1504,`save action clipped at ${result.saveRight}`);
   });
 });
+
+for(const viewport of [{width:1024,height:768},{width:768,height:1024},{width:390,height:844}]){
+  browserTest(`premium chat remains reachable without horizontal overflow at ${viewport.width}x${viewport.height}`,async()=>{
+    await withPage(viewport,async page=>{
+      const result=await page.evaluate(()=>{
+        const box=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
+        const menu=document.querySelector('[data-menu-toggle]');
+        const suggestions=[...document.querySelectorAll('.chat-suggestions .pill')].filter(node=>getComputedStyle(node).display!=='none').map(node=>node.getBoundingClientRect().width);
+        return{width:document.documentElement.scrollWidth,composer:box('.chat-reference-composer'),workspace:box('.chat-shell__workspace'),menuDisplay:getComputedStyle(menu).display,menuVisible:menu.getBoundingClientRect().width>0,threadOverflow:getComputedStyle(document.querySelector('.thread')).overflowY,suggestions};
+      });
+      assert.ok(result.width<=viewport.width,`horizontal overflow ${result.width}`);
+      assert.ok(result.composer.left>=0&&result.composer.right<=viewport.width,`composer spans ${result.composer.left}..${result.composer.right}`);
+      assert.ok(result.composer.bottom<=result.workspace.bottom+1,'composer remains inside the chat workspace');
+      if(viewport.width<=900){assert.ok(result.menuVisible&&result.menuDisplay!=='none','mobile menu remains available');result.suggestions.forEach(width=>assert.ok(width>=96,`suggestion chip is unreadably narrow at ${width}px`));}
+      assert.equal(result.threadOverflow,'auto');
+    });
+  });
+}
+
+browserTest('premium chat stops decorative motion for reduced-motion users',async()=>{
+  await withPage({width:1680,height:945},async page=>{
+    await page.emulateMedia({reducedMotion:'reduce'});
+    const animations=await page.evaluate(()=>({orb:getComputedStyle(document.querySelector('.orb')).animationName,typing:getComputedStyle(document.querySelector('.bubble--typing span')).animationName,spinner:getComputedStyle(document.querySelector('.chat-loading__spinner')).animationName}));
+    assert.deepEqual(animations,{orb:'none',typing:'none',spinner:'none'});
+  });
+});
