@@ -67,7 +67,7 @@
   }
 
   function selectLatest(project,agentKey){
-    var versions=(project&&project.artifactVersions||[]).filter(function(version){return version.agentKey===agentKey||version.artifactId&&version.artifactId.indexOf(agentKey)>=0;});
+    var retired=project&&project.retiredArtifactIds||[],versions=(project&&project.artifactVersions||[]).filter(function(version){return retired.indexOf(version.artifactId)<0&&(version.agentKey===agentKey||version.artifactId&&version.artifactId.indexOf(agentKey)>=0);});
     return{project:project,versions:versions,selected:versions[versions.length-1]};
   }
 

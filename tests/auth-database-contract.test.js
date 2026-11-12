@@ -61,6 +61,7 @@ test('specialist reset is authenticated, scoped, atomic, and preserves artifact 
   assert.match(resetSql,/interview_sessions[\s\S]*id\s*=\s*p_session_id[\s\S]*project_id\s*=\s*p_project_id[\s\S]*agent_key\s*=\s*p_agent_key/i);
   assert.match(resetSql,/delete from public\.answers[\s\S]*project_id\s*=\s*p_project_id[\s\S]*agent_key\s*=\s*p_agent_key/i);
   assert.match(resetSql,/update public\.artifacts[\s\S]*status\s*=\s*'retired'[\s\S]*project_id\s*=\s*p_project_id[\s\S]*agent_key\s*=\s*p_agent_key/i);
+  assert.doesNotMatch(resetSql,/interview_sessions[\s\S]*completed_at/i);
   assert.doesNotMatch(resetSql,/delete from public\.artifact_versions|update public\.artifact_versions/i);
   assert.match(resetSql,/revoke execute on function public\.reset_fas_agent\(uuid, uuid, text\) from public, anon/i);
   assert.match(resetSql,/grant execute on function public\.reset_fas_agent\(uuid, uuid, text\) to authenticated/i);

@@ -205,3 +205,28 @@ test('partial EXTRACT rebuild preserves deterministic gaps when synthesis is una
   assert.ok(rebuilt.premiumReport);
   assert.ok(rebuilt.sections.some(section=>section.blocks.some(block=>block.kind==='gap'&&/no approved source/i.test(block.text))));
 });
+
+test('local reset keeps history but loadReview does not select the retired run',async()=>{
+  const stores=require('../assets/js/project-store.js'),storage={value:null,getItem(){return this.value;},setItem(_key,value){this.value=value;}};
+  const store=stores.create({configured:false,storage,projectId:'reset-review'});
+  await store.saveArtifact({id:'trusted-expert-statement-reset-review',agentKey:'anchor',type:'trusted_expert_statement',title:'OLD RUN',sections:[{title:'Old',blocks:[]}]});
+  await store.resetAgent('anchor');
+
+  const state=await upgrade.loadReview({store,agentKey:'anchor',artifacts,isReview:true});
+
+  assert.equal(state.status,'empty');
+  assert.equal(state.selected,undefined);
+  assert.equal((JSON.parse(storage.value).artifactVersions||[]).length,1);
+});
+
+test('editing a resolved follow-up replaces its field instead of concatenating contradictory values',async()=>{
+  const stores=require('../assets/js/project-store.js'),store=stores.create({configured:false,storage:null,projectId:'edit-follow-up'});
+  await store.saveAnswer({id:'main',agentKey:'anchor',field:'anchor.authority',text:'I help coaches build offers.',incomplete:true,trigger:'vague_quantity'});
+  const followUp=await store.saveAnswer({id:'follow-up',agentKey:'anchor',field:'anchor.authority',text:'24 clients.',supersedesId:'main',relation:'follow_up'});
+  await store.reviseAnswer(followUp.id,'12 clients.');
+  for(const field of fields.slice(1))await store.saveAnswer({agentKey:'anchor',field:'anchor.'+field,text:'Complete '+field+' detail.'});
+
+  const authority=upgrade.collectAnswers(await store.loadProject(),'anchor')[0];
+
+  assert.equal(authority.text,'12 clients.');
+});

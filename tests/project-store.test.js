@@ -34,7 +34,20 @@ test('local answer revision appends a superseding answer without deleting the or
   assert.equal(project.answers.length, 2);
   assert.equal(revised.supersedesId, original.id);
   assert.equal(revised.text, 'Revised answer');
+  assert.equal(revised.relation, 'revision');
   assert.equal(project.answers[0].text, 'Original answer');
+});
+
+test('Supabase answer revision persists explicit revision metadata in the answer value',async()=>{
+  const stores=require('../assets/js/project-store.js'),calls=[],projectId='11111111-1111-4111-8111-111111111111';
+  const fetchImpl=async(url,init={})=>{calls.push({url,init});if(url.includes('/projects?'))return{ok:true,json:async()=>[{id:projectId}]};if(url.includes('/answers?')&&(!init.method||init.method==='GET'))return{ok:true,json:async()=>[{id:'prior',agent_key:'anchor',field_path:'anchor.authority',value:{text:'24 clients',relation:'follow_up'},basis:'user',permission_status:'not_required'}]};if(url.endsWith('/answers'))return{ok:true,json:async()=>[{id:'revision',agent_key:'anchor',field_path:'anchor.authority',value:JSON.parse(init.body).value,basis:'user',permission_status:'not_required',supersedes_id:'prior'}]};return{ok:true,json:async()=>[]};};
+  const store=stores.create({configured:true,supabaseUrl:'https://example.supabase.co',anonKey:'anon-public',accessToken:'user-token',projectId,userId:'33333333-3333-4333-8333-333333333333',sessionId:'44444444-4444-4444-8444-444444444444',fetchImpl});
+
+  const revised=await store.reviseAnswer('prior','12 clients');
+  const insert=JSON.parse(calls.find(call=>call.url.endsWith('/answers')&&call.init.method==='POST').init.body);
+
+  assert.equal(insert.value.relation,'revision');
+  assert.equal(revised.relation,'revision');
 });
 
 test('local agent reset retires its current artifact while preserving immutable version history', async () => {

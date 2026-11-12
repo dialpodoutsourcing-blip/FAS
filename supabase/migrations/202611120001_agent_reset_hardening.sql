@@ -38,7 +38,6 @@ begin
   set checkpoint = '{}'::jsonb,
       state = '{}'::jsonb,
       status = 'active',
-      completed_at = null,
       updated_at = now()
   where id = p_session_id
     and project_id = p_project_id
