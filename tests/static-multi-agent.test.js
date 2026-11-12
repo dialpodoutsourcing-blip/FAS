@@ -110,7 +110,7 @@ assert.match(adam, /tab-voice[\s\S]*activateVoiceMode/, 'selecting Talk starts o
 assert.match(adam, /submitPostCompletionMessage/, 'completed Type and Talk messages use the advisory conversation path');
 assert.match(adam, /\/api\/advisory-response/, 'completed conversation calls the advisory endpoint');
 assert.match(adam, /createRetryConfirmationModal/, 'chat controller initializes the shared retry modal');
-assert.match(adam, /anchorArtifactUpgrade\.collectAnswers\(project,FAS\.agent\.current\.key\)/, 'normal completion uses the hardened shared answer collector');
+assert.match(adam, /anchorArtifactUpgrade\.collectAnswers\(project,FAS\.agent\.current\.key,\{includePending:true\}\)/, 'private draft completion uses the hardened shared answer collector with saved pending answers');
 assert.doesNotMatch(adam, /Say yes to retry or no to keep your work/, 'retry warning is presented by the modal instead of the chat thread');
 
 const pages = ['chat.html', 'review.html', 'vault.html', 'launch.html'];
