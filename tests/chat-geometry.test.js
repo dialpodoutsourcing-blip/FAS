@@ -75,6 +75,21 @@ for(const viewport of [{width:768,height:1024},{width:390,height:844}]){
   });
 }
 
+for(const viewport of [{width:1680,height:945},{width:768,height:1024},{width:390,height:844}]){
+  browserTest(`saved-answer status never overlaps composer controls at ${viewport.width}x${viewport.height}`,async()=>{
+    await withPage(viewport,async page=>{
+      await page.locator('[data-answer-status]').evaluate(node=>node.textContent='Answer saved.');
+      const result=await page.evaluate(()=>{
+        const rect=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom};};
+        return{status:rect('[data-answer-status]'),mic:rect('.chat-reference-composer .icon-btn'),send:rect('.chat-reference-composer .btn--gold')};
+      });
+      const overlaps=(a,b)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
+      assert.equal(overlaps(result.status,result.mic),false,'saved status overlaps microphone control');
+      assert.equal(overlaps(result.status,result.send),false,'saved status overlaps Send control');
+    });
+  });
+}
+
 browserTest('premium chat keeps long identity content inside the desktop toolbar',async()=>{
   await withPage({width:1508,height:782},async page=>{
     await page.locator('[data-agent-title]').evaluate(node=>node.textContent='A'.repeat(140));
