@@ -31,5 +31,13 @@
     return{run:function(key,task){if(pending[key])return pending[key];var started;try{started=Promise.resolve(task());}catch(error){started=Promise.reject(error);}pending[key]=started.finally(function(){delete pending[key];});return pending[key];}};
   }
 
-  return{buildItems:buildItems,createExportGate:createExportGate};
+  function normalizeView(value){return value==='list'?'list':'cards';}
+  function createViewPreference(storage,key){
+    return{
+      load:function(){try{return normalizeView(storage&&storage.getItem(key));}catch(error){return'cards';}},
+      save:function(view){var normalized=normalizeView(view);try{if(storage)storage.setItem(key,normalized);}catch(error){}return normalized;}
+    };
+  }
+
+  return{buildItems:buildItems,createExportGate:createExportGate,normalizeView:normalizeView,createViewPreference:createViewPreference};
 });
