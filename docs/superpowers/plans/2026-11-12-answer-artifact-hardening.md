@@ -135,5 +135,3 @@ Run: `npm test`
 - [ ] **Step 3: Inspect the final diff and verify deferred permission behavior was not changed**
 
 Run: `git diff --check && git diff --stat && git status --short`
-
-

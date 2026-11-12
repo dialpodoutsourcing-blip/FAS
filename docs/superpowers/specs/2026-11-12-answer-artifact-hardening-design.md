@@ -66,5 +66,3 @@ ANCHOR retains its current completeness requirement. EXTRACT collection returns 
 - Missing EXTRACT fields no longer prevent saving an Expertise Map.
 - The generated partial map visibly identifies missing sections.
 - Existing unrelated tests continue to pass.
-
-
