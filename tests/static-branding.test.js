@@ -16,6 +16,12 @@ for (const page of pages) {
   assert.doesNotMatch(html, /brand__letter/, `${page} should not retain the temporary letter logo`);
 }
 
+const dashboardRef = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+assert.match(dashboardRef,/home-focus__landscape/, 'dashboard includes a decorative landscape layer');
+assert.match(dashboardRef,/home-roadmap-card--gold/, 'Anchor uses the gold roadmap treatment');
+assert.match(dashboardRef,/home-roadmap-card--emerald/, 'Extract uses the emerald roadmap treatment');
+assert.match(dashboardRef,/data-account-name/, 'dashboard identity remains data-driven');
+
 const logo = fs.readFileSync(path.join(root, 'assets/images/fas-monogram.svg'), 'utf8');
 assert.match(logo, /<svg[^>]+viewBox="0 0 120 72"[^>]+role="img"/);
 assert.match(logo, /<title[^>]*>FAS/);
@@ -27,7 +33,7 @@ assert.doesNotMatch(logo, /<text\b/, 'logo does not depend on font glyphs');
 const dashboard = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 assert.match(dashboard, /Welcome back, <span data-account-name>/, 'dashboard greeting uses the authenticated customer name');
 assert.match(dashboard, /assets\/js\/dashboard\.js/, 'dashboard loads live customer progress');
-assert.match(dashboard, /class="dashboard-progress"/, 'dashboard uses the compact current-step banner');
+assert.match(dashboard, /class="[^"]*\bdashboard-progress\b[^"]*"/, 'dashboard uses the compact current-step banner');
 assert.doesNotMatch(dashboard, /class="hero"/, 'dashboard does not regress to the tall ADAM hero');
 assert.match(dashboard, /class="[^"]*\bresume-cta\b[^"]*"/);
 assert.match(dashboard, /class="resume-cta__default" data-dashboard-action>Continue to step 2<\//);
