@@ -32,6 +32,7 @@
   }
 
   function normalizeView(value){return value==='list'?'list':'cards';}
+  function getStorage(host,key){try{return host&&host[key]||null;}catch(error){return null;}}
   function createViewPreference(storage,key){
     return{
       load:function(){try{return normalizeView(storage&&storage.getItem(key));}catch(error){return'cards';}},
@@ -39,5 +40,5 @@
     };
   }
 
-  return{buildItems:buildItems,createExportGate:createExportGate,normalizeView:normalizeView,createViewPreference:createViewPreference};
+  return{buildItems:buildItems,createExportGate:createExportGate,normalizeView:normalizeView,getStorage:getStorage,createViewPreference:createViewPreference};
 });

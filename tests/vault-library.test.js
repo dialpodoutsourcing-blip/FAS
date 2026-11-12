@@ -108,3 +108,11 @@ test('view preference normalizes saves and never exposes storage failures',()=>{
   const blocked=vault.createViewPreference({setItem:()=>{throw new Error('blocked');}},'fas.vault.view');
   assert.equal(blocked.save('list'),'list');
 });
+
+test('storage lookup fails closed when the browser property getter throws',()=>{
+  const browser={};
+  Object.defineProperty(browser,'localStorage',{get(){throw new Error('SecurityError');}});
+  assert.equal(vault.getStorage(browser,'localStorage'),null);
+  assert.equal(vault.getStorage({localStorage:{getItem(){return'cards';}}},'localStorage').getItem(),'cards');
+  assert.equal(vault.getStorage(null,'localStorage'),null);
+});

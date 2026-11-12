@@ -182,7 +182,8 @@ test('Vault renders current library items and uses the exact saved version for v
 
 test('Vault switches remembered card and list layouts without reloading project data',()=>{
  const ui=fs.readFileSync(path.join(__dirname,'..','assets','js','artifact-ui.js'),'utf8');
- assert.match(ui,/createViewPreference\(window\.localStorage,'fas\.vault\.view'\)/);
+ assert.match(ui,/createViewPreference\(FAS\.vaultLibrary\.getStorage\(window,'localStorage'\),'fas\.vault\.view'\)/);
+ assert.match(ui,/getStorage\(window,'localStorage'\)/);
  assert.match(ui,/preference\.load\(\)/);
  assert.match(ui,/preference\.save\(view\)/);
  assert.match(ui,/data-vault-toolbar/);

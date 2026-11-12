@@ -34,5 +34,9 @@ assert.match(styles, /\.vault-preview-dialog\s*\{/, 'vault has a modal preview s
 assert.match(styles, /\.vault-preview-dialog::backdrop\s*\{/, 'modal preview has a backdrop');
 assert.match(styles, /\.vault-preview-dialog__head\s*\{[^}]*position:\s*sticky/s, 'preview actions stay visible');
 assert.match(styles, /@media[^\{]*\(max-width:\s*720px\)[\s\S]*\.vault-preview-dialog/, 'preview adapts on narrow screens');
+assert.match(styles, /@media[^\{]*\(max-width:\s*1100px\)[\s\S]*\.vault-library--cards[^}]*repeat\(2/, 'card grid reduces to two columns before it overflows');
+assert.match(styles, /@media[^\{]*\(max-width:\s*820px\)[\s\S]*\.vault-library--cards[^}]*1fr/, 'card grid becomes one column at compact widths');
+assert.match(styles, /\.vault-preview-dialog__head\s*>\s*div:first-child\s*\{[^}]*min-width:\s*0/s, 'preview title flex child may shrink');
+assert.match(styles, /\.vault-preview-dialog__head h2\s*\{[^}]*overflow-wrap:\s*anywhere/s, 'long preview titles wrap without horizontal overflow');
 
 console.log('Dynamic Vault shell and styles checks passed.');
