@@ -1426,7 +1426,7 @@ body[data-page="home"] .home-content { min-height: 0; padding-top: 54px; grid-te
 .home-encouragement { height: 82px; min-height: 82px; padding-block: 12px; }
 .home-encouragement::after { display: none; }
 
-@media (max-height: 900px) and (min-width: 1441px) {
+@media (max-height: 1050px) and (min-width: 1441px) {
   body[data-page="home"] { height: auto; min-height: 100dvh; overflow-x: hidden; overflow-y: auto; }
   body[data-page="home"] .home-main { height: auto; min-height: 100dvh; padding: 28px 30px 40px; display: flex; gap: 26px; overflow: visible; }
   .home-hero { height: auto; min-height: 160px; }
@@ -1540,6 +1540,8 @@ body[data-page="home"] .home-content { min-height: 0; padding-top: 54px; grid-te
   .home-roadmap-card { height: 318px; min-height: 0; padding: 13px 24px 17px; border-radius: 16px; }
   .home-roadmap-card__step { top: 15px; left: 17px; padding: 3px 14px; font-size: 12px; }
   .home-roadmap-card__art { flex-basis: 114px; height: 114px; margin: -5px -20px 0; }
+  .home-roadmap-card__art { min-height: 0; overflow: hidden; }
+  .home-roadmap-card__art img { width: 100%; max-width: 100%; height: 100%; max-height: 100%; min-height: 0; object-fit: contain; }
   .home-roadmap-card__copy { margin-top: -3px; }
   .home-roadmap-card__agent { font-size: 18px; }
   .home-roadmap-card__copy small { font-size: 12px; }

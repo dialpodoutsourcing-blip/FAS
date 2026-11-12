@@ -7,9 +7,17 @@ const {chromium}=require('playwright-core');
 const root=path.resolve(__dirname,'..');
 const edge=[process.env.PLAYWRIGHT_EXECUTABLE_PATH,'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe','C:/Program Files/Google/Chrome/Application/chrome.exe','/usr/bin/chromium','/usr/bin/chromium-browser','/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'].find(candidate=>candidate&&fs.existsSync(candidate));
 const browserTest=edge?test:test.skip;
+const imageData=name=>`data:image/png;base64,${fs.readFileSync(path.join(root,'assets/images',name)).toString('base64')}`;
+const styles=fs.readFileSync(path.join(root,'assets/css/styles.css'),'utf8')
+  .replace('../images/dashboard-anchor-platform.png',imageData('dashboard-anchor-platform.png'))
+  .replace('../images/dashboard-extract-platform.png',imageData('dashboard-extract-platform.png'))
+  .replace('../images/dashboard-hero-waves.png',imageData('dashboard-hero-waves.png'))
+  .replace('../images/dashboard-focus-landscape.png',imageData('dashboard-focus-landscape.png'));
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8')
   .replace(/<link rel="stylesheet" href="assets\/css\/tokens\.css">/,`<style>${fs.readFileSync(path.join(root,'assets/css/tokens.css'),'utf8')}</style>`)
-  .replace(/<link rel="stylesheet" href="assets\/css\/styles\.css">/,`<style>${fs.readFileSync(path.join(root,'assets/css/styles.css'),'utf8')}</style>`)
+  .replace(/<link rel="stylesheet" href="assets\/css\/styles\.css">/,`<style>${styles}</style>`)
+  .replace('assets/images/dashboard-anchor-platform.png',imageData('dashboard-anchor-platform.png'))
+  .replace('assets/images/dashboard-extract-platform.png',imageData('dashboard-extract-platform.png'))
   .replace(/<script[\s\S]*?<\/script>/g,'');
 
 async function withPage(viewport,run){
@@ -83,6 +91,8 @@ browserTest('scaled desktop preserves the polished reference details at 1508x782
         scrollHeight:document.documentElement.scrollHeight,
         progress:rect('.home-focus__progress'),gauge:rect('.home-focus__gauge'),gaugeNumber:rect('.home-focus__gauge strong'),gaugeDenominator:rect('.home-focus__gauge span'),gaugeLabel:rect('.home-focus__progress small'),
         sidebarAccount:rect('.home-sidebar__account'),signout:rect('.home-sidebar__signout'),sidebarFooter:rect('.home-sidebar__footer'),
+        cardArtwork:[...document.querySelectorAll('.home-roadmap-card__art')].map(node=>{const value=node.getBoundingClientRect();return{top:value.top,bottom:value.bottom,height:value.height};}),
+        cardArtworkImages:[...document.querySelectorAll('.home-roadmap-card__art img')].map(node=>{const value=node.getBoundingClientRect();return{top:value.top,bottom:value.bottom,height:value.height};}),
         cardDescriptions:[...document.querySelectorAll('.home-roadmap-card__copy h3 + p')].map(node=>{const value=node.getBoundingClientRect();return{top:value.top,bottom:value.bottom,height:value.height};}),
         cardFooters:[...document.querySelectorAll('.home-roadmap-card footer')].map(node=>{const value=node.getBoundingClientRect();return{top:value.top,bottom:value.bottom,height:value.height};}),
         cards:[...document.querySelectorAll('.home-roadmap-card')].map(node=>{const value=node.getBoundingClientRect();return{top:value.top,bottom:value.bottom,height:value.height};}),
@@ -95,12 +105,22 @@ browserTest('scaled desktop preserves the polished reference details at 1508x782
     assert.ok(geometry.gaugeLabel.height>10&&geometry.gaugeLabel.bottom<=geometry.progress.bottom,'progress label remains visible inside the progress panel');
     assert.ok(geometry.signout&&geometry.signout.height>=32,'dedicated Sign Out control remains visible');
     assert.ok(geometry.signout.bottom<=geometry.sidebarFooter.bottom,'Sign Out remains inside the sidebar footer');
+    geometry.cardArtworkImages.forEach((image,index)=>assert.ok(image.bottom<=geometry.cardArtwork[index].bottom,`card ${index+1} artwork overflows its wrapper by ${image.bottom-geometry.cardArtwork[index].bottom}px`));
     assert.equal(geometry.cardDescriptions.length,2,'both roadmap descriptions exist');
     geometry.cardDescriptions.forEach((description,index)=>assert.ok(description.height>20&&description.bottom<=geometry.cardFooters[index].top,`card ${index+1} description remains visible above its actions`));
     geometry.cardFooters.forEach((footer,index)=>assert.ok(footer.bottom<=geometry.cards[index].bottom-6,`card ${index+1} actions remain inside the card`));
     assert.ok(geometry.quick.bottom<geometry.encouragement.top,'utility panels retain their reference separation');
     assert.ok(geometry.encouragement.bottom<=778,'Keep Going remains fully visible');
     assert.ok(geometry.scrollHeight<=782,`polished dashboard overflowed to ${geometry.scrollHeight}px`);
+  });
+});
+
+browserTest('desktop just above compact height keeps every action reachable',async()=>{
+  await withPage({width:1508,height:901},async page=>{
+    const geometry=await page.evaluate(()=>{const card=document.querySelector('.home-roadmap-card:last-child').getBoundingClientRect(),footer=document.querySelector('.home-roadmap-card:last-child footer').getBoundingClientRect(),encouragement=document.querySelector('.home-encouragement').getBoundingClientRect();return{scrollHeight:document.documentElement.scrollHeight,cardBottom:card.bottom,footerBottom:footer.bottom,encouragementBottom:encouragement.bottom};});
+    assert.ok(geometry.scrollHeight>901,'901px desktop restores scrolling until the full layout fits');
+    assert.ok(geometry.footerBottom<=geometry.cardBottom,'roadmap footer remains inside its card');
+    assert.ok(geometry.encouragementBottom<=geometry.scrollHeight,'Keep Going remains reachable within the document');
   });
 });
 
