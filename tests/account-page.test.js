@@ -24,9 +24,13 @@ test('temporary propagation cover blocks login with a truthful capped status',()
   assert.match(html,/data-propagation-value[^>]*>75%?</i);
   assert.match(html,/Estimated time remaining:\s*<strong>5[–-]6 hours<\/strong>/i);
   assert.match(html,/<main class="account-shell"[^>]*inert[^>]*aria-hidden="true"/i);
+  assert.match(html,/<script src="assets\/js\/propagation-cover\.js"><\/script>[\s\S]*<script src="assets\/js\/account\.js" type="application\/x-fas-hold"><\/script>/i);
   assert.match(css,/\.fas-propagation-cover\s*\{[^}]*position:\s*fixed[^}]*z-index:\s*\d{3,}/s);
+  assert.match(css,/\.fas-propagation-cover\s*\{[^}]*align-items:\s*safe center[^}]*overflow-x:\s*hidden[^}]*overflow-y:\s*auto/s);
   assert.match(css,/\.fas-propagation-cover__fill\s*\{[^}]*transform:\s*scaleX\(\.75\)[^}]*animation:\s*fasPropagation[^;]*21600s/s);
   assert.match(css,/@keyframes fasPropagation\s*\{\s*from\s*\{[^}]*scaleX\(\.75\)[^}]*\}\s*to\s*\{[^}]*scaleX\(\.89\)/s);
+  const progress=fs.readFileSync(path.join(root,'assets','js','propagation-cover.js'),'utf8');
+  assert.match(progress,/21600000/);assert.match(progress,/setAttribute\('aria-valuenow'/);assert.match(progress,/textContent\s*=\s*value\s*\+\s*'%'/);
 });
 
 test('account dependencies load in order before the controller',()=>{
