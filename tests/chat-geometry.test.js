@@ -107,3 +107,20 @@ browserTest('premium chat wraps long unbroken agent and customer messages',async
     messages.forEach(message=>{assert.ok(message.scroll<=message.client+1,`message clips ${message.scroll-message.client}px`);assert.equal(message.wrap,'anywhere');});
   });
 });
+
+browserTest('anchor completion modal is centered, contained, and exposes one focused primary action',async()=>{
+  await withPage({width:1680,height:945},async page=>{
+    await page.locator('[data-completion-panel]').evaluate(node=>{node.hidden=false;});
+    await page.locator('[data-completion-generate]').focus();
+    const result=await page.evaluate(()=>{
+      const modal=document.querySelector('[data-completion-panel]'),card=modal.querySelector('.completion-panel__card'),action=document.querySelector('[data-completion-generate]'),r=card.getBoundingClientRect();
+      return{modal:{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height},actionCount:modal.querySelectorAll('button,a').length,focused:document.activeElement===action,position:getComputedStyle(modal).position,zIndex:Number(getComputedStyle(modal).zIndex)};
+    });
+    assert.ok(result.modal.left>300&&result.modal.right<1380,`modal spans ${result.modal.left}..${result.modal.right}`);
+    assert.ok(result.modal.top>120&&result.modal.bottom<825,`modal spans ${result.modal.top}..${result.modal.bottom}`);
+    assert.equal(result.actionCount,1);
+    assert.equal(result.focused,true);
+    assert.equal(result.position,'fixed');
+    assert.ok(result.zIndex>=80);
+  });
+});
