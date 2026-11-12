@@ -34,6 +34,10 @@ assert.match(dashboardRef,/data-account-name/, 'dashboard identity remains data-
 assert.match(dashboardRef,/class="eyebrow home-hero__eyebrow"/, 'dashboard header uses its reference eyebrow treatment');
 assert.match(dashboardRef,/class="home-hero__controls"[\s\S]*class="home-system-pill"[\s\S]*class="home-account-link"/, 'dashboard status controls match their visual selectors');
 assert.match(dashboardRef,/class="resume-cta__label"[\s\S]*class="resume-cta__default"[\s\S]*class="resume-cta__hover"/, 'resume labels share the animated overlay wrapper');
+assert.match(dashboardRef,/class="home-sidebar__signout"[^>]*data-account-signout/, 'dashboard sidebar exposes the dedicated Sign Out control');
+assert.match(dashboardRef,/class="home-hero__artwork"[^>]*aria-hidden="true"/, 'dashboard includes a non-interactive hero artwork layer');
+assert.match(dashboardRef,/class="home-encouragement__icon"[^>]*aria-hidden="true"/, 'encouragement panel uses the reference chart icon hook');
+assert.match(dashboardRef,/class="home-encouragement__flourish"[^>]*aria-hidden="true"/, 'encouragement panel exposes its decorative lower flourish');
 
 const logo = fs.readFileSync(path.join(root, 'assets/images/fas-monogram.svg'), 'utf8');
 assert.match(logo, /<svg[^>]+viewBox="0 0 120 72"[^>]+role="img"/);
