@@ -29,6 +29,24 @@ test('ANCHOR applies a five-part AI synthesis without losing source provenance',
  assert.deepEqual(base.sections[0].blocks[0].text.startsWith('Authority focus:'),true,'base artifact remains unchanged');
 });
 
+test('ANCHOR deterministic fallback provides substantive expanded strategic analysis',()=>{
+ const report=artifacts.build('anchor',{id:'expanded',answers:['authority','arena','evidence','position','boundaries','activation'].map((field,index)=>({id:'expanded-'+field,field:'anchor.'+field,text:'Specific saved '+field+' answer with grounded detail '+(index+1)+'.'}))}).premiumReport.expandedAnalysis;
+ assert.ok(report.credibilityParagraphs.length>=2);
+ assert.ok(report.decisionParagraphs.length>=2);
+ assert.ok(report.statementInterpretation.length>=2);
+ assert.ok(report.messagingApplications.length>=3);
+ assert.ok(report.activationScorecard.length>=3);
+});
+
+test('private ANCHOR draft uses saved pending sources without exposing private sources',()=>{
+ const answers=['authority','arena','evidence','position','boundaries','activation'].map(field=>({id:'draft-'+field,field:'anchor.'+field,text:'Saved '+field+' detail for the private draft.',permissionStatus:field==='position'?'pending':'not_required'}));
+ answers.push({id:'private-extra',field:'anchor.evidence',text:'Never include this private detail.',permissionStatus:'private'});
+ const draft=artifacts.build('anchor',{id:'private-draft',privateDraft:true,answers});
+ assert.ok(draft.premiumReport);
+ assert.match(draft.premiumReport.authorityFoundation.distinctiveLens,/Saved position detail/);
+ assert.doesNotMatch(JSON.stringify(draft.premiumReport),/Never include/);
+});
+
 test('ANCHOR attaches a complete premium report without mutating the grounded base artifact',()=>{
  const base=artifacts.build('anchor',{id:'premium',answers:['authority','arena','evidence','position','boundaries','activation'].map((field,index)=>({id:'src-'+field,field:'anchor.'+field,text:'Grounded '+field+' answer '+(index+1)}))}),before=JSON.stringify(base);
  const report={

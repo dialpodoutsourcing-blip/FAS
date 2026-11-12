@@ -29,6 +29,7 @@ test('completed Anchor interviews request structured synthesis before saving the
 
 test('completion generation permits saved pending and incomplete answers only for the private draft',()=>{
  assert.match(adam,/collectAnswers\(project,FAS\.agent\.current\.key,\{includePending:true,includeIncomplete:true\}\)/);
+ assert.match(adam,/privateDraft:true/);
 });
 test('completed interviews open the saved blueprint and reject extra chat answers',()=>{
  const completionGuard=adam.indexOf('if (interview && !interview.currentQuestion())');
