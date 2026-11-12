@@ -35,12 +35,12 @@ function premiumAnchor(){
  built.status='user_approved';return built;
 }
 
-test('premium Anchor renders a distinct nine-page PDF in every approved theme',async()=>{
+test('premium Anchor renders a distinct adaptive twelve-page PDF in every approved theme',async()=>{
  const service=require('../lib/export-service.js'),themes=['editorial-strategy','luxury-editorial','boardroom-consultancy'],buffers=[];
  for(const theme of themes){
   const pdf=await service.renderPdf(premiumAnchor(),{theme});buffers.push(pdf);
   assert.equal(pdf.subarray(0,5).toString(),'%PDF-');assert.ok(pdf.length>12000,theme+' should contain substantive designed content');
-  const document=await PDFDocument.load(pdf);assert.equal(document.getPageCount(),9);assert.equal(document.getTitle(),'Trusted Expert Blueprint');assert.match(document.getSubject(),/premium.*anchor/i);assert.ok((document.getKeywords()||'').includes(theme));
+  const document=await PDFDocument.load(pdf);assert.ok(document.getPageCount()>=12&&document.getPageCount()<=16);assert.equal(document.getTitle(),'Trusted Expert Blueprint');assert.match(document.getSubject(),/premium.*anchor/i);assert.ok((document.getKeywords()||'').includes(theme));
  }
  assert.notDeepEqual(buffers[0],buffers[1]);assert.notDeepEqual(buffers[1],buffers[2]);
 });
@@ -179,7 +179,7 @@ test('premium Anchor DOCX uses the full report structure with professional Word 
  const docx=await service.renderDocx(anchor),zip=await JSZip.loadAsync(docx);
  const documentXml=await zip.file('word/document.xml').async('string');
  const footerXml=await zip.file('word/footer1.xml').async('string');
- for(const heading of ['EXECUTIVE OPPORTUNITY','AUTHORITY FOUNDATION','EVIDENCE &amp; CREDIBILITY','POSITION &amp; MESSAGE','30-DAY ACTIVATION','RECOMMENDED DECISION'])assert.match(documentXml,new RegExp(heading));
+ for(const heading of ['EXECUTIVE OPPORTUNITY','AUTHORITY FOUNDATION','EVIDENCE &amp; CREDIBILITY','POSITION &amp; MESSAGE','30-DAY ACTIVATION','RECOMMENDED DECISION','CREDIBILITY ANALYSIS','POSITIONING INTERPRETATION','MESSAGE APPLICATION GUIDE'])assert.match(documentXml,new RegExp(heading));
  assert.match(documentXml,/Proceed with a controlled validation cycle before scaling\./);
  assert.match(documentXml,/<w:br\/>/,'the cover title should use a real Word line break');
  assert.ok((documentXml.match(/<w:tbl>/g)||[]).length>=3,'premium DOCX should use tables to organize strategic content');
@@ -202,6 +202,6 @@ test('export request normalizes unknown branding while preserving premium report
 test('premium rendering contains long Unicode content safely and legacy exports still work',async()=>{
  const service=require('../lib/export-service.js'),anchor=premiumAnchor();anchor.premiumReport.executiveBrief.opportunity+=' → café — '+('Unbroken'.repeat(90));
  const [premium,legacy,docx]=await Promise.all([service.renderPdf(anchor,{theme:'boardroom-consultancy'}),service.renderPdf(artifact,{theme:'luxury-editorial'}),service.renderDocx(anchor)]);
- assert.equal((await PDFDocument.load(premium)).getPageCount(),9);assert.equal(legacy.subarray(0,5).toString(),'%PDF-');assert.equal(docx.subarray(0,2).toString(),'PK');
+ assert.ok((await PDFDocument.load(premium)).getPageCount()>=12);assert.equal(legacy.subarray(0,5).toString(),'%PDF-');assert.equal(docx.subarray(0,2).toString(),'PK');
 });
 
