@@ -12,10 +12,23 @@
 
   function collectAnswers(project,agentKey){
     agentKey=agentKey||'anchor';var fields=(fieldsByAgent[agentKey]||[]).map(function(field){return agentKey+'.'+field;});
-    var latest={};
+    var grouped={};fields.forEach(function(field){grouped[field]=[];});
     (project&&project.answers||[]).forEach(function(answer){
       var answerAgent=answer.agentKey||answer.agent_key,field=answer.field||answer.field_path,text=answerText(answer).trim(),permissionStatus=answer.permissionStatus||answer.permission_status||'not_required';
-      if(agentKey===answerAgent&&fields.indexOf(field)>=0&&text&&!answer.incomplete&&permissionStatus!=='private'&&permissionStatus!=='pending')latest[field]={id:answer.id,field:field,text:text,basis:answer.basis||'user',permissionStatus:permissionStatus};
+      if(agentKey===answerAgent&&fields.indexOf(field)>=0&&text&&permissionStatus!=='private'&&permissionStatus!=='pending')grouped[field].push(Object.assign({},answer,{text:text,permissionStatus:permissionStatus}));
+    });
+    var latest={};
+    fields.forEach(function(field){
+      var rows=grouped[field],byId={},combined=null;
+      rows.forEach(function(row){
+        var supersedes=row.supersedesId||row.supersedes_id,previous=supersedes&&byId[supersedes],additive=row.relation==='follow_up'||row.relation!=='revision'&&Boolean(previous&&(previous.incomplete||previous.trigger||previous.additive));
+        if(row.incomplete){byId[row.id]=Object.assign({},row,{additive:additive});return;}
+        if(additive&&combined){combined.parts.push(row.text);combined.id=row.id;combined.basis=row.basis||combined.basis;combined.permissionStatus=row.permissionStatus;combined.additive=true;}
+        else combined={id:row.id,field:field,parts:[row.text],basis:row.basis||'user',permissionStatus:row.permissionStatus,additive:false};
+        byId[row.id]=Object.assign({},row,{additive:additive});
+        if(additive&&previous&&previous.incomplete&&combined.parts.indexOf(previous.text)<0)combined.parts.unshift(previous.text);
+      });
+      if(combined)latest[field]={id:combined.id,field:field,text:combined.parts.map(function(text,index){return index?'Supporting detail: '+text:text;}).join('\n\n'),basis:combined.basis,permissionStatus:combined.permissionStatus};
     });
     if(!fields.every(function(field){return latest[field];}))return null;
     return fields.map(function(field){return latest[field];});

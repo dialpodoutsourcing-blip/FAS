@@ -47,10 +47,10 @@ function synthesizedReport() {
   };
 }
 
-test('collectAnswers uses the latest non-empty saved value for every exact Anchor field', () => {
+test('collectAnswers uses an explicit revision as the authoritative value for its exact Anchor field', () => {
   const project = completeProject();
   project.answers.unshift({ id: 'old-authority', agent_key: 'anchor', field: 'anchor.authority', text: 'Old value.' });
-  project.answers.push({ id: 'latest-authority', agent_key: 'anchor', field: 'anchor.authority', text: 'Latest authority answer.' });
+  project.answers.push({ id: 'latest-authority', agent_key: 'anchor', field: 'anchor.authority', text: 'Latest authority answer.', supersedesId:'answer-1' });
   project.answers.push({ id: 'blank-authority', agentKey: 'anchor', field: 'anchor.authority', text: '   ' });
   project.answers.push({ id: 'extract-answer', agentKey: 'extract', field: 'anchor.authority', text: 'Wrong agent.' });
 
@@ -60,6 +60,33 @@ test('collectAnswers uses the latest non-empty saved value for every exact Ancho
   assert.equal(answers[0].id, 'latest-authority');
   assert.equal(answers[0].text, 'Latest authority answer.');
   assert.equal(upgrade.collectAnswers({ answers: project.answers.filter(answer => answer.field !== 'anchor.evidence') }), null);
+});
+
+test('collectAnswers combines a main answer with chronological probe follow-ups instead of replacing it',()=>{
+  const project=completeProject();
+  project.answers[0].text='I help online coaches turn scattered expertise into a clear paid offer.';
+  project.answers[0].incomplete=true;
+  project.answers[0].trigger='vague_quantity';
+  project.answers.push({id:'authority-numbers',agentKey:'anchor',field:'anchor.authority',text:'I have helped 24 coaches in the last 18 months.',supersedesId:'answer-1'});
+  project.answers.push({id:'authority-detail',agentKey:'anchor',field:'anchor.authority',text:'Most reached a sellable offer in six weeks.',supersedesId:'authority-numbers'});
+
+  const authority=upgrade.collectAnswers(project)[0];
+
+  assert.equal(authority.id,'authority-detail');
+  assert.equal(authority.text,'I help online coaches turn scattered expertise into a clear paid offer.\n\nSupporting detail: I have helped 24 coaches in the last 18 months.\n\nSupporting detail: Most reached a sellable offer in six weeks.');
+});
+
+test('collectAnswers excludes unusable follow-ups without losing usable main answers or other agents',()=>{
+  const project=completeProject();
+  project.answers.push({id:'pending-authority',agentKey:'anchor',field:'anchor.authority',text:'Yes, save this.',permissionStatus:'pending',supersedesId:'answer-1'});
+  project.answers.push({id:'private-authority',agentKey:'anchor',field:'anchor.authority',text:'Private detail.',permissionStatus:'private',supersedesId:'answer-1'});
+  project.answers.push({id:'incomplete-authority',agentKey:'anchor',field:'anchor.authority',text:'Half a thought.',incomplete:true,supersedesId:'answer-1'});
+  project.answers.push({id:'extract-authority',agentKey:'extract',field:'anchor.authority',text:'Wrong specialist.',supersedesId:'answer-1'});
+
+  const authority=upgrade.collectAnswers(project)[0];
+
+  assert.equal(authority.id,'answer-1');
+  assert.equal(authority.text,'Saved authority answer with enough specific detail to remain useful.');
 });
 
 test('needsUpgrade accepts only a complete legacy Anchor artifact', () => {

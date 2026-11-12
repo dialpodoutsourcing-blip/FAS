@@ -124,6 +124,22 @@ test('Supabase loads answers oldest-first so corrections are authoritative', asy
   assert.match(calls.find(url=>url.includes('/answers?')),/order=created_at\.asc/);
 });
 
+test('Supabase load restores follow-up metadata from the durable interview checkpoint',async()=>{
+  const stores=require('../assets/js/project-store.js'),projectId='11111111-1111-4111-8111-111111111111';
+  const fetchImpl=async url=>{
+    if(url.includes('/projects?'))return{ok:true,json:async()=>[{id:projectId}]};
+    if(url.includes('/answers?'))return{ok:true,json:async()=>[{id:'answer-main',agent_key:'anchor',field_path:'anchor.authority',value:{text:'Main answer'},basis:'user',permission_status:'not_required'}]};
+    if(url.includes('/interview_sessions?'))return{ok:true,json:async()=>[{agent_key:'anchor',checkpoint:{answers:[{id:'answer-main',field:'anchor.authority',text:'Main answer',incomplete:true,trigger:'vague_quantity'}]}}]};
+    return{ok:true,json:async()=>[]};
+  };
+  const store=stores.create({configured:true,supabaseUrl:'https://example.supabase.co',anonKey:'anon-public',accessToken:'user-token',projectId,userId:'33333333-3333-4333-8333-333333333333',sessionId:'44444444-4444-4444-8444-444444444444',fetchImpl});
+
+  const project=await store.loadProject();
+
+  assert.equal(project.answers[0].incomplete,true);
+  assert.equal(project.answers[0].trigger,'vague_quantity');
+});
+
 test('Supabase retry atomically retires current work without deleting immutable blueprint history', async()=>{
   const stores=require('../assets/js/project-store.js'),calls=[];
   const store=stores.create({configured:true,supabaseUrl:'https://example.supabase.co',anonKey:'anon-public',accessToken:'user-token',projectId:'11111111-1111-4111-8111-111111111111',userId:'33333333-3333-4333-8333-333333333333',sessionId:'44444444-4444-4444-8444-444444444444',fetchImpl:async(url,init={})=>{calls.push({url,init});return{ok:true,json:async()=>[]};}});

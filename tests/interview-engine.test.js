@@ -191,6 +191,7 @@ test('revisiting an Anchor field replaces its saved value without leaving a conf
   assert.equal(interview.navigate('anchor.arena').field, 'anchor.arena');
   const corrected = interview.acceptAnswer({ text:'Brick-and-mortar owners moving online.' });
   assert.equal(corrected.answer.supersedesId, 'answer-2');
+  assert.equal(corrected.answer.relation, 'revision');
   assert.equal(corrected.conflict, null);
   assert.equal(interview.currentQuestion().field, 'anchor.evidence');
   assert.equal(interview.checkpoint().answers.at(-1).text, 'Brick-and-mortar owners moving online.');
@@ -202,6 +203,7 @@ test('reconcileAnswer replaces local identities with durable UUIDs for later cla
   interview.reconcileAnswer(first.answer.id,{id:'55555555-5555-4555-8555-555555555555'});
   const clarification=interview.acceptAnswer({text:'Twelve clients asked last quarter.'});
   assert.equal(clarification.answer.supersedesId,'55555555-5555-4555-8555-555555555555');
+  assert.equal(clarification.answer.relation,'follow_up');
 });
 
 test('contradictions and public-use permission stay unresolved until confirmed', () => {
