@@ -28,23 +28,30 @@ test('configured pages redirect unauthenticated visitors with a safe local retur
 test('temporary launch gate redirects every authenticated non-owner to the propagation screen',async()=>{
   const guard=optionalRequire('../assets/js/auth-guard.js');assert.ok(guard,'auth guard exists');
   const assigned=[],events=[];
-  const result=await guard.protect({config:{configured:true},auth:{requireSession:async()=>({accessToken:'still-valid',user:{id:'user-2',email:'client@example.com'}}),clearSession:()=>events.push('auth-clear')},context:{load(){throw new Error('non-owner context must not load');},clear:()=>events.push('context-clear')},location:{pathname:'/index.html',search:'',assign:value=>assigned.push(value)}});
+  const result=await guard.protect({config:{configured:true},auth:{requireSession:async()=>({accessToken:'still-valid',user:{id:'user-2',email:'client@example.com'}}),getUser:async()=>({id:'user-2',email:'client@example.com'}),clearSession:()=>events.push('auth-clear')},context:{load(){throw new Error('non-owner context must not load');},clear:()=>events.push('context-clear')},location:{pathname:'/index.html',search:'',assign:value=>assigned.push(value)}});
   assert.deepEqual(result,{mode:'redirect',destination:'account.html',reason:'launch-hold'});
   assert.deepEqual(events,['auth-clear','context-clear']);
   assert.deepEqual(assigned,['account.html']);
 });
 
+test('temporary launch gate rejects a tampered cached owner email using the server-verified identity',async()=>{
+  const guard=optionalRequire('../assets/js/auth-guard.js'),assigned=[],events=[];
+  const result=await guard.protect({config:{configured:true},auth:{requireSession:async()=>({accessToken:'valid-client-token',user:{id:'user-2',email:ownerEmail}}),getUser:async()=>({id:'user-2',email:'client@example.com'}),clearSession:()=>events.push('auth-clear')},context:{load(){throw new Error('tampered identity must not load context');},clear:()=>events.push('context-clear')},location:{assign:value=>assigned.push(value)}});
+  assert.deepEqual(result,{mode:'redirect',destination:'account.html',reason:'launch-hold'});
+  assert.deepEqual(events,['auth-clear','context-clear']);assert.deepEqual(assigned,['account.html']);
+});
+
 test('configured pages reuse the refreshed session and valid account context',async()=>{
   const guard=optionalRequire('../assets/js/auth-guard.js');assert.ok(guard,'auth guard exists');
   let sessionCalls=0,bootstrapCalls=0;const stored={workspaceId:'workspace-1',projectId:'project-1',sessions};
-  const result=await guard.protect({config:{configured:true},auth:{requireSession:async()=>{sessionCalls++;return{accessToken:'fresh',user:{id:'user-1',email:ownerEmail}};}},context:{load:()=>stored,bootstrap:async()=>{bootstrapCalls++;}},location:{}});
+  const result=await guard.protect({config:{configured:true},auth:{requireSession:async()=>{sessionCalls++;return{accessToken:'fresh',user:{id:'user-1',email:ownerEmail}};},getUser:async()=>({id:'user-1',email:ownerEmail})},context:{load:()=>stored,bootstrap:async()=>{bootstrapCalls++;}},location:{}});
   assert.equal(sessionCalls,1);assert.equal(bootstrapCalls,0);assert.deepEqual(result,{mode:'supabase',session:{accessToken:'fresh',user:{id:'user-1',email:ownerEmail}},context:stored});
 });
 
 test('missing account context is bootstrapped from authenticated metadata',async()=>{
   const guard=optionalRequire('../assets/js/auth-guard.js');assert.ok(guard,'auth guard exists');
   const inputs=[],created={workspaceId:'workspace-1',projectId:'project-1',sessions};
-  const result=await guard.protect({config:{configured:true},auth:{requireSession:async()=>({accessToken:'fresh',user:{email:ownerEmail,user_metadata:{display_name:'Mike',project_name:'FAS Studio'}}})},context:{load:()=>null,bootstrap:async input=>{inputs.push(input);return created;}},location:{}});
+  const result=await guard.protect({config:{configured:true},auth:{requireSession:async()=>({accessToken:'fresh',user:{email:ownerEmail,user_metadata:{display_name:'Mike',project_name:'FAS Studio'}}}),getUser:async()=>({email:ownerEmail,user_metadata:{display_name:'Mike',project_name:'FAS Studio'}})},context:{load:()=>null,bootstrap:async input=>{inputs.push(input);return created;}},location:{}});
   assert.deepEqual(inputs,[{displayName:'Mike',projectName:'FAS Studio'}]);assert.equal(result.context.projectId,'project-1');
 });
 

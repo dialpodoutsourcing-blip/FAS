@@ -9,8 +9,11 @@
     if(config.unavailable)return Promise.resolve({mode:'config-error'});
     if(!config.configured)return Promise.resolve({mode:'local'});
     return auth.requireSession().then(function(session){
-      if(!isLaunchOwner(session)){if(auth.clearSession)auth.clearSession();if(context.clear)context.clear();if(location.assign)location.assign('account.html');return{mode:'redirect',destination:'account.html',reason:'launch-hold'};}
-      var account=context.load();if(account)return{mode:'supabase',session:session,context:account};var details=userMetadata(session);return context.bootstrap(details).then(function(created){return{mode:'supabase',session:session,context:created};});
+      return auth.getUser().then(function(user){
+        var verifiedSession=Object.assign({},session,{user:user});
+        if(!isLaunchOwner(verifiedSession)){if(auth.clearSession)auth.clearSession();if(context.clear)context.clear();if(location.assign)location.assign('account.html');return{mode:'redirect',destination:'account.html',reason:'launch-hold'};}
+        var account=context.load();if(account)return{mode:'supabase',session:verifiedSession,context:account};var details=userMetadata(verifiedSession);return context.bootstrap(details).then(function(created){return{mode:'supabase',session:verifiedSession,context:created};});
+      });
     }).catch(function(){
       if(auth.clearSession)auth.clearSession();if(context.clear)context.clear();
       var candidate=(location.pathname||'')+(location.search||''),safe=context.safeReturnPath?context.safeReturnPath(candidate):'index.html',destination='account.html?return='+encodeURIComponent(safe);
