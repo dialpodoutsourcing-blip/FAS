@@ -49,6 +49,9 @@ for(const hook of ['data-retry-confirm','data-retry-cancel'])assert.match(chat,n
 assert.match(chat, /data-voice-ambient[^>]+aria-hidden="true"/, 'voice panel includes decorative ambient wavelengths');
 assert.match(chat, /data-voice-hud[^>]+aria-hidden="true"/, 'voice panel includes a decorative processing HUD');
 assert.match(chat, /data-voice-hud-secondary[^>]+aria-hidden="true"/, 'voice panel includes a decorative right-side analysis HUD');
+assert.match(chat, /class="voice-console"/, 'Talk uses one premium three-column voice console');
+assert.match(chat, /class="voice-bottom-dock"/, 'Talk groups transcript and real voice controls in a bottom dock');
+assert.doesNotMatch(chat.match(/<section class="voice"[\s\S]*?<\/section>/)?.[0]||'', />\s*(Attach|Browse|Use Tools)\s*</, 'Talk does not expose unsupported decorative tools');
 assert.match(chat, /VOICE ANALYSIS/, 'right-side HUD identifies its analysis role');
 assert.match(chat, /data-voice-status[^>]+aria-live="polite"/, 'voice mode exposes an accessible live status');
 const voiceAudio = chat.match(/<audio\b[^>]*data-voice-audio[^>]*>/)?.[0] || '';
@@ -189,6 +192,8 @@ assert.match(styles, /\.chat-page \.bubble__text--q\s*\{[^}]*font-size:\s*clamp\
 assert.match(styles, /@keyframes voiceWaveDrift/, 'ambient voice wavelengths are animated');
 assert.match(styles, /@keyframes hudScan/, 'voice HUD has a processing scan animation');
 assert.match(styles, /\.voice-hud--signal\s*\{[^}]*right:\s*28px[^}]*left:\s*auto/s, 'analysis HUD is positioned on the right');
+assert.match(styles, /\.chat-page \.voice-console\s*\{[^}]*grid-template-columns:\s*minmax\(210px,\.72fr\) minmax\(360px,1\.7fr\) minmax\(210px,\.72fr\)/s, 'desktop Talk stage follows the reference three-column hierarchy');
+assert.match(styles, /--voice-live:\s*#35d6a8/, 'Talk limits green to a named live-status accent');
 assert.match(styles, /@keyframes hudRadar/, 'analysis HUD includes an animated signal radar');
 assert.match(styles, /@keyframes orbIdle/, 'voice orb has an ambient idle animation');
 assert.match(styles, /prefers-reduced-motion[\s\S]*\.voice__ambient[\s\S]*\.voice-hud/s, 'voice effects respect reduced-motion preferences');

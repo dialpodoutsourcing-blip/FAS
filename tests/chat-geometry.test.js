@@ -196,3 +196,20 @@ browserTest('cached legacy completion shell is moved out of the hidden Type pane
     assert.deepEqual(result,{parent:'BODY',hidden:false,open:true,rects:1});
   });
 });
+
+for(const viewport of [{width:1680,height:945},{width:390,height:844}]){
+  browserTest(`premium Talk composition remains contained at ${viewport.width}x${viewport.height}`,async()=>{
+    await withPage(viewport,async page=>{
+      await page.evaluate(()=>{document.documentElement.classList.add('fas-access-ready');document.getElementById('panel-text').hidden=true;document.getElementById('panel-voice').hidden=false;});
+      const result=await page.evaluate(()=>{
+        const box=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
+        const consoleStyle=getComputedStyle(document.querySelector('.voice-console'));
+        return{pageWidth:document.documentElement.scrollWidth,workspace:box('.chat-shell__workspace'),panel:box('#panel-voice'),panelDisplay:getComputedStyle(document.getElementById('panel-voice')).display,console:box('.voice-console'),consoleDisplay:consoleStyle.display,stage:box('.voice__stage'),leftHud:box('[data-voice-hud]'),rightHud:box('[data-voice-hud-secondary]'),dock:box('.voice-bottom-dock'),columns:consoleStyle.gridTemplateColumns};
+      });
+      assert.ok(result.pageWidth<=viewport.width,`Talk causes horizontal overflow ${result.pageWidth}`);
+      assert.ok(result.console.left>=result.workspace.left&&result.console.right<=result.workspace.right+1,`voice console ${result.console.left}..${result.console.right} (${result.consoleDisplay}) exceeds workspace ${result.workspace.left}..${result.workspace.right}; panel ${result.panel.left}..${result.panel.right} (${result.panelDisplay})`);
+      assert.ok(result.dock.bottom<=result.workspace.bottom+1,'voice dock remains inside workspace');
+      if(viewport.width>900){assert.ok(result.leftHud.right<result.stage.left,'live-process HUD stays left of the orb');assert.ok(result.stage.right<result.rightHud.left,'analysis HUD stays right of the orb');assert.notEqual(result.columns,'none');}
+    });
+  });
+}
