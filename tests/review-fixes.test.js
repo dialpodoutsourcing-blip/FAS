@@ -167,6 +167,19 @@ test('PDF control opens a three-brand chooser while DOCX remains direct',()=>{
  assert.match(ui,/runExport\([^,]+,'docx'\)/);
 });
 
+test('Vault renders current library items and uses the exact saved version for view and PDF',()=>{
+ const ui=fs.readFileSync(path.join(__dirname,'..','assets','js','artifact-ui.js'),'utf8');
+ assert.match(ui,/store\.loadProject\(\)/);
+ assert.match(ui,/FAS\.vaultLibrary\.buildItems\(project,FAS\.agents&&FAS\.agents\.keys\|\|\[\]\)/);
+ assert.match(ui,/runVaultExport\(item\.version,'pdf',item\.version\.exportTheme\)/);
+ assert.match(ui,/runVaultExport\(selected,/);
+ assert.match(ui,/runVaultExport\(item\.version,/);
+ assert.match(ui,/buildReview\(item\.version,/);
+ assert.match(ui,/origin&&origin\.isConnected&&typeof origin\.focus==='function'/);
+ assert.match(ui,/You do not have any completed work yet/);
+ assert.match(ui,/We could not load your Vault/);
+});
+
 test('shared navigation uses the reviewed artifact agent when selecting a specialist',()=>{
  const nav=fs.readFileSync(path.join(__dirname,'..','assets','js','nav.js'),'utf8');
  assert.match(nav,/query\.get\('agent'\)\s*\|\|\s*query\.get\('asset'\)/);
