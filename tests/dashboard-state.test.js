@@ -60,3 +60,18 @@ test('dashboard marks every roadmap card complete when all available work is don
     ['extract','Complete','Review']
   ]);
 });
+
+test('render preserves the locked destination and authenticated Anchor session',()=>{
+  const state=dashboard.derive({answers:[],checkpoints:{},artifacts:[]},['anchor','extract']);
+  const label={textContent:'',className:''};
+  const action={textContent:''};
+  const extractCard={
+    href:'',
+    classList:{toggle(){}},
+    querySelector(selector){return selector==='[data-home-card-status]'?label:selector==='[data-home-card-action]'?action:null;},
+    setAttribute(){},removeAttribute(){}
+  };
+  const doc={querySelector(selector){return selector==='[data-home-card="extract"]'?extractCard:null;}};
+  dashboard.render(state,doc,{projectId:'p',sessions:{anchor:'anchor-session',extract:'extract-session'}});
+  assert.equal(extractCard.href,'chat.html?agent=anchor&notice=extract-locked&project=p&session=anchor-session');
+});
