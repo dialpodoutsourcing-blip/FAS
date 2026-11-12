@@ -1464,3 +1464,87 @@ body[data-page="home"] .home-content { min-height: 0; padding-top: 54px; grid-te
   .home-roadmap__grid,.home-utility { grid-template-columns: 1fr; }
   .home-roadmap-card { height: auto; min-height: 370px; }
 }
+
+/* Keep scaled/short desktop displays faithful to the one-screen dashboard. */
+@media (min-width: 1450px) and (min-height: 720px) and (max-height: 900px) {
+  body[data-page="home"] { width: 100%; height: 100dvh; min-height: 0; overflow: hidden; }
+  body[data-page="home"] .app { height: 100dvh; min-height: 0; grid-template-columns: 226px minmax(0,1fr); overflow: hidden; }
+  body[data-page="home"] .sidebar[data-home-sidebar] { height: 100dvh; padding: 12px 8px 10px; overflow: hidden; }
+  .home-sidebar__brand { height: 64px; padding-inline: 8px; }
+  .home-sidebar__brand .brand__mark { width: 91px; height: 44px; }
+  .home-sidebar__brand .brand__name { width: 194px; font-size: 7px; letter-spacing: 1.25px; }
+  .home-sidebar__primary { margin-top: 4px; }
+  .home-sidebar__primary .nav-link { min-height: 39px; padding-inline: 11px; gap: 11px; font-size: 12px; }
+  .home-sidebar__primary .nav-link svg { width: 18px; height: 18px; }
+  .home-sidebar__specialists { margin-top: 14px; padding-inline: 7px; }
+  .home-sidebar__specialists > .nav-group__title { padding-bottom: 6px; font-size: 9px; }
+  .home-sidebar__specialists .step-link { min-height: 46px; gap: 8px; }
+  .home-sidebar__specialists .em--xs { width: 29px; height: 29px; }
+  .home-sidebar__specialists .step-link__task { font-size: 12px; }
+  .home-sidebar__specialists .step-link__agent { font-size: 8px; }
+  .home-sidebar__account { min-height: 58px; padding: 7px; }
+  .home-sidebar__account .user__avatar { width: 34px; height: 34px; }
+
+  body[data-page="home"] .home-main {
+    width: auto;
+    height: 100dvh;
+    min-height: 0;
+    padding: 22px 24px 12px 32px;
+    display: grid;
+    grid-template-rows: 104px 145px minmax(0,1fr);
+    row-gap: 20px;
+    overflow: hidden;
+  }
+  .home-hero { height: 104px; min-height: 0; }
+  .home-hero__eyebrow { margin-bottom: 10px; font-size: 10px; letter-spacing: 5px; }
+  .home-hero__eyebrow::after { width: 65px; height: 2px; }
+  .home-hero__copy { max-width: calc(100% - 230px); }
+  .home-hero__title { max-width: 900px; font-size: 42px; }
+  .home-hero__copy > p:last-child { margin-top: 7px; font-size: 15px; }
+  .home-hero__controls { padding-top: 4px; gap: 12px; }
+  .home-system-pill { min-width: 146px; min-height: 44px; font-size: 12px; }
+  .home-account-link { width: 46px; height: 46px; }
+
+  body[data-page="home"] .home-focus { height: 145px; min-height: 0; grid-template-columns: 188px minmax(0,1fr) 246px; border-radius: 18px; }
+  .home-focus__gauge { width: 124px; padding-top: 17px; }
+  .home-focus__gauge::before { width: 105px; height: 56px; }
+  .home-focus__gauge strong { font-size: 43px; }
+  .home-focus__progress small { font-size: 10px; }
+  .home-focus__identity { grid-template-columns: 52px 1fr; padding: 18px 25px; column-gap: 14px; }
+  .home-focus__identity > .em { width: 51px; height: 51px; }
+  .home-focus__identity h2 { font-size: 28px; }
+  .home-focus__identity > div p { font-size: 13px; }
+  .home-focus__description { margin: 6px 0; font-size: 14px; }
+  .home-focus .dashboard-progress__rail { height: 7px; }
+  .home-focus__action { gap: 7px; padding: 17px 24px 15px 8px; }
+  .home-focus__action > span { font-size: 10px; }
+  .home-focus__action .resume-cta { min-height: 52px; font-size: 14px; }
+  .home-focus__action > a:last-of-type { font-size: 12px; }
+
+  body[data-page="home"] .home-content { min-height: 0; padding-top: 10px; grid-template-columns: minmax(0,1fr) 280px; gap: 20px; overflow: hidden; }
+  .home-section-head { height: 74px; padding: 2px 0 0 18px; }
+  .home-section-head h2 { font-size: 32px; }
+  .home-section-head p { margin-top: 3px; font-size: 13px; }
+  .home-roadmap__grid { height: 318px; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px; }
+  .home-roadmap-card { height: 318px; min-height: 0; padding: 13px 24px 17px; border-radius: 16px; }
+  .home-roadmap-card__step { top: 15px; left: 17px; padding: 3px 14px; font-size: 12px; }
+  .home-roadmap-card__art { flex-basis: 160px; height: 160px; margin: -5px -20px 0; }
+  .home-roadmap-card__copy { margin-top: -3px; }
+  .home-roadmap-card__agent { font-size: 18px; }
+  .home-roadmap-card__copy small { font-size: 12px; }
+  .home-roadmap-card__copy h3 { margin-top: 3px; font-size: 22px; }
+  .home-roadmap-card footer { padding-top: 7px; font-size: 11px; }
+  .home-roadmap-card .status { padding: 7px 13px; }
+
+  .home-utility { display: grid; grid-template-columns: 1fr; gap: 16px; padding-top: 19px; }
+  .home-quick { height: 242px; padding: 16px 17px; }
+  .home-quick h2 { margin-bottom: 9px; font-size: 18px; }
+  .home-quick > a { min-height: 52px; margin-top: 6px; padding: 6px 9px; grid-template-columns: 38px minmax(0,1fr) auto; }
+  .home-quick b { width: 34px; height: 34px; }
+  .home-quick span { font-size: 12px; }
+  .home-quick small { font-size: 10px; }
+  .home-encouragement { height: 118px; min-height: 0; padding: 15px; gap: 12px; }
+  .home-encouragement > strong { font-size: 32px; }
+  .home-encouragement h2 { font-size: 15px; }
+  .home-encouragement p { margin-top: 5px; font-size: 11px; }
+}
