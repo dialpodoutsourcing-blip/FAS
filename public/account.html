@@ -9,7 +9,20 @@
   <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body class="account-page">
-  <main class="account-shell">
+  <section class="fas-propagation-cover" role="dialog" aria-modal="true" aria-labelledby="propagation-title" aria-describedby="propagation-copy">
+    <div class="fas-propagation-cover__glow" aria-hidden="true"></div>
+    <div class="fas-propagation-cover__panel">
+      <div class="fas-propagation-cover__brand" aria-label="Fitness Authority System"><strong>FAS</strong><span>FITNESS AUTHORITY SYSTEM</span></div>
+      <p class="fas-propagation-cover__eyebrow">SYSTEM DEPLOYMENT IN PROGRESS</p>
+      <h1 id="propagation-title">FAS is still propagating</h1>
+      <p id="propagation-copy" class="fas-propagation-cover__copy">We’re completing the final system rollout and availability checks. Access will open as soon as propagation is complete.</p>
+      <div class="fas-propagation-cover__status"><span>Propagation status</span><strong data-propagation-value>75%</strong></div>
+      <div class="fas-propagation-cover__track" role="progressbar" aria-label="FAS propagation progress" aria-valuemin="0" aria-valuenow="75" aria-valuemax="100"><span class="fas-propagation-cover__fill"></span></div>
+      <p class="fas-propagation-cover__estimate">Estimated time remaining: <strong>5–6 hours</strong></p>
+      <p class="fas-propagation-cover__note"><i aria-hidden="true"></i> Deployment systems are online</p>
+    </div>
+  </section>
+  <main class="account-shell" inert aria-hidden="true">
     <section class="account-story" aria-labelledby="account-brand-title">
       <a class="account-mark" href="index.html" aria-label="FAS home"><span>FAS</span><small>FITNESS AUTHORITY SYSTEM</small></a>
       <div class="account-story__copy">

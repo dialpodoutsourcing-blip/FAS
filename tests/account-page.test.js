@@ -17,6 +17,18 @@ test('account page is accessible, complete, and contains no credentials',()=>{
   assert.doesNotMatch(html,/sb_(publishable|secret)|service.role|access_token|refresh_token/i);
 });
 
+test('temporary propagation cover blocks login with a truthful capped status',()=>{
+  const html=fs.readFileSync(accountPath,'utf8'),css=fs.readFileSync(accountCssPath,'utf8');
+  assert.match(html,/class="fas-propagation-cover"[^>]*role="dialog"[^>]*aria-modal="true"/i);
+  assert.match(html,/FAS is still propagating/i);
+  assert.match(html,/data-propagation-value[^>]*>75%?</i);
+  assert.match(html,/Estimated time remaining:\s*<strong>5[–-]6 hours<\/strong>/i);
+  assert.match(html,/<main class="account-shell"[^>]*inert[^>]*aria-hidden="true"/i);
+  assert.match(css,/\.fas-propagation-cover\s*\{[^}]*position:\s*fixed[^}]*z-index:\s*\d{3,}/s);
+  assert.match(css,/\.fas-propagation-cover__fill\s*\{[^}]*transform:\s*scaleX\(\.75\)[^}]*animation:\s*fasPropagation[^;]*21600s/s);
+  assert.match(css,/@keyframes fasPropagation\s*\{\s*from\s*\{[^}]*scaleX\(\.75\)[^}]*\}\s*to\s*\{[^}]*scaleX\(\.89\)/s);
+});
+
 test('account dependencies load in order before the controller',()=>{
   const html=fs.existsSync(accountPath)?fs.readFileSync(accountPath,'utf8'):'';
   const scripts=['runtime-config.js','auth-client.js','account-context.js','artifacts.js','anchor-artifact-upgrade.js','local-import.js','account.js'].map(name=>html.indexOf(name));
