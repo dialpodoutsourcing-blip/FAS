@@ -22,7 +22,7 @@
       var rows=grouped[field],byId={},combined=null;
       rows.forEach(function(row){
         var supersedes=row.supersedesId||row.supersedes_id,previous=supersedes&&byId[supersedes],additive=row.relation==='follow_up'||row.relation!=='revision'&&Boolean(previous&&(previous.incomplete||previous.trigger||previous.additive));
-        if(row.incomplete){byId[row.id]=Object.assign({},row,{additive:additive});return;}
+        if(row.incomplete&&options.includeIncomplete!==true){byId[row.id]=Object.assign({},row,{additive:additive});return;}
         if(additive&&combined){combined.parts.push(row.text);combined.id=row.id;combined.basis=row.basis||combined.basis;combined.permissionStatus=row.permissionStatus;combined.additive=true;}
         else combined={id:row.id,field:field,parts:[row.text],basis:row.basis||'user',permissionStatus:row.permissionStatus,additive:false};
         byId[row.id]=Object.assign({},row,{additive:additive});
