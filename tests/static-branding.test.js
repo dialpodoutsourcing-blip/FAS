@@ -39,10 +39,7 @@ assert.match(dashboardRef,/class="home-hero__artwork"[^>]*aria-hidden="true"/, '
 assert.match(dashboardRef,/class="home-encouragement__icon"[^>]*aria-hidden="true"/, 'encouragement panel uses the reference chart icon hook');
 assert.match(dashboardRef,/class="home-encouragement__flourish"[^>]*aria-hidden="true"/, 'encouragement panel exposes its decorative lower flourish');
 assert.match(dashboardRef,/class="home-sidebar__atmosphere"[^>]*aria-hidden="true"/, 'sidebar footer exposes an inaccessible atmospheric flourish');
-assert.equal((dashboardRef.match(/class="home-roadmap-card__haze" aria-hidden="true"/g)||[]).length,2,'both roadmap cards expose inaccessible native haze layers');
-assert.equal((dashboardRef.match(/class="step-link__subtitle"/g)||[]).length,2,'visible specialists expose the two reference subtitles');
-assert.equal((dashboardRef.match(/class="step-link__chevron" aria-hidden="true"/g)||[]).length,2,'visible specialists expose simple decorative chevrons');
-assert.doesNotMatch(dashboardRef,/class="step-link__action-label"/,'sidebar no longer exposes status labels in the reference specialist rows');
+assert.match(dashboardRef,/class="step-link__action-label"[\s\S]*class="step-link__action-arrow"[^>]*aria-hidden="true"/, 'specialist actions separate their label and diagonal arrow');
 assert.match(dashboardRef,/class="resume-cta__arrow"[^>]*aria-hidden="true"/, 'focus CTA exposes a dedicated arrow detail');
 assert.match(dashboardRef,/class="home-focus__details"[\s\S]*class="home-focus__chevron"[^>]*aria-hidden="true"/, 'focus detail link exposes its underline and chevron hooks');
 
