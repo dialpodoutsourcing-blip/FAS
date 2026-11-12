@@ -17,6 +17,12 @@ for (const page of pages) {
 }
 
 const dashboardRef = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+for (const artwork of ['dashboard-anchor-platform.png', 'dashboard-extract-platform.png']) {
+  assert.match(dashboardRef, new RegExp(`assets/images/${artwork.replace('.', '\\.')}`), `${artwork} is rendered by the dashboard`);
+  const artworkPath = path.join(root, 'assets', 'images', artwork);
+  assert.ok(fs.existsSync(artworkPath), `${artwork} exists in source assets`);
+  assert.ok(fs.statSync(artworkPath).size > 1000, `${artwork} contains production artwork`);
+}
 assert.match(dashboardRef,/home-focus__landscape/, 'dashboard includes a decorative landscape layer');
 assert.match(dashboardRef,/home-roadmap-card--gold/, 'Anchor uses the gold roadmap treatment');
 assert.match(dashboardRef,/home-roadmap-card--emerald/, 'Extract uses the emerald roadmap treatment');
