@@ -61,5 +61,10 @@ assert.match(styles, /@media\s*\(max-width:\s*900px\)[\s\S]*\.home-content/, 'da
 assert.match(styles, /\.home-focus__action \.resume-cta\s*\{[^}]*width:\s*100%[^}]*min-width:\s*0/s, 'focus action cannot overflow its responsive column');
 assert.match(styles, /@media\s*\(max-width:\s*1180px\)[\s\S]*\.home-content\s*\{[^}]*grid-template-columns:\s*1fr/s, 'utility rail collapses before roadmap cards become cramped');
 assert.match(styles, /overflow-wrap:\s*anywhere/, 'long authenticated names remain contained');
+assert.match(styles, /Dashboard pixel match v2/, 'dashboard uses the approved pixel-match stylesheet');
+assert.match(styles, /body\[data-page="home"\] \.app\s*\{[^}]*grid-template-columns:\s*312px\s+minmax\(0,\s*1fr\)/s, 'desktop dashboard uses the reference sidebar width');
+assert.match(styles, /body\[data-page="home"\][^}]*height:\s*100dvh/s, 'desktop dashboard is bounded to one viewport');
+assert.match(styles, /\.home-roadmap-card__art img\s*\{[^}]*object-fit:\s*contain/s, 'generated scenes are fitted without cropping');
+assert.match(styles, /@media\s*\(max-width:\s*1440px\)[\s\S]*@media\s*\(max-width:\s*1024px\)[\s\S]*@media\s*\(max-width:\s*768px\)/s, 'dashboard has explicit desktop, tablet, and mobile compaction points');
 
 console.log('Static branding and resume CTA checks passed.');

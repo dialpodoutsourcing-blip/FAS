@@ -205,7 +205,7 @@ assert.match(dashboard,/data-home-card="anchor"/, 'dashboard keeps a live Anchor
 assert.match(dashboard,/data-home-card="extract"/, 'dashboard keeps a live Extract roadmap card');
 assert.match(dashboard,/href="vault\.html"[\s\S]*View Your Vault/, 'quick access links to the Vault');
 assert.doesNotMatch(dashboard,/Michael Diala|Innov8 IT/, 'dashboard does not hard-code the reference identity');
-assert.match(dashboard,/class="[^"]*\bhome-sidebar\b[^"]*"/, 'dashboard uses the reference-specific sidebar');
+assert.match(dashboard,/class="sidebar"[^>]*data-home-sidebar/, 'dashboard uses the reference-specific sidebar');
 assert.match(dashboard,/class="home-sidebar__brand"/, 'dashboard has the compact reference logo lockup');
 assert.match(dashboard,/class="nav-group home-sidebar__primary"[\s\S]*Dashboard[\s\S]*Help me \/ Demo[\s\S]*Talk to ADAM[\s\S]*My vault/, 'dashboard keeps the four primary reference actions');
 assert.match(dashboard,/class="home-sidebar__specialists"[\s\S]*data-home-sidebar-card="anchor"[\s\S]*data-home-sidebar-card="extract"/, 'dashboard sidebar has the two included specialist rows');
