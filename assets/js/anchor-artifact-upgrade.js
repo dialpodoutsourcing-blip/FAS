@@ -10,12 +10,12 @@
     return answer.value&&typeof answer.value.text==='string'?answer.value.text:'';
   }
 
-  function collectAnswers(project,agentKey){
-    agentKey=agentKey||'anchor';var fields=(fieldsByAgent[agentKey]||[]).map(function(field){return agentKey+'.'+field;});
+  function collectAnswers(project,agentKey,options){
+    agentKey=agentKey||'anchor';options=options||{};var fields=(fieldsByAgent[agentKey]||[]).map(function(field){return agentKey+'.'+field;});
     var grouped={};fields.forEach(function(field){grouped[field]=[];});
     (project&&project.answers||[]).forEach(function(answer){
       var answerAgent=answer.agentKey||answer.agent_key,field=answer.field||answer.field_path,text=answerText(answer).trim(),permissionStatus=answer.permissionStatus||answer.permission_status||'not_required';
-      if(agentKey===answerAgent&&fields.indexOf(field)>=0&&text&&permissionStatus!=='private'&&permissionStatus!=='pending')grouped[field].push(Object.assign({},answer,{text:text,permissionStatus:permissionStatus}));
+      if(agentKey===answerAgent&&fields.indexOf(field)>=0&&text&&permissionStatus!=='private'&&(permissionStatus!=='pending'||options.includePending===true))grouped[field].push(Object.assign({},answer,{text:text,permissionStatus:permissionStatus}));
     });
     var latest={};
     fields.forEach(function(field){

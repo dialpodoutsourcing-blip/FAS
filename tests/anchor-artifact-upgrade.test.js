@@ -169,6 +169,17 @@ test('private or pending Anchor evidence is never included in a publishable rebu
   await assert.rejects(()=>upgrade.rebuild({project,artifacts,fetchImpl:async()=>{throw new Error('must not synthesize');}}),/six complete/i);
 });
 
+test('private draft generation can use saved pending answers while still excluding private answers',()=>{
+  const project=completeProject();
+  project.answers.find(answer=>answer.field==='anchor.position').permissionStatus='pending';
+  const pendingDraft=upgrade.collectAnswers(project,'anchor',{includePending:true});
+  assert.ok(pendingDraft);
+  assert.equal(pendingDraft.find(answer=>answer.field==='anchor.position').permissionStatus,'pending');
+
+  project.answers.find(answer=>answer.field==='anchor.position').permissionStatus='private';
+  assert.equal(upgrade.collectAnswers(project,'anchor',{includePending:true}),null);
+});
+
 test('completed EXTRACT work is eligible for a premium deterministic upgrade',async()=>{
   const fields=['context','diagnostic','origin','timeline','method','proof','point_of_view','boundaries','synthesis'];
   const project={answers:fields.map((field,index)=>({id:'e'+index,agentKey:'extract',field:'extract.'+field,text:'Specific '+field+' evidence and detail for the expertise report.'}))};
