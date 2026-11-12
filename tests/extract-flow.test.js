@@ -1,6 +1,7 @@
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');
 const html=fs.readFileSync(path.join(__dirname,'..','chat.html'),'utf8');const adam=fs.readFileSync(path.join(__dirname,'..','assets','js','adam.js'),'utf8');const coordinator=fs.readFileSync(path.join(__dirname,'..','assets','js','interview-coordinator.js'),'utf8');const projectStore=fs.readFileSync(path.join(__dirname,'..','assets','js','project-store.js'),'utf8');
+const agents=require('../assets/js/agents.js');
 test('chat loads production domain modules before its controller',()=>{
  for(const file of ['project-store.js','interview-engine.js','interview-coordinator.js','artifacts.js'])assert.match(html,new RegExp(`<script src="assets/js/${file.replace('.','\\.')}"`));
  assert.ok(html.indexOf('interview-coordinator.js')<html.indexOf('adam.js'));
@@ -32,7 +33,8 @@ test('completed interviews open the saved blueprint and reject extra chat answer
 });
 test('completion is clearly announced before user-confirmed blueprint generation',()=>{
  assert.match(adam,/function announceCompletion/);
- assert.match(adam,/finished[\s\S]*generat[\s\S]*review[\s\S]*PDF/i);
+ assert.match(adam,/finished[\s\S]*saved[\s\S]*select Generate[\s\S]*review/i);
+ assert.doesNotMatch(adam,/I.m generating your[\s\S]*now/i);
  const choice=adam.indexOf('function presentCompletionChoice');
  const generate=adam.indexOf('function generateFromCompletionModal',choice);
  assert.ok(choice>=0&&generate>choice,'completion choice is defined before the explicit generation action');
@@ -91,12 +93,18 @@ test('completion action is single-flight and exposes retry without losing the mo
  assert.match(adam,/\[data-completion-generate\]/);
  assert.match(adam,/Generating your '\+completionDeliverable\(\)/);
  assert.match(adam,/Retry Generation/);
- assert.match(adam,/completionPanel\.hidden=false/);
+ assert.match(adam,/completionPanel\.showModal\(\)/);
 });
 test('completion modal traps focus and cannot be dismissed with Escape',()=>{
  assert.match(adam,/completionModalKeydown/);
  assert.match(adam,/event\.key==='Escape'[\s\S]*preventDefault\(\)/);
  assert.match(adam,/event\.key==='Tab'[\s\S]*completionButton\.focus\(\)/);
+});
+test('every specialist exposes the correct completion deliverable',()=>{
+ const expected={anchor:'Trusted Expert Statement',extract:'Expertise Map',radar:'Buyer Intelligence Brief',forge:'Brand Identity Brief',architect:'Curriculum Map',voice:'Copy Pack',launch:'Rollout Plan'};
+ for(const [key,deliverable] of Object.entries(expected))assert.equal(agents.get(key).deliverable,deliverable,key);
+ assert.match(adam,/FAS\.agent\.current\.deliverable/);
+ assert.match(adam,/FAS\.agent\.current\.name\+' COMPLETE'/);
 });
 test('chat controller requests an AI acknowledgement while preserving the engine-selected question',()=>{
  assert.match(adam,/apiFetch\('\/api\/chat-response'/);

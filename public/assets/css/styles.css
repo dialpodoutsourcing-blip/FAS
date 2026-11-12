@@ -1164,8 +1164,8 @@ body.src-off .part__src { display: none; }
 .chat-page .composer__chips .pill { min-height: 34px; padding: 0 12px; white-space: nowrap; }
 .composer__status { min-height: 15px; margin: -3px 0 0; color: var(--gold); font-size: 11px; text-align: right; }
 .chat-page [data-agent-completion] { justify-self: end; width: auto; min-height: 34px; padding: 0 12px; font-size: 11px; opacity: .72; }
-.completion-panel { position:fixed; z-index:90; inset:0; display:grid; place-items:center; padding:24px; background:rgba(0,0,0,.78); backdrop-filter:blur(12px); }
-.completion-panel[hidden] { display: none; }
+.completion-panel { position:fixed; z-index:90; inset:0; width:auto; max-width:none; height:auto; max-height:none; margin:0; border:0; display:grid; place-items:center; padding:24px; background:rgba(0,0,0,.78); backdrop-filter:blur(12px); }
+.completion-panel:not([open]) { display: none; }
 .completion-panel__card { position:relative; isolation:isolate; width:min(620px,100%); overflow:hidden; padding:46px 48px 42px; border:1px solid rgba(241,197,79,.68); border-radius:20px; background:radial-gradient(420px 220px at 50% 0,rgba(241,197,79,.12),transparent 70%),linear-gradient(145deg,rgba(22,22,18,.98),rgba(5,9,7,.99)); box-shadow:0 30px 90px rgba(0,0,0,.78),0 0 44px rgba(226,170,37,.12),inset 0 1px rgba(255,244,193,.14); text-align:center; }
 .completion-panel__card::after { content:""; position:absolute; z-index:-1; right:-120px; bottom:-90px; width:380px; height:180px; border-radius:50%; border-top:1px solid rgba(241,197,79,.58); box-shadow:0 -9px 30px rgba(241,197,79,.08); }
 .completion-panel__eyebrow { display:block; margin-bottom:18px; color:#e8bd4c; font:700 11px/1 var(--font-sub); letter-spacing:2.4px; }

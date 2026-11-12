@@ -110,8 +110,7 @@ browserTest('premium chat wraps long unbroken agent and customer messages',async
 
 browserTest('anchor completion modal is centered, contained, and exposes one focused primary action',async()=>{
   await withPage({width:1680,height:945},async page=>{
-    await page.locator('[data-completion-panel]').evaluate(node=>{node.hidden=false;});
-    await page.locator('[data-completion-generate]').focus();
+    await page.locator('[data-completion-panel]').evaluate(node=>node.showModal());
     const result=await page.evaluate(()=>{
       const modal=document.querySelector('[data-completion-panel]'),card=modal.querySelector('.completion-panel__card'),action=document.querySelector('[data-completion-generate]'),r=card.getBoundingClientRect();
       return{modal:{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height},actionCount:modal.querySelectorAll('button,a').length,focused:document.activeElement===action,position:getComputedStyle(modal).position,zIndex:Number(getComputedStyle(modal).zIndex)};
@@ -122,5 +121,16 @@ browserTest('anchor completion modal is centered, contained, and exposes one foc
     assert.equal(result.focused,true);
     assert.equal(result.position,'fixed');
     assert.ok(result.zIndex>=80);
+  });
+});
+
+browserTest('completion modal stays visible in Talk and native modality keeps focus out of the background',async()=>{
+  await withPage({width:1280,height:800},async page=>{
+    await page.evaluate(()=>{document.querySelector('#panel-text').hidden=true;document.querySelector('#panel-voice').hidden=false;document.querySelector('[data-completion-panel]').showModal();});
+    const action=page.locator('[data-completion-generate]');
+    await action.focus();
+    await page.keyboard.press('Shift+Tab');
+    const result=await page.evaluate(()=>{const modal=document.querySelector('[data-completion-panel]');return{visible:modal.getClientRects().length>0,open:modal.open,backgroundFocused:Boolean(document.activeElement.closest&&document.activeElement.closest('#panel-text,#panel-voice'))};});
+    assert.deepEqual(result,{visible:true,open:true,backgroundFocused:false});
   });
 });

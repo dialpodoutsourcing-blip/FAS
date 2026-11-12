@@ -321,21 +321,22 @@
   function buildCompletedSummary(project){var answers=(project&&project.answers||[]).filter(function(answer){return(answer.agentKey||answer.agent_key)===FAS.agent.current.key;}),latest={};answers.forEach(function(answer){latest[answer.field||answer.field_path]=answer.text||(answer.value&&answer.value.text)||answer.value||'';});return Object.keys(latest).map(function(field){return field+': '+latest[field];}).join('\n').slice(0,6000)||FAS.agent.current.name+' is complete.';}
   function latestAgentAnswers(project){var latest={};(project&&project.answers||[]).filter(function(answer){return(answer.agentKey||answer.agent_key)===FAS.agent.current.key;}).forEach(function(answer){latest[answer.field||answer.field_path]=answer;});return Object.keys(latest).map(function(field){return latest[field];});}
   function renderEditableSavedAnswers(project){var feed=$('[data-agent-saved]');if(!feed)return;var answers=latestAgentAnswers(project);if(!answers.length)return;feed.textContent='';answers.forEach(function(answer){var item=document.createElement('div'),top=document.createElement('div'),name=document.createElement('span'),status=document.createElement('span'),value=document.createElement('span'),edit=document.createElement('button');item.className='feed__item';top.className='feed__top';name.className='feed__name';name.textContent=(answer.field||answer.field_path||'Saved answer').replace(/[._-]+/g,' ');status.className='status status--draft';status.textContent='Saved';value.className='feed__value';value.textContent=answer.text||(answer.value&&answer.value.text)||answer.value||'';edit.className='btn btn--text';edit.type='button';edit.setAttribute('data-edit-answer',answer.id);edit.textContent='Edit';top.appendChild(name);top.appendChild(status);top.appendChild(edit);item.appendChild(top);item.appendChild(value);feed.appendChild(item);});}
-  function completionDeliverable(){return FAS.agent.current.key==='anchor'?'Trusted Expert Statement':FAS.agent.current.title;}
-  function completionModalOpen(){return Boolean(completionPanel&&!completionPanel.hidden);}
+  function completionDeliverable(){return FAS.agent.current.deliverable||FAS.agent.current.title;}
+  function completionModalOpen(){return Boolean(completionPanel&&completionPanel.open);}
   function completionModalKeydown(event){if(!completionModalOpen())return;if(event.key==='Escape'){event.preventDefault();return;}if(event.key==='Tab'){event.preventDefault();if(completionButton)completionButton.focus();}}
   function presentCompletionChoice(message,retry){
-    var title=$('[data-completion-title]'),copy=$('[data-completion-copy]'),deliverable=completionDeliverable();
+    var title=$('[data-completion-title]'),copy=$('[data-completion-copy]'),eyebrow=$('[data-completion-eyebrow]'),deliverable=completionDeliverable();
     announceCompletion();artifactRetryPending=Boolean(retry);
     if(title)title.textContent='You\u2019ve completed '+FAS.agent.current.name;
+    if(eyebrow)eyebrow.textContent=FAS.agent.current.name+' COMPLETE';
     if(copy)copy.textContent='You\u2019ve completed '+FAS.agent.current.name+'. Your answers are safely saved. Let\u2019s turn them into your '+deliverable+'.';
     if(completionStatus)completionStatus.textContent=message||'';
-    if(completionButton){completionButton.disabled=false;completionButton.textContent=retry?'Retry Generation':'Generate & Review My '+deliverable;}
-    if(completionPanel)completionPanel.hidden=false;
+    if(completionButton){completionButton.disabled=false;completionButton.removeAttribute('aria-disabled');completionButton.textContent=retry?'Retry Generation':'Generate & Review My '+deliverable;}
+    if(completionPanel&&!completionPanel.open)completionPanel.showModal();
     if(form)form.removeAttribute('aria-busy');
     window.setTimeout(function(){if(completionButton)completionButton.focus();},0);
   }
-  function hideCompletionChoice(){if(completionPanel)completionPanel.hidden=true;}
+  function hideCompletionChoice(){if(completionPanel&&completionPanel.open)completionPanel.close();}
   function enterCompletedConversation(project){completedConversation=true;completedSummary=buildCompletedSummary(project);hideCompletionChoice();if(input){input.disabled=false;input.placeholder='Ask ADAM anything or choose your next step…';}var button=form&&form.querySelector('[type="submit"]');if(button){button.disabled=false;button.textContent='Send';}var legacy=$('[data-agent-completion]');if(legacy)legacy.hidden=false;renderCurrentQuestion({question:'Your '+FAS.agent.current.name+' work is complete. Ask ADAM a question, edit an answer, or review your saved work.'},false);setVoiceStatus('ADAM is ready to discuss your completed work or help with your next step.',false);}
   function renderCurrentQuestion(question, preserveThread) {
     if (!question) return;
@@ -760,7 +761,7 @@
     return apiFetch('/api/artifact-synthesis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agentKey:'anchor',answers:answers})}).then(function(response){if(!response.ok)throw new Error('Synthesis unavailable');return response.json();}).then(function(payload){return FAS.artifacts.applySynthesis(artifact,payload.sections);}).catch(function(){return artifact;});
   }
 
-  function voiceCompletionCopy(){var label=FAS.agent.current.key==='anchor'?'Trusted Expert Blueprint':FAS.agent.current.title;return'Great—you’ve finished '+FAS.agent.current.name+'. Your answers are saved. I’m generating your '+label+' now. Next, you’ll review it and choose your PDF design.';}
+  function voiceCompletionCopy(){return'Great—you’ve finished '+FAS.agent.current.name+'. Your answers are saved. Select Generate to prepare and review your '+completionDeliverable()+'.';}
   function announceCompletion(){if(completionAnnounced)return;completionAnnounced=true;FAS.chat.addMessage({role:'agent',tag:'ADAM',variant:'completion',text:voiceCompletionCopy()});if(input)input.disabled=true;var button=form&&form.querySelector('[type="submit"]');if(button)button.disabled=true;$$('[data-agent-stages] .stage').forEach(function(stage){stage.classList.remove('is-active');stage.classList.add('is-done');stage.removeAttribute('aria-current');});}
   function scheduleReviewRedirect(completionUrl){setTimeout(function(){window.location.assign(completionUrl);},1600);}
 
@@ -769,7 +770,7 @@
   function generateFromCompletionModal(){
     if(blueprintPromise)return blueprintPromise;
     artifactRetryPending=false;
-    if(completionButton){completionButton.disabled=true;completionButton.textContent='Generating…';}
+    if(completionButton){completionButton.setAttribute('aria-disabled','true');completionButton.textContent='Generating…';}
     if(completionStatus)completionStatus.textContent='Generating your '+completionDeliverable()+'…';
     var work=generateBlueprint(getCompletionUrl(),completionStatus);
     return work.catch(function(error){artifactRetryPending=true;presentCompletionChoice('Your answers are safe. Generation needs another try.',true);throw error;});
@@ -817,7 +818,7 @@
     });
   }
 
-  if(completionPanel)completionPanel.addEventListener('keydown',completionModalKeydown);
+  if(completionPanel){completionPanel.addEventListener('keydown',completionModalKeydown);completionPanel.addEventListener('cancel',function(event){event.preventDefault();});}
   if(completionButton)completionButton.addEventListener('click',function(){generateFromCompletionModal().catch(function(){});});
 
   document.addEventListener('click', function (event) {
