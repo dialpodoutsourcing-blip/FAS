@@ -30,17 +30,18 @@ test('completed interviews open the saved blueprint and reject extra chat answer
  assert.ok(completionGuard>=0&&completionGuard<addUserMessage,'completion is checked before another user message is saved');
  assert.match(adam,/projectStore\.saveArtifact[\s\S]*window\.location\.assign\(completionUrl/);
 });
-test('completion is clearly announced before automatic blueprint generation',()=>{
+test('completion is clearly announced before user-confirmed blueprint generation',()=>{
  assert.match(adam,/function announceCompletion/);
  assert.match(adam,/finished[\s\S]*generat[\s\S]*review[\s\S]*PDF/i);
- const announce=adam.indexOf('announceCompletion()');
- const generate=adam.indexOf('generateBlueprint(completionUrl,status)',announce);
- assert.ok(announce>=0&&generate>announce,'completion announcement precedes generation and redirect');
+ const choice=adam.indexOf('function presentCompletionChoice');
+ const generate=adam.indexOf('function generateFromCompletionModal',choice);
+ assert.ok(choice>=0&&generate>choice,'completion choice is defined before the explicit generation action');
 });
 test('successful completion redirects to review and leaves a specialist review action for restored chat',()=>{
- assert.match(adam,/Review '\+FAS\.agent\.current\.name/);
+ assert.match(adam,/Generate & Review My '\+deliverable/);
  assert.match(adam,/generateBlueprint\(completionUrl,status\)[\s\S]*window\.location\.assign\(completionUrl\)/);
- assert.match(adam,/enterCompletedConversation\(project\)[\s\S]*showCompletionPanel/);
+ assert.match(adam,/enterCompletedConversation\(project\)/);
+ assert.match(adam,/hideCompletionChoice\(\)/);
 });
 
 test('direct EXTRACT access is blocked until a saved ANCHOR artifact exists',()=>{
@@ -69,7 +70,33 @@ test('blueprint generation is single-flight and reopens the completed composer f
  assert.match(adam,/completedConversation=true/);
  assert.match(adam,/input\.disabled=false/);
  assert.match(adam,/\/api\/advisory-response/);
- assert.match(adam,/finally\(function\(\)\{if\(!blueprintPromise\)/);
+ assert.match(adam,/finally\(function\(\)\{if\(!blueprintPromise&&!completionModalOpen\(\)\)/);
+});
+test('final saved answer opens the completion modal without generating automatically',()=>{
+ const submit=adam.slice(adam.indexOf("interviewCoordinator.submit({text:text,source:'type'"),adam.indexOf("if (form) form.addEventListener"));
+ const complete=submit.slice(submit.indexOf('if (completion.complete)'),submit.indexOf('}).catch'));
+ assert.match(complete,/presentCompletionChoice\(/);
+ assert.doesNotMatch(complete,/generateBlueprint\(/);
+ assert.ok(complete.indexOf('presentCompletionChoice')>complete.indexOf('completion.complete'));
+});
+test('restored complete answers reopen the completion modal without background generation',()=>{
+ const initialize=adam.slice(adam.indexOf('function initializePersistence'),adam.indexOf('function loadPersistence'));
+ const pending=initialize.slice(initialize.indexOf('if(!interview.currentQuestion()&&!hasArtifact&&interview.completion().complete)'));
+ assert.match(pending,/presentCompletionChoice\(/);
+ assert.doesNotMatch(pending,/generateBlueprint\(/);
+});
+test('completion action is single-flight and exposes retry without losing the modal',()=>{
+ assert.match(adam,/function generateFromCompletionModal/);
+ assert.match(adam,/if\(blueprintPromise\)return blueprintPromise/);
+ assert.match(adam,/\[data-completion-generate\]/);
+ assert.match(adam,/Generating your '\+completionDeliverable\(\)/);
+ assert.match(adam,/Retry Generation/);
+ assert.match(adam,/completionPanel\.hidden=false/);
+});
+test('completion modal traps focus and cannot be dismissed with Escape',()=>{
+ assert.match(adam,/completionModalKeydown/);
+ assert.match(adam,/event\.key==='Escape'[\s\S]*preventDefault\(\)/);
+ assert.match(adam,/event\.key==='Tab'[\s\S]*completionButton\.focus\(\)/);
 });
 test('chat controller requests an AI acknowledgement while preserving the engine-selected question',()=>{
  assert.match(adam,/apiFetch\('\/api\/chat-response'/);
