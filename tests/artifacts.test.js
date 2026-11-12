@@ -98,6 +98,14 @@ test('EXTRACT premium fallback excludes private proof and labels thin evidence',
  assert.ok(artifact.premiumReport);assert.doesNotMatch(JSON.stringify(artifact.premiumReport),/Secret client result/);assert.match(JSON.stringify(artifact.premiumReport),/gap|needs|missing|validate/i);
 });
 
+test('EXTRACT with partial usable input renders evidence plus explicit missing-section gaps',()=>{
+ const artifact=artifacts.build('extract',{id:'partial',answers:[{id:'origin',field:'extract.origin',text:'A specific origin story.',permissionStatus:'not_required'}]});
+ assert.equal(artifact.sections.find(section=>section.title==='Origin story').blocks[0].kind,'evidence');
+ assert.equal(artifact.sections.find(section=>section.title==='Signature moves').blocks[0].kind,'gap');
+ assert.match(artifact.sections.find(section=>section.title==='Signature moves').blocks[0].text,/no approved source/i);
+ assert.ok(artifact.premiumReport);
+});
+
 test('artifact validation rejects an unsupported factual claim',()=>{
  const result=artifacts.validate({type:'expertise_map',title:'Map',version:1,sections:[{title:'Proof bank',blocks:[{kind:'claim',text:'Guaranteed revenue'}]}],sources:[]});
  assert.equal(result.valid,false);assert.ok(result.errors.some(error=>/source/i.test(error)));

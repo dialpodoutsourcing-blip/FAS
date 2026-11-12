@@ -177,3 +177,31 @@ test('completed EXTRACT work is eligible for a premium deterministic upgrade',as
   const rebuilt=await upgrade.rebuild({agentKey:'extract',project,artifacts,fetchImpl:async()=>({ok:false})});
   assert.ok(rebuilt.premiumReport);assert.ok(rebuilt.premiumReport.signatureMethod.stages.length>=4);
 });
+
+test('partial EXTRACT collection keeps every usable field while zero usable input fails closed',()=>{
+  const project={answers:[
+    {id:'origin',agentKey:'extract',field:'extract.origin',text:'I built this method after solving the same constraint repeatedly.'},
+    {id:'method',agentKey:'extract',field:'extract.method',text:'Assess, map, implement, validate.'},
+    {id:'pending-proof',agentKey:'extract',field:'extract.proof',text:'A pending client story.',permissionStatus:'pending'},
+    {id:'private-boundary',agentKey:'extract',field:'extract.boundaries',text:'Private limits.',permissionStatus:'private'}
+  ]};
+
+  const answers=upgrade.collectAnswers(project,'extract');
+
+  assert.deepEqual(answers.map(answer=>answer.field),['extract.origin','extract.method']);
+  assert.equal(upgrade.collectAnswers({answers:project.answers.slice(2)},'extract'),null);
+  assert.equal(upgrade.collectAnswers({answers:project.answers.slice(0,1)},'anchor'),null);
+});
+
+test('partial EXTRACT rebuild preserves deterministic gaps when synthesis is unavailable',async()=>{
+  const project={id:'partial-extract',answers:[
+    {id:'origin',agentKey:'extract',field:'extract.origin',text:'I built this method after solving the same constraint repeatedly.'},
+    {id:'method',agentKey:'extract',field:'extract.method',text:'Assess, map, implement, validate.'}
+  ]};
+
+  const rebuilt=await upgrade.rebuild({agentKey:'extract',project,artifacts,fetchImpl:async()=>({ok:false})});
+
+  assert.equal(rebuilt.title,'Expertise Map');
+  assert.ok(rebuilt.premiumReport);
+  assert.ok(rebuilt.sections.some(section=>section.blocks.some(block=>block.kind==='gap'&&/no approved source/i.test(block.text))));
+});

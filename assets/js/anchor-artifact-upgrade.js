@@ -30,8 +30,9 @@
       });
       if(combined)latest[field]={id:combined.id,field:field,text:combined.parts.map(function(text,index){return index?'Supporting detail: '+text:text;}).join('\n\n'),basis:combined.basis,permissionStatus:combined.permissionStatus};
     });
-    if(!fields.every(function(field){return latest[field];}))return null;
-    return fields.map(function(field){return latest[field];});
+    var available=fields.filter(function(field){return latest[field];});
+    if(agentKey==='anchor'&&available.length!==fields.length||agentKey==='extract'&&!available.length)return null;
+    return available.map(function(field){return latest[field];});
   }
 
   function needsUpgrade(agentKey,selected,project){
