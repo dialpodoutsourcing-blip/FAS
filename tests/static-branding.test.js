@@ -3,6 +3,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
+const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+assert.ok(pkg.devDependencies&&pkg.devDependencies['playwright-core'], 'browser geometry dependency is declared by the repository');
+const geometryTest = fs.readFileSync(path.join(root, 'tests/dashboard-geometry.test.js'), 'utf8');
+assert.doesNotMatch(geometryTest, /C:\/vibec\/review\/node_modules/, 'geometry tests never import from another checkout');
 const pages = ['index.html', 'chat.html', 'review.html', 'vault.html', 'launch.html'];
 
 for (const page of pages) {
@@ -17,6 +21,12 @@ for (const page of pages) {
 }
 
 const dashboardRef = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+for (const artwork of ['dashboard-anchor-platform.png', 'dashboard-extract-platform.png']) {
+  assert.match(dashboardRef, new RegExp(`assets/images/${artwork.replace('.', '\\.')}`), `${artwork} is rendered by the dashboard`);
+  const artworkPath = path.join(root, 'assets', 'images', artwork);
+  assert.ok(fs.existsSync(artworkPath), `${artwork} exists in source assets`);
+  assert.ok(fs.statSync(artworkPath).size > 1000, `${artwork} contains production artwork`);
+}
 assert.match(dashboardRef,/home-focus__landscape/, 'dashboard includes a decorative landscape layer');
 assert.match(dashboardRef,/home-roadmap-card--gold/, 'Anchor uses the gold roadmap treatment');
 assert.match(dashboardRef,/home-roadmap-card--emerald/, 'Extract uses the emerald roadmap treatment');
@@ -55,5 +65,10 @@ assert.match(styles, /@media\s*\(max-width:\s*900px\)[\s\S]*\.home-content/, 'da
 assert.match(styles, /\.home-focus__action \.resume-cta\s*\{[^}]*width:\s*100%[^}]*min-width:\s*0/s, 'focus action cannot overflow its responsive column');
 assert.match(styles, /@media\s*\(max-width:\s*1180px\)[\s\S]*\.home-content\s*\{[^}]*grid-template-columns:\s*1fr/s, 'utility rail collapses before roadmap cards become cramped');
 assert.match(styles, /overflow-wrap:\s*anywhere/, 'long authenticated names remain contained');
+assert.match(styles, /Dashboard pixel match v2/, 'dashboard uses the approved pixel-match stylesheet');
+assert.match(styles, /body\[data-page="home"\] \.app\s*\{[^}]*grid-template-columns:\s*312px\s+minmax\(0,\s*1fr\)/s, 'desktop dashboard uses the reference sidebar width');
+assert.match(styles, /body\[data-page="home"\][^}]*height:\s*100dvh/s, 'desktop dashboard is bounded to one viewport');
+assert.match(styles, /\.home-roadmap-card__art img\s*\{[^}]*object-fit:\s*contain/s, 'generated scenes are fitted without cropping');
+assert.match(styles, /@media\s*\(max-width:\s*1440px\)[\s\S]*@media\s*\(max-width:\s*1024px\)[\s\S]*@media\s*\(max-width:\s*768px\)/s, 'dashboard has explicit desktop, tablet, and mobile compaction points');
 
 console.log('Static branding and resume CTA checks passed.');
