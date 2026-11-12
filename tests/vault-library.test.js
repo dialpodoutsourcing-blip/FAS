@@ -86,3 +86,25 @@ test('buildItems handles empty and malformed project data without mutation',()=>
   assert.deepEqual(vault.buildItems(null,['anchor']),[]);
   assert.equal(JSON.stringify(project),before);
 });
+
+test('view preference defaults safely and restores only supported layouts',()=>{
+  assert.equal(vault.normalizeView(), 'cards');
+  assert.equal(vault.normalizeView('cards'), 'cards');
+  assert.equal(vault.normalizeView('list'), 'list');
+  assert.equal(vault.normalizeView('grid'), 'cards');
+
+  assert.equal(vault.createViewPreference(null,'fas.vault.view').load(),'cards');
+  assert.equal(vault.createViewPreference({getItem:()=> 'list'},'fas.vault.view').load(),'list');
+  assert.equal(vault.createViewPreference({getItem:()=> 'broken'},'fas.vault.view').load(),'cards');
+  assert.equal(vault.createViewPreference({getItem:()=>{throw new Error('blocked');}},'fas.vault.view').load(),'cards');
+});
+
+test('view preference normalizes saves and never exposes storage failures',()=>{
+  const writes=[],preference=vault.createViewPreference({setItem:(key,value)=>writes.push([key,value])},'fas.vault.view');
+  assert.equal(preference.save('list'),'list');
+  assert.equal(preference.save('unknown'),'cards');
+  assert.deepEqual(writes,[['fas.vault.view','list'],['fas.vault.view','cards']]);
+
+  const blocked=vault.createViewPreference({setItem:()=>{throw new Error('blocked');}},'fas.vault.view');
+  assert.equal(blocked.save('list'),'list');
+});
