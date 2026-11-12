@@ -52,6 +52,8 @@ assert.match(styles, /body\[data-page="home"\][\s\S]*radial-gradient/, 'dashboar
 assert.match(styles, /\.home-content\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+minmax\(260px,\s*320px\)/s, 'dashboard uses the reference roadmap and utility split');
 assert.match(styles, /\.home-roadmap-card--gold[\s\S]*\.home-roadmap-card--emerald/, 'dashboard cards retain distinct gold and emerald treatments');
 assert.match(styles, /@media\s*\(max-width:\s*900px\)[\s\S]*\.home-content/, 'dashboard collapses cleanly for tablet and mobile');
+assert.match(styles, /\.home-focus__action \.resume-cta\s*\{[^}]*width:\s*100%[^}]*min-width:\s*0/s, 'focus action cannot overflow its responsive column');
+assert.match(styles, /@media\s*\(max-width:\s*1180px\)[\s\S]*\.home-content\s*\{[^}]*grid-template-columns:\s*1fr/s, 'utility rail collapses before roadmap cards become cramped');
 assert.match(styles, /overflow-wrap:\s*anywhere/, 'long authenticated names remain contained');
 
 console.log('Static branding and resume CTA checks passed.');
