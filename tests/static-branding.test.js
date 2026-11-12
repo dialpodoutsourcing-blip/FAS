@@ -57,7 +57,7 @@ assert.match(logo, /<path\b/, 'logo uses geometric paths');
 assert.doesNotMatch(logo, /<text\b/, 'logo does not depend on font glyphs');
 
 const dashboard = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-assert.match(dashboard, /Welcome back, <span data-account-name>/, 'dashboard greeting uses the authenticated customer name');
+assert.match(dashboard, /Welcome Back, <span data-account-name>/, 'dashboard greeting matches the reference capitalization and uses the authenticated customer name');
 assert.match(dashboard, /assets\/js\/dashboard\.js/, 'dashboard loads live customer progress');
 assert.match(dashboard, /class="[^"]*\bdashboard-progress\b[^"]*"/, 'dashboard uses the compact current-step banner');
 assert.doesNotMatch(dashboard, /class="hero"/, 'dashboard does not regress to the tall ADAM hero');
@@ -82,6 +82,8 @@ assert.match(styles, /Dashboard pixel match v2/, 'dashboard uses the approved pi
 assert.match(styles, /body\[data-page="home"\] \.app\s*\{[^}]*grid-template-columns:\s*312px\s+minmax\(0,\s*1fr\)/s, 'desktop dashboard uses the reference sidebar width');
 assert.match(styles, /body\[data-page="home"\][^}]*height:\s*100dvh/s, 'desktop dashboard is bounded to one viewport');
 assert.match(styles, /\.home-roadmap-card__art img\s*\{[^}]*object-fit:\s*contain/s, 'generated scenes are fitted without cropping');
+assert.match(styles,/\.home-roadmap-card--gold \.status--done\s*\{[^}]*background:\s*linear-gradient[^}]*color:\s*#0/s,'completed Anchor uses the reference filled gold pill');
+assert.match(styles,/\.home-roadmap-card__haze::before\s*\{[^}]*clip-path:/s,'card haze includes a native mountain-smoke silhouette');
 assert.match(styles, /@media\s*\(max-width:\s*1440px\)[\s\S]*@media\s*\(max-width:\s*1024px\)[\s\S]*@media\s*\(max-width:\s*768px\)/s, 'dashboard has explicit desktop, tablet, and mobile compaction points');
 
 console.log('Static branding and resume CTA checks passed.');

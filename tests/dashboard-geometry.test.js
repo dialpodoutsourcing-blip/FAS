@@ -146,6 +146,23 @@ browserTest('large desktop keeps the corrected reference lockup, sidebar shell, 
   });
 });
 
+browserTest('1680 by 945 matches the supplied reference geometry',async()=>{
+  await withPage({width:1680,height:945},async page=>{
+    const g=await page.evaluate(()=>{const r=s=>{const b=document.querySelector(s).getBoundingClientRect();return{x:b.x,y:b.y,width:b.width,height:b.height,bottom:b.bottom};};return{sidebar:r('[data-home-sidebar]'),dashboard:r('.home-sidebar__primary .nav-link'),specialists:r('.home-sidebar__specialists'),focus:r('.home-focus'),head:r('.home-section-head'),card:r('.home-roadmap-card'),card2:r('.home-roadmap-card:nth-child(2)'),quick:r('.home-quick'),keep:r('.home-encouragement'),account:r('.home-sidebar__account-shell'),scrollHeight:document.documentElement.scrollHeight};});
+    assert.ok(g.sidebar.width>=280&&g.sidebar.width<=288,`sidebar width ${g.sidebar.width}`);
+    assert.ok(g.dashboard.x>=18&&g.dashboard.x<=22&&g.dashboard.y>=136&&g.dashboard.y<=144,`Dashboard row at ${g.dashboard.x},${g.dashboard.y}`);
+    assert.ok(g.specialists.y>=414&&g.specialists.y<=422,`specialists begin at ${g.specialists.y}`);
+    assert.ok(g.focus.x>=338&&g.focus.x<=346&&g.focus.y>=179&&g.focus.y<=187&&g.focus.height>=178&&g.focus.height<=186,`focus geometry ${JSON.stringify(g.focus)}`);
+    assert.ok(g.head.x>=338&&g.head.x<=346&&g.head.y>=398&&g.head.y<=406,`roadmap heading at ${g.head.x},${g.head.y}`);
+    assert.ok(g.card.x>=338&&g.card.x<=346&&g.card.y>=491&&g.card.y<=499&&g.card.width>=448&&g.card.width<=458&&g.card.height>=394&&g.card.height<=404,`first card ${JSON.stringify(g.card)}`);
+    assert.ok(g.card2.x>=813&&g.card2.x<=821&&g.card2.width>=448&&g.card2.width<=458,`second card ${JSON.stringify(g.card2)}`);
+    assert.ok(g.quick.x>=1294&&g.quick.x<=1302&&g.quick.y>=420&&g.quick.y<=428&&g.quick.width>=337&&g.quick.width<=347&&g.quick.height>=297&&g.quick.height<=307,`Quick Access ${JSON.stringify(g.quick)}`);
+    assert.ok(g.keep.y>=743&&g.keep.y<=751&&g.keep.height>=142&&g.keep.height<=152,`Keep Going ${JSON.stringify(g.keep)}`);
+    assert.ok(g.account.x>=18&&g.account.x<=22&&g.account.y>=778&&g.account.y<=786&&g.account.width>=240&&g.account.width<=248&&g.account.height>=127&&g.account.height<=137,`account shell ${JSON.stringify(g.account)}`);
+    assert.ok(g.scrollHeight<=945,`reference viewport scrolls to ${g.scrollHeight}`);
+  });
+});
+
 browserTest('desktop through 901px stays in the one-screen composition',async()=>{
   await withPage({width:1508,height:901},async page=>{
     const geometry=await page.evaluate(()=>{const card=document.querySelector('.home-roadmap-card:last-child').getBoundingClientRect(),footer=document.querySelector('.home-roadmap-card:last-child footer').getBoundingClientRect(),encouragement=document.querySelector('.home-encouragement').getBoundingClientRect();return{scrollHeight:document.documentElement.scrollHeight,cardBottom:card.bottom,footerBottom:footer.bottom,encouragementBottom:encouragement.bottom};});
