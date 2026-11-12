@@ -1879,7 +1879,7 @@ body[data-page="home"] .home-sidebar__primary .nav-link:not([aria-current="page"
 .home-roadmap-card--gold { box-shadow: inset 0 1px rgba(255,255,255,.11),inset 0 0 58px rgba(238,187,55,.065),0 16px 36px rgba(0,0,0,.38); }
 .home-roadmap-card--emerald { box-shadow: inset 0 1px rgba(255,255,255,.11),inset 0 0 58px rgba(0,221,168,.065),0 16px 36px rgba(0,0,0,.38); }
 .home-roadmap-card.is-locked { opacity: 1; filter: none; }
-.home-roadmap-card.is-locked .home-roadmap-card__copy { opacity: .68; }
+.home-roadmap-card.is-locked .home-roadmap-card__copy { opacity: .84; }
 .home-roadmap-card footer { z-index: 3; }
 .home-roadmap-card .status { box-shadow: inset 0 1px rgba(255,255,255,.08),0 7px 18px rgba(0,0,0,.2); }
 
