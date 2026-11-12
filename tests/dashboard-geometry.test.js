@@ -151,7 +151,7 @@ browserTest('1680 by 945 matches the supplied reference geometry',async()=>{
     const g=await page.evaluate(()=>{const r=s=>{const b=document.querySelector(s).getBoundingClientRect();return{x:b.x,y:b.y,width:b.width,height:b.height,bottom:b.bottom};};return{sidebar:r('[data-home-sidebar]'),dashboard:r('.home-sidebar__primary .nav-link'),specialists:r('.home-sidebar__specialists'),focus:r('.home-focus'),head:r('.home-section-head'),card:r('.home-roadmap-card'),card2:r('.home-roadmap-card:nth-child(2)'),quick:r('.home-quick'),keep:r('.home-encouragement'),account:r('.home-sidebar__account-shell'),scrollHeight:document.documentElement.scrollHeight};});
     assert.ok(g.sidebar.width>=280&&g.sidebar.width<=288,`sidebar width ${g.sidebar.width}`);
     assert.ok(g.dashboard.x>=18&&g.dashboard.x<=22&&g.dashboard.y>=136&&g.dashboard.y<=144,`Dashboard row at ${g.dashboard.x},${g.dashboard.y}`);
-    assert.ok(g.specialists.y>=414&&g.specialists.y<=422,`specialists begin at ${g.specialists.y}`);
+    assert.ok(g.specialists.y>=388&&g.specialists.y<=398,`specialist divider begins at ${g.specialists.y}`);
     assert.ok(g.focus.x>=338&&g.focus.x<=346&&g.focus.y>=179&&g.focus.y<=187&&g.focus.height>=178&&g.focus.height<=186,`focus geometry ${JSON.stringify(g.focus)}`);
     assert.ok(g.head.x>=338&&g.head.x<=346&&g.head.y>=398&&g.head.y<=406,`roadmap heading at ${g.head.x},${g.head.y}`);
     assert.ok(g.card.x>=338&&g.card.x<=346&&g.card.y>=491&&g.card.y<=499&&g.card.width>=448&&g.card.width<=458&&g.card.height>=394&&g.card.height<=404,`first card ${JSON.stringify(g.card)}`);
@@ -160,6 +160,40 @@ browserTest('1680 by 945 matches the supplied reference geometry',async()=>{
     assert.ok(g.keep.y>=743&&g.keep.y<=751&&g.keep.height>=142&&g.keep.height<=152,`Keep Going ${JSON.stringify(g.keep)}`);
     assert.ok(g.account.x>=18&&g.account.x<=22&&g.account.y>=778&&g.account.y<=786&&g.account.width>=240&&g.account.width<=248&&g.account.height>=127&&g.account.height<=137,`account shell ${JSON.stringify(g.account)}`);
     assert.ok(g.scrollHeight<=945,`reference viewport scrolls to ${g.scrollHeight}`);
+  });
+});
+
+browserTest('1680 reference keeps glass cards, balanced number capsules, and sidebar rhythm',async()=>{
+  await withPage({width:1680,height:945},async page=>{
+    const result=await page.evaluate(()=>{
+      const box=node=>{const r=node.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height};};
+      const cards=[...document.querySelectorAll('.home-roadmap-card')];
+      const steps=[...document.querySelectorAll('.home-roadmap-card__step')];
+      const active=document.querySelector('.home-sidebar__primary .nav-link');
+      const specialists=document.querySelector('.home-sidebar__specialists');
+      const lockup=document.querySelector('.home-sidebar__lockup');
+      const lockupMark=document.querySelector('.home-sidebar__lockup-mark');
+      const lockupWord=document.querySelector('.home-sidebar__lockup-word');
+      const specialistTitle=document.querySelector('.home-sidebar__specialists > .nav-group__title');
+      return{
+        cards:cards.map(card=>({box:box(card),background:getComputedStyle(card).backgroundImage,backdrop:getComputedStyle(card).backdropFilter})),
+        steps:steps.map(step=>({box:box(step),display:getComputedStyle(step).display,lineHeight:getComputedStyle(step).lineHeight})),
+        active:box(active),
+        lockup:box(lockup),
+        lockupVisual:{left:lockupMark.getBoundingClientRect().left,right:lockupWord.getBoundingClientRect().right},
+        specialistTitle:box(specialistTitle),
+        specialists:{box:box(specialists),borderTop:getComputedStyle(specialists).borderTopWidth},
+        scrollHeight:document.documentElement.scrollHeight
+      };
+    });
+    result.cards.forEach((card,index)=>{assert.ok(card.background.split('gradient').length>=4,`card ${index+1} lacks layered glass: ${card.background}`);assert.notEqual(card.backdrop,'none',`card ${index+1} lacks backdrop blur`);});
+    result.steps.forEach((step,index)=>{assert.ok(Math.abs(step.box.width-54)<=1&&Math.abs(step.box.height-34)<=1,`step ${index+1} capsule is ${step.box.width}x${step.box.height}`);assert.equal(step.display,'grid');});
+    assert.ok(Math.abs(result.steps[0].box.width-result.steps[1].box.width)<=.5&&Math.abs(result.steps[0].box.height-result.steps[1].box.height)<=.5,'number capsule borders are not balanced');
+    assert.equal(result.specialists.borderTop,'1px');
+    assert.ok(result.lockupVisual.right-result.lockupVisual.left>=112&&result.lockupVisual.right-result.lockupVisual.left<=124,`sidebar lockup visual width is ${result.lockupVisual.right-result.lockupVisual.left}`);
+    assert.ok(result.specialistTitle.y>=410&&result.specialistTitle.y<=424,`specialist label starts at ${result.specialistTitle.y}`);
+    assert.ok(result.specialists.box.y>result.active.y+result.active.height+42&&result.specialists.box.y<=398,'sidebar divider and specialist label retain the reference breathing room');
+    assert.ok(result.scrollHeight<=945,`refined dashboard scrolls to ${result.scrollHeight}`);
   });
 });
 

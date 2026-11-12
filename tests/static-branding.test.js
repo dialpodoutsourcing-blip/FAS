@@ -84,6 +84,10 @@ assert.match(styles, /body\[data-page="home"\][^}]*height:\s*100dvh/s, 'desktop 
 assert.match(styles, /\.home-roadmap-card__art img\s*\{[^}]*object-fit:\s*contain/s, 'generated scenes are fitted without cropping');
 assert.match(styles,/\.home-roadmap-card--gold \.status--done\s*\{[^}]*background:\s*linear-gradient[^}]*color:\s*#0/s,'completed Anchor uses the reference filled gold pill');
 assert.match(styles,/\.home-roadmap-card__haze::before\s*\{[^}]*clip-path:/s,'card haze includes a native mountain-smoke silhouette');
+assert.match(styles,/\.home-roadmap-card\s*\{[^}]*background:[^}]*linear-gradient[^}]*linear-gradient[^}]*radial-gradient/s,'roadmap cards use layered translucent glass lighting');
+assert.match(styles,/\.home-roadmap-card__step\s*\{[^}]*inline-size:\s*54px[^}]*block-size:\s*34px[^}]*display:\s*grid[^}]*place-items:\s*center/s,'roadmap step capsules use balanced fixed geometry and optical centering');
+assert.match(styles,/\.home-sidebar__specialists\s*\{[^}]*border-top:\s*1px solid rgba\(/s,'desktop sidebar specialists use the reference divider');
+assert.match(styles,/\.home-sidebar__primary \.nav-link\[aria-current="page"\]\s*\{[^}]*linear-gradient[^}]*inset 0 1px/s,'active sidebar row uses layered gold glass and an inner highlight');
 assert.match(styles, /@media\s*\(max-width:\s*1440px\)[\s\S]*@media\s*\(max-width:\s*1024px\)[\s\S]*@media\s*\(max-width:\s*768px\)/s, 'dashboard has explicit desktop, tablet, and mobile compaction points');
 
 console.log('Static branding and resume CTA checks passed.');
