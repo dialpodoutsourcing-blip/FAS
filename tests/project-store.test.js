@@ -37,7 +37,7 @@ test('local answer revision appends a superseding answer without deleting the or
   assert.equal(project.answers[0].text, 'Original answer');
 });
 
-test('local agent reset removes its answers, checkpoint, artifacts, and versions only', async () => {
+test('local agent reset retires its current artifact while preserving immutable version history', async () => {
   const stores = require('../assets/js/project-store.js');
   const storage = memoryStorage();
   const store = stores.create({ configured:false, storage, projectId: 'reset-project' });
@@ -51,9 +51,11 @@ test('local agent reset removes its answers, checkpoint, artifacts, and versions
   assert.equal(project.answers.some(answer => answer.agentKey === 'anchor'), false);
   assert.equal(project.checkpoints.anchor, undefined);
   assert.equal(project.artifacts.some(artifact => artifact.agentKey === 'anchor'), false);
-  assert.equal(project.artifactVersions.some(version => version.agentKey === 'anchor'), false);
+  assert.equal(project.artifactVersions.some(version => version.agentKey === 'anchor'), true);
+  assert.equal(project.artifactVersions.find(version => version.agentKey === 'anchor').status, 'draft');
   assert.equal(project.answers.some(answer => answer.agentKey === 'extract'), true);
   assert.equal(project.artifacts.some(artifact => artifact.agentKey === 'extract'), true);
+  assert.equal(project.artifactVersions.some(version => version.agentKey === 'extract'), true);
 });
 
 test('local project store persists a normalized export theme across instances', async () => {
@@ -122,13 +124,18 @@ test('Supabase loads answers oldest-first so corrections are authoritative', asy
   assert.match(calls.find(url=>url.includes('/answers?')),/order=created_at\.asc/);
 });
 
-test('Supabase retry clears interview work without deleting immutable blueprint history', async()=>{
+test('Supabase retry atomically retires current work without deleting immutable blueprint history', async()=>{
   const stores=require('../assets/js/project-store.js'),calls=[];
   const store=stores.create({configured:true,supabaseUrl:'https://example.supabase.co',anonKey:'anon-public',accessToken:'user-token',projectId:'11111111-1111-4111-8111-111111111111',userId:'33333333-3333-4333-8333-333333333333',sessionId:'44444444-4444-4444-8444-444444444444',fetchImpl:async(url,init={})=>{calls.push({url,init});return{ok:true,json:async()=>[]};}});
   await store.resetAgent('anchor');
-  assert.ok(calls.some(call=>call.url.includes('/answers?')&&call.init.method==='DELETE'));
-  assert.ok(calls.some(call=>call.url.includes('/interview_sessions?')&&call.init.method==='PATCH'));
-  assert.equal(calls.some(call=>call.url.includes('/artifacts?')&&call.init.method==='DELETE'),false);
+  assert.equal(calls.length,1);
+  assert.match(calls[0].url,/\/rest\/v1\/rpc\/reset_fas_agent$/);
+  assert.equal(calls[0].init.method,'POST');
+  assert.deepEqual(JSON.parse(calls[0].init.body),{
+    p_project_id:'11111111-1111-4111-8111-111111111111',
+    p_session_id:'44444444-4444-4444-8444-444444444444',
+    p_agent_key:'anchor'
+  });
 });
 
 test('Supabase store hydrates saved artifact content and project-scopes persisted export themes', async () => {

@@ -6,6 +6,8 @@ const path=require('node:path');
 
 const migrationPath=path.join(__dirname,'..','supabase','migrations','202610250002_fas_auth_onboarding.sql');
 const sql=fs.existsSync(migrationPath)?fs.readFileSync(migrationPath,'utf8'):'';
+const resetMigrationPath=path.join(__dirname,'..','supabase','migrations','202611120001_agent_reset_hardening.sql');
+const resetSql=fs.existsSync(resetMigrationPath)?fs.readFileSync(resetMigrationPath,'utf8'):'';
 
 test('onboarding bootstrap is authenticated, serialized, and idempotent',()=>{
   assert.match(sql,/create or replace function public\.bootstrap_fas_account\s*\(p_display_name text, p_project_name text\)[\s\S]*security definer[\s\S]*set search_path\s*=\s*public,\s*pg_temp/i);
@@ -49,4 +51,17 @@ test('onboarding RPC execution is limited to authenticated users',()=>{
     assert.match(sql,new RegExp(`revoke execute on function public\\.${name}[\\s\\S]*?from public, anon`,'i'),`${name} must revoke public and anon`);
     assert.match(sql,new RegExp(`grant execute on function public\\.${name}[\\s\\S]*?to authenticated`,'i'),`${name} must grant authenticated`);
   }
+});
+
+test('specialist reset is authenticated, scoped, atomic, and preserves artifact versions',()=>{
+  assert.match(resetSql,/status[^;]+(?:'retired'|retired)/i);
+  assert.match(resetSql,/create or replace function public\.reset_fas_agent\s*\(p_project_id uuid,\s*p_session_id uuid,\s*p_agent_key text\)/i);
+  assert.match(resetSql,/security definer[\s\S]*set search_path\s*=\s*public,\s*pg_temp/i);
+  assert.match(resetSql,/auth\.uid\(\)[\s\S]*can_edit_project\s*\(p_project_id\)/i);
+  assert.match(resetSql,/interview_sessions[\s\S]*id\s*=\s*p_session_id[\s\S]*project_id\s*=\s*p_project_id[\s\S]*agent_key\s*=\s*p_agent_key/i);
+  assert.match(resetSql,/delete from public\.answers[\s\S]*project_id\s*=\s*p_project_id[\s\S]*agent_key\s*=\s*p_agent_key/i);
+  assert.match(resetSql,/update public\.artifacts[\s\S]*status\s*=\s*'retired'[\s\S]*project_id\s*=\s*p_project_id[\s\S]*agent_key\s*=\s*p_agent_key/i);
+  assert.doesNotMatch(resetSql,/delete from public\.artifact_versions|update public\.artifact_versions/i);
+  assert.match(resetSql,/revoke execute on function public\.reset_fas_agent\(uuid, uuid, text\) from public, anon/i);
+  assert.match(resetSql,/grant execute on function public\.reset_fas_agent\(uuid, uuid, text\) to authenticated/i);
 });
