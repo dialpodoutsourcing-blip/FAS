@@ -199,15 +199,19 @@
               <div class="msg" data-chat-typing hidden><span class="em em--sm"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="#em-extract" data-agent-typing-icon></use></svg></span><div class="bubble bubble--typing" aria-label="EXTRACT is typing"><span></span><span></span><span></span></div></div>
             </div>
 
+            <section class="chat-suggestions-bar" aria-label="Quick Suggestions">
+              <span class="chat-suggestions-bar__title" aria-hidden="true">⚡ <strong>Quick Suggestions</strong></span>
+              <div class="composer__chips chat-suggestions" data-agent-hints data-tour-id="hints" aria-label="Quick Suggestions">
+                <button class="pill" type="button" data-chat-hint>What did you notice?</button>
+                <button class="pill" type="button" data-chat-hint>What did you do next?</button>
+                <button class="pill pill--dashed" type="button" data-chat-unsure>I am not sure</button>
+              </div>
+            </section>
+
             <form class="composer chat-reference-composer" data-chat-form aria-label="Your answer" data-tour-id="composer">
               <label class="composer__label" for="answer">Your answer</label>
               <textarea class="composer__input" id="answer" rows="2" data-chat-input placeholder="Type your answer here…"></textarea>
               <div class="composer__row">
-                <div class="composer__chips chat-suggestions" data-agent-hints data-tour-id="hints" aria-label="Quick Suggestions">
-                  <button class="pill" type="button" data-chat-hint>What did you notice?</button>
-                  <button class="pill" type="button" data-chat-hint>What did you do next?</button>
-                  <button class="pill pill--dashed" type="button" data-chat-unsure>I am not sure</button>
-                </div>
                 <div class="row">
                   <button class="icon-btn" type="button" data-goto-voice aria-label="Talk instead"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4a3 3 0 0 1 6 0v7a3 3 0 0 1-6 0zM5 11a7 7 0 0 0 14 0M12 18v3"></path></svg></button>
                   <button class="btn btn--gold" type="submit">Send <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l16-8-6 16-2-6z"></path></svg></button>

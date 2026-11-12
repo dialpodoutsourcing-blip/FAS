@@ -48,6 +48,7 @@ assert.match(styles, /\.nav-link\s*\{[^}]*min-height:\s*36px[^}]*font-size:\s*12
 assert.match(styles, /\.step-link\s*\{[^}]*min-height:\s*40px[^}]*gap:\s*7px/s, 'specialist links keep the shared compact row');
 assert.match(styles, /\.sidebar \.em--xs\s*\{[^}]*width:\s*29px[^}]*height:\s*29px/s, 'specialist emblems use the compact shared size');
 assert.match(styles, /\.user\s*\{[^}]*padding:\s*7px/s, 'expert settings card remains compact and visible');
-assert.doesNotMatch(styles, /\.chat-page \.sidebar(?:\s|\.|__)/, 'chat does not override shared sidebar sizing or visibility');
+assert.match(styles, /\.chat-page \.sidebar\s*\{[^}]*padding:\s*28px 20px 22px[^}]*gap:\s*25px/s, 'chat deliberately applies the approved premium reference sidebar rhythm');
+assert.match(styles, /\.chat-page \.sidebar \.nav-link\.is-active\s*\{[^}]*linear-gradient[^}]*border:\s*1px solid #f0bd40/s, 'chat reference sidebar has the gold active navigation treatment');
 
 console.log('Shared sidebar checks passed.');
