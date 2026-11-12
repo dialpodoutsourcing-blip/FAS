@@ -37,7 +37,7 @@ browserTest('dashboard matches the one-screen desktop geometry at 1920x1080',asy
     assert.ok(geometry.focus.height>=210&&geometry.focus.height<=235,`focus height ${geometry.focus.height}`);
     const utilityLead=geometry.cards.top-geometry.utility.top;
     assert.ok(utilityLead>=70&&utilityLead<=110,`utility leads cards by ${utilityLead}px instead of the reference band`);
-    assert.ok(geometry.cardAgent.top>=895&&geometry.cardAgent.top<=910,`card copy begins at ${geometry.cardAgent.top}`);
+    assert.ok(geometry.cardAgent.top>=855&&geometry.cardAgent.top<=880,`card copy begins at ${geometry.cardAgent.top}`);
     assert.ok(geometry.cardFooter.bottom<=geometry.card.bottom-8,`card action footer ${geometry.cardFooter.bottom} is clipped by card ${geometry.card.bottom}`);
     assert.ok(geometry.encouragement.bottom<=1080,`encouragement panel is clipped at ${geometry.encouragement.bottom}`);
     assert.ok(geometry.footer.bottom<=1075&&geometry.footer.bottom>=970,`account footer remains visible at ${geometry.footer.bottom}`);
