@@ -28,7 +28,7 @@
         byId[row.id]=Object.assign({},row,{additive:additive});
         if(additive&&previous&&previous.incomplete&&combined.parts.indexOf(previous.text)<0)combined.parts.unshift(previous.text);
       });
-      if(combined)latest[field]={id:combined.id,field:field,text:combined.parts.map(function(text,index){return index?'Supporting detail: '+text:text;}).join('\n\n'),basis:combined.basis,permissionStatus:combined.permissionStatus};
+      if(combined){var selected=rows.find(function(row){return row.id===combined.id;})||{};latest[field]={id:combined.id,agentKey:agentKey,field:field,text:combined.parts.map(function(text,index){return index?'Supporting detail: '+text:text;}).join('\n\n'),basis:combined.basis,permissionStatus:combined.permissionStatus,incomplete:Boolean(selected.incomplete),trigger:selected.trigger||null};}
     });
     var available=fields.filter(function(field){return latest[field];});
     if(agentKey==='anchor'&&available.length!==fields.length||agentKey==='extract'&&!available.length)return null;

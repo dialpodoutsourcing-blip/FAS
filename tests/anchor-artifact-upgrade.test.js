@@ -122,7 +122,7 @@ test('upgrade synthesizes from saved answers and appends one themed version to t
   assert.equal(requests[0].url, '/api/artifact-synthesis');
   assert.deepEqual(JSON.parse(requests[0].init.body), {
     agentKey: 'anchor',
-    answers: fields.map((field, index) => ({ id: `answer-${index + 1}`, field: `anchor.${field}`, text: `Saved ${field} answer with enough specific detail to remain useful.`, basis:'user', permissionStatus:'not_required' }))
+    answers: fields.map((field, index) => ({ id: `answer-${index + 1}`, agentKey:'anchor', field: `anchor.${field}`, text: `Saved ${field} answer with enough specific detail to remain useful.`, basis:'user', permissionStatus:'not_required', incomplete:false, trigger:null }))
   });
   assert.equal(saves.length, 1);
   assert.equal(saves[0][0], 'persisted-artifact-id');
@@ -186,6 +186,8 @@ test('private draft generation can use saved incomplete answers after the interv
   const draft=upgrade.collectAnswers(project,'anchor',{includePending:true,includeIncomplete:true});
   assert.ok(draft);
   assert.match(draft.find(answer=>answer.field==='anchor.position').text,/Saved position answer/);
+ assert.equal(draft.find(answer=>answer.field==='anchor.position').agentKey,'anchor');
+ assert.equal(draft.find(answer=>answer.field==='anchor.position').incomplete,true);
 });
 
 test('completed EXTRACT work is eligible for a premium deterministic upgrade',async()=>{

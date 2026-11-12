@@ -45,6 +45,13 @@ test('premium Anchor renders a distinct adaptive twelve-page PDF in every approv
  assert.notDeepEqual(buffers[0],buffers[1]);assert.notDeepEqual(buffers[1],buffers[2]);
 });
 
+test('adaptive Anchor PDF renderer does not slice or ellipsize expanded analysis',()=>{
+ const source=require('node:fs').readFileSync(require('node:path').join(__dirname,'..','lib','anchor-report-renderer.js'),'utf8');
+ const editorial=source.slice(source.indexOf('function drawEditorialPage'),source.indexOf('async function renderAnchorReport'));
+ assert.doesNotMatch(editorial,/paragraphs\|\|\[\]\)\.slice|items\|\|\[\]\)\.slice|maxLines:7/);
+ assert.match(editorial,/objectionResponses/);assert.match(editorial,/activationScorecard/);
+});
+
 function premiumExtract(){
  const fields={context:'Technical service teams need a clearer delivery and sales process.',diagnostic:'The constraint is usually unclear decision flow.',origin:'The method emerged while repairing failed software projects.',timeline:'Developer to adviser to delivery lead.',method:'Diagnose, map, prototype, validate, transfer.',proof:'Clients adopted the mapped process and reduced avoidable rework.',point_of_view:'Clarity before automation.',boundaries:'No guaranteed commercial outcomes.',synthesis:'Package the method as a diagnostic workshop.'};
  return artifacts.build('extract',{id:'premium-extract',answers:Object.entries(fields).map(([field,text])=>({id:'extract-'+field,field:'extract.'+field,text}))});

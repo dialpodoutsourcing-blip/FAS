@@ -47,6 +47,14 @@ test('private ANCHOR draft uses saved pending sources without exposing private s
  assert.doesNotMatch(JSON.stringify(draft.premiumReport),/Never include/);
 });
 
+test('sparse ANCHOR fallback names gaps without inventing audience specificity',()=>{
+ const answers=['authority','arena','evidence','position','boundaries','activation'].map(field=>({id:'unknown-'+field,field:'anchor.'+field,text:'Unknown'}));
+ const report=artifacts.build('anchor',{id:'sparse',answers}).premiumReport;
+ const copy=JSON.stringify(report.expandedAnalysis);
+ assert.match(copy,/open gap|not yet supported|validate/i);
+ assert.doesNotMatch(copy,/audience is specific enough|lost clarity, delayed decisions|inconsistent execution/i);
+});
+
 test('ANCHOR attaches a complete premium report without mutating the grounded base artifact',()=>{
  const base=artifacts.build('anchor',{id:'premium',answers:['authority','arena','evidence','position','boundaries','activation'].map((field,index)=>({id:'src-'+field,field:'anchor.'+field,text:'Grounded '+field+' answer '+(index+1)}))}),before=JSON.stringify(base);
  const report={

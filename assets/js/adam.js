@@ -764,7 +764,7 @@
 
   function synthesizeCompletedArtifact(project, artifact) {
     if (FAS.agent.current.key !== 'anchor' || !FAS.artifacts.applySynthesis) return Promise.resolve(artifact);
-    var answers=(project.answers||[]).filter(function(answer){var permission=answer.permissionStatus||answer.permission_status||'not_required';return(answer.agentKey==='anchor'||answer.agent_key==='anchor')&&permission!=='private'&&(permission!=='pending'||project.privateDraft===true);}).map(function(answer){return{id:answer.id,field:answer.field||answer.field_path,text:answer.text||(answer.value&&answer.value.text)||answer.value,basis:answer.basis||'user',permissionStatus:answer.permissionStatus||answer.permission_status||'not_required'};});
+    var answers=(project.answers||[]).filter(function(answer){var permission=answer.permissionStatus||answer.permission_status||'not_required';return(answer.agentKey==='anchor'||answer.agent_key==='anchor')&&permission!=='private'&&(permission!=='pending'||project.privateDraft===true);}).map(function(answer){return{id:answer.id,agentKey:'anchor',field:answer.field||answer.field_path,text:answer.text||(answer.value&&answer.value.text)||answer.value,basis:answer.basis||'user',permissionStatus:answer.permissionStatus||answer.permission_status||'not_required',incomplete:Boolean(answer.incomplete),trigger:answer.trigger||null};});
     return apiFetch('/api/artifact-synthesis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agentKey:'anchor',answers:answers})}).then(function(response){if(!response.ok)throw new Error('Synthesis unavailable');return response.json();}).then(function(payload){return FAS.artifacts.applySynthesis(artifact,payload.sections);}).catch(function(){return artifact;});
   }
 
