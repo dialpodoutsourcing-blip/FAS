@@ -33,3 +33,45 @@ test('dashboard reviews the final specialist when all available work is complete
   assert.equal(state.action,'Review step 2');
   assert.equal(state.href,'review.html?asset=extract');
 });
+
+test('dashboard projects a clear state for every available roadmap card',()=>{
+  const project={answers:[],checkpoints:{anchor:{questionIndex:6,insufficientFields:[],conflicts:[]}},artifacts:[{agentKey:'anchor'}]};
+  const state=dashboard.derive(project,['anchor','extract']);
+  assert.deepEqual(state.cards.map(card=>({key:card.key,status:card.status,action:card.action,href:card.href})),[
+    {key:'anchor',status:'Complete',action:'Review',href:'review.html?asset=anchor'},
+    {key:'extract',status:'Current',action:'Start',href:'chat.html?agent=extract'}
+  ]);
+});
+
+test('dashboard locks later cards and includes future entitlements safely',()=>{
+  const state=dashboard.derive({answers:[],checkpoints:{},artifacts:[]},['anchor','extract','radar']);
+  assert.deepEqual(state.cards.map(card=>[card.key,card.status,card.action]),[
+    ['anchor','Current','Start'],
+    ['extract','Locked','Locked'],
+    ['radar','Locked','Locked']
+  ]);
+});
+
+test('dashboard marks every roadmap card complete when all available work is done',()=>{
+  const project={answers:[],checkpoints:{},artifacts:[{agentKey:'anchor'},{agentKey:'extract'}]};
+  const state=dashboard.derive(project,['anchor','extract']);
+  assert.deepEqual(state.cards.map(card=>[card.key,card.status,card.action]),[
+    ['anchor','Complete','Review'],
+    ['extract','Complete','Review']
+  ]);
+});
+
+test('render preserves the locked destination and authenticated Anchor session',()=>{
+  const state=dashboard.derive({answers:[],checkpoints:{},artifacts:[]},['anchor','extract']);
+  const label={textContent:'',className:''};
+  const action={textContent:''};
+  const extractCard={
+    href:'',
+    classList:{toggle(){}},
+    querySelector(selector){return selector==='[data-home-card-status]'?label:selector==='[data-home-card-action]'?action:null;},
+    setAttribute(){},removeAttribute(){}
+  };
+  const doc={querySelector(selector){return selector==='[data-home-card="extract"]'?extractCard:null;}};
+  dashboard.render(state,doc,{projectId:'p',sessions:{anchor:'anchor-session',extract:'extract-session'}});
+  assert.equal(extractCard.href,'chat.html?agent=anchor&notice=extract-locked&project=p&session=anchor-session');
+});

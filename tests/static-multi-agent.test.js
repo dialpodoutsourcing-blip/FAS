@@ -195,6 +195,16 @@ assert.match(styles, /prefers-reduced-motion[\s\S]*\.agent-loader__grid[\s\S]*\.
 assert.match(styles,/html:not\(\.fas-access-ready\)[\s\S]*data-agent-link="radar"[\s\S]*data-nav="launch"/s,'paid products are hidden before access resolves');
 
 const readme = read('README.md');
+assert.match(dashboard,/class="[^"]*\bhome-hero\b[^"]*"/, 'dashboard has the reference welcome header');
+assert.match(dashboard,/class="[^"]*\bhome-focus\b[^"]*"/, 'dashboard has the wide active-step banner');
+assert.match(dashboard,/class="[^"]*\bhome-roadmap\b[^"]*"/, 'dashboard has the two-step roadmap region');
+assert.match(dashboard,/class="[^"]*\bhome-utility\b[^"]*"/, 'dashboard has the right utility column');
+assert.match(dashboard,/class="[^"]*\bhome-quick\b[^"]*"/, 'dashboard has quick access actions');
+assert.match(dashboard,/data-home-progress/, 'dashboard exposes live progress output');
+assert.match(dashboard,/data-home-card="anchor"/, 'dashboard keeps a live Anchor roadmap card');
+assert.match(dashboard,/data-home-card="extract"/, 'dashboard keeps a live Extract roadmap card');
+assert.match(dashboard,/href="vault\.html"[\s\S]*View Your Vault/, 'quick access links to the Vault');
+assert.doesNotMatch(dashboard,/Michael Diala|Innov8 IT/, 'dashboard does not hard-code the reference identity');
 for (const key of keys) assert.ok(readme.includes(`chat.html?agent=${key}`), `README documents ${key} preview`);
 assert.match(readme, /local static preview/i);
 assert.match(readme, /shared guided-interview engine/i);

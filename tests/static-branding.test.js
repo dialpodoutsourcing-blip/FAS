@@ -16,6 +16,15 @@ for (const page of pages) {
   assert.doesNotMatch(html, /brand__letter/, `${page} should not retain the temporary letter logo`);
 }
 
+const dashboardRef = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+assert.match(dashboardRef,/home-focus__landscape/, 'dashboard includes a decorative landscape layer');
+assert.match(dashboardRef,/home-roadmap-card--gold/, 'Anchor uses the gold roadmap treatment');
+assert.match(dashboardRef,/home-roadmap-card--emerald/, 'Extract uses the emerald roadmap treatment');
+assert.match(dashboardRef,/data-account-name/, 'dashboard identity remains data-driven');
+assert.match(dashboardRef,/class="eyebrow home-hero__eyebrow"/, 'dashboard header uses its reference eyebrow treatment');
+assert.match(dashboardRef,/class="home-hero__controls"[\s\S]*class="home-system-pill"[\s\S]*class="home-account-link"/, 'dashboard status controls match their visual selectors');
+assert.match(dashboardRef,/class="resume-cta__label"[\s\S]*class="resume-cta__default"[\s\S]*class="resume-cta__hover"/, 'resume labels share the animated overlay wrapper');
+
 const logo = fs.readFileSync(path.join(root, 'assets/images/fas-monogram.svg'), 'utf8');
 assert.match(logo, /<svg[^>]+viewBox="0 0 120 72"[^>]+role="img"/);
 assert.match(logo, /<title[^>]*>FAS/);
@@ -27,7 +36,7 @@ assert.doesNotMatch(logo, /<text\b/, 'logo does not depend on font glyphs');
 const dashboard = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 assert.match(dashboard, /Welcome back, <span data-account-name>/, 'dashboard greeting uses the authenticated customer name');
 assert.match(dashboard, /assets\/js\/dashboard\.js/, 'dashboard loads live customer progress');
-assert.match(dashboard, /class="dashboard-progress"/, 'dashboard uses the compact current-step banner');
+assert.match(dashboard, /class="[^"]*\bdashboard-progress\b[^"]*"/, 'dashboard uses the compact current-step banner');
 assert.doesNotMatch(dashboard, /class="hero"/, 'dashboard does not regress to the tall ADAM hero');
 assert.match(dashboard, /class="[^"]*\bresume-cta\b[^"]*"/);
 assert.match(dashboard, /class="resume-cta__default" data-dashboard-action>Continue to step 2<\//);
@@ -39,5 +48,12 @@ assert.match(styles, /\.resume-cta:hover \.resume-cta__default/);
 assert.match(styles, /\.resume-cta:focus-visible \.resume-cta__default/);
 assert.match(styles, /\.resume-cta:hover \.resume-cta__hover/);
 assert.match(styles, /\.resume-cta:focus-visible \.resume-cta__hover/);
+assert.match(styles, /body\[data-page="home"\][\s\S]*radial-gradient/, 'dashboard has the reference emerald and gold atmosphere');
+assert.match(styles, /\.home-content\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+minmax\(260px,\s*320px\)/s, 'dashboard uses the reference roadmap and utility split');
+assert.match(styles, /\.home-roadmap-card--gold[\s\S]*\.home-roadmap-card--emerald/, 'dashboard cards retain distinct gold and emerald treatments');
+assert.match(styles, /@media\s*\(max-width:\s*900px\)[\s\S]*\.home-content/, 'dashboard collapses cleanly for tablet and mobile');
+assert.match(styles, /\.home-focus__action \.resume-cta\s*\{[^}]*width:\s*100%[^}]*min-width:\s*0/s, 'focus action cannot overflow its responsive column');
+assert.match(styles, /@media\s*\(max-width:\s*1180px\)[\s\S]*\.home-content\s*\{[^}]*grid-template-columns:\s*1fr/s, 'utility rail collapses before roadmap cards become cramped');
+assert.match(styles, /overflow-wrap:\s*anywhere/, 'long authenticated names remain contained');
 
 console.log('Static branding and resume CTA checks passed.');
