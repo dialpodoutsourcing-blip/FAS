@@ -91,7 +91,7 @@ browserTest('scaled desktop preserves the polished reference details at 1508x782
         scrollHeight:document.documentElement.scrollHeight,
         progress:rect('.home-focus__progress'),gauge:rect('.home-focus__gauge'),gaugeNumber:rect('.home-focus__gauge strong'),gaugeDenominator:rect('.home-focus__gauge span'),gaugeLabel:rect('.home-focus__progress small'),
         sidebarAccount:rect('.home-sidebar__account'),signout:rect('.home-sidebar__signout'),sidebarFooter:rect('.home-sidebar__footer'),sidebarAtmosphere:rect('.home-sidebar__atmosphere'),
-        specialistActions:[...document.querySelectorAll('[data-home-sidebar-action]')].map(node=>{const value=node.getBoundingClientRect();return{top:value.top,bottom:value.bottom,left:value.left,right:value.right,width:value.width,height:value.height,label:Boolean(node.querySelector('.step-link__action-label')),arrow:Boolean(node.querySelector('.step-link__action-arrow'))};}),
+        specialistActions:[...document.querySelectorAll('[data-home-sidebar-action]')].map(node=>{const value=node.getBoundingClientRect();return{top:value.top,bottom:value.bottom,left:value.left,right:value.right,width:value.width,height:value.height,chevron:Boolean(node.querySelector('.step-link__chevron'))};}),
         cardArtwork:[...document.querySelectorAll('.home-roadmap-card__art')].map(node=>{const value=node.getBoundingClientRect();return{top:value.top,bottom:value.bottom,height:value.height};}),
         cardArtworkImages:[...document.querySelectorAll('.home-roadmap-card__art img')].map(node=>{const value=node.getBoundingClientRect();return{top:value.top,bottom:value.bottom,height:value.height};}),
         cardDescriptions:[...document.querySelectorAll('.home-roadmap-card__copy h3 + p')].map(node=>{const value=node.getBoundingClientRect();return{top:value.top,bottom:value.bottom,height:value.height};}),
@@ -109,7 +109,7 @@ browserTest('scaled desktop preserves the polished reference details at 1508x782
     assert.ok(geometry.signout&&geometry.signout.height>=32,'dedicated Sign Out control remains visible');
     assert.ok(geometry.signout.bottom<=geometry.sidebarFooter.bottom,'Sign Out remains inside the sidebar footer');
     assert.ok(geometry.sidebarAtmosphere&&geometry.sidebarAtmosphere.bottom<=geometry.sidebarFooter.bottom,'sidebar atmosphere remains inside the footer');
-    geometry.specialistActions.forEach((action,index)=>{assert.ok(action.label&&action.arrow,`specialist action ${index+1} uses separate label and arrow details`);assert.ok(action.height>20&&action.right<=geometry.sidebarFooter.right,`specialist action ${index+1} remains contained`);});
+    geometry.specialistActions.forEach((action,index)=>{assert.ok(action.chevron,`specialist action ${index+1} uses the reference chevron`);assert.ok(action.height>=20&&action.right<=geometry.sidebarFooter.right,`specialist action ${index+1} remains contained`);});
     geometry.cardArtworkImages.forEach((image,index)=>assert.ok(image.bottom<=geometry.cardArtwork[index].bottom,`card ${index+1} artwork overflows its wrapper by ${image.bottom-geometry.cardArtwork[index].bottom}px`));
     assert.equal(geometry.cardDescriptions.length,2,'both roadmap descriptions exist');
     geometry.cardDescriptions.forEach((description,index)=>assert.ok(description.height>20&&description.bottom<=geometry.cardFooters[index].top,`card ${index+1} description remains visible above its actions`));
@@ -123,10 +123,33 @@ browserTest('scaled desktop preserves the polished reference details at 1508x782
   });
 });
 
-browserTest('desktop just above compact height keeps every action reachable',async()=>{
+browserTest('large desktop keeps the corrected reference lockup, sidebar shell, and restrained card lighting',async()=>{
+  await withPage({width:1907,height:980},async page=>{
+    const result=await page.evaluate(()=>{
+      const box=node=>{const r=node.getBoundingClientRect();return{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height};};
+      const lockup=document.querySelector('.home-sidebar__lockup'),mark=document.querySelector('.home-sidebar__lockup-mark'),word=document.querySelector('.home-sidebar__lockup-word'),shell=document.querySelector('.home-sidebar__account-shell'),account=document.querySelector('.home-sidebar__account'),signout=document.querySelector('.home-sidebar__signout');
+      return{
+        scrollWidth:document.documentElement.scrollWidth,scrollHeight:document.documentElement.scrollHeight,
+        lockup:box(lockup),mark:box(mark),word:box(word),sidebar:box(document.querySelector('[data-home-sidebar]')),
+        shell:box(shell),account:box(account),signout:box(signout),
+        rows:[...document.querySelectorAll('[data-home-sidebar-card]')].map(row=>{const task=box(row.querySelector('.step-link__task')),subtitle=box(row.querySelector('.step-link__subtitle')),action=row.querySelector('[data-home-sidebar-action]');return{task,subtitle,legacy:getComputedStyle(action,'::after').content};}),
+        cards:[...document.querySelectorAll('.home-roadmap-card')].map(card=>{const haze=card.querySelector('.home-roadmap-card__haze'),c=box(card),h=box(haze);return{card:c,haze:h,hazePointer:getComputedStyle(haze).pointerEvents,cornerContent:getComputedStyle(card,'::after').content};})
+      };
+    });
+    assert.ok(result.scrollWidth<=1907&&result.scrollHeight<=980,'large desktop remains one screen');
+    assert.ok(result.lockup.left>=result.sidebar.left&&result.lockup.right<=result.sidebar.right,'brand lockup remains inside the sidebar');
+    assert.ok(result.mark.right+8<=result.word.left,'A mark and FAS word never overlap');
+    assert.ok(result.account.top>=result.shell.top&&result.account.bottom<=result.shell.bottom,'profile remains inside its shell');
+    assert.ok(result.signout.top>=result.shell.top&&result.signout.bottom<=result.shell.bottom,'Sign Out remains inside the profile shell');
+    result.rows.forEach((row,index)=>{assert.ok(Math.abs(row.task.left-row.subtitle.left)<=2,`specialist ${index+1} subtitle is not aligned under its title`);assert.ok(row.legacy==='none'||row.legacy==='normal',`specialist ${index+1} still renders a legacy status arrow`);});
+    result.cards.forEach((item,index)=>{assert.ok(item.card.bottom<=976,`card ${index+1} is clipped below the 980px viewport at ${item.card.bottom}`);assert.ok(item.haze.left>=item.card.left&&item.haze.top>=item.card.top&&item.haze.right<=item.card.right&&item.haze.bottom<=item.card.bottom,`card ${index+1} smoke escapes its glass panel`);assert.equal(item.hazePointer,'none');assert.ok(item.cornerContent==='none'||item.cornerContent==='normal',`card ${index+1} still uses the oversized ring border`);});
+  });
+});
+
+browserTest('desktop through 901px stays in the one-screen composition',async()=>{
   await withPage({width:1508,height:901},async page=>{
     const geometry=await page.evaluate(()=>{const card=document.querySelector('.home-roadmap-card:last-child').getBoundingClientRect(),footer=document.querySelector('.home-roadmap-card:last-child footer').getBoundingClientRect(),encouragement=document.querySelector('.home-encouragement').getBoundingClientRect();return{scrollHeight:document.documentElement.scrollHeight,cardBottom:card.bottom,footerBottom:footer.bottom,encouragementBottom:encouragement.bottom};});
-    assert.ok(geometry.scrollHeight>901,'901px desktop restores scrolling until the full layout fits');
+    assert.ok(geometry.scrollHeight<=901,'901px desktop should remain in the one-screen composition');
     assert.ok(geometry.footerBottom<=geometry.cardBottom,'roadmap footer remains inside its card');
     assert.ok(geometry.encouragementBottom<=geometry.scrollHeight,'Keep Going remains reachable within the document');
   });

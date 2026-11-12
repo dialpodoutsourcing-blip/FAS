@@ -70,6 +70,7 @@
     <nav class="sidebar" id="sidebar" aria-label="Main menu" data-home-sidebar>
       <a class="home-sidebar__brand" href="index.html">
         <img class="brand__mark" src="assets/images/fas-monogram.svg" alt="">
+        <span class="home-sidebar__lockup"><svg class="home-sidebar__lockup-mark" viewBox="0 0 48 42" aria-hidden="true"><path d="M7 35 24 5l17 30h-8l-3-6H18l-3 6H7Zm15-13h5l-3-6-2 6Z" fill="currentColor"/><path d="m5 31 34-16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg><span class="home-sidebar__lockup-word">FAS</span></span>
         <span class="brand__name">FITNESS AUTHORITY SYSTEM</span>
       </a>
 
@@ -85,13 +86,13 @@
         <div class="nav-group__title" data-tour-id="specialists">Your specialists</div>
         <a class="step-link is-preview" href="chat.html?agent=anchor" data-agent-link="anchor" data-home-sidebar-card="anchor" style="--c:#D9BC7E">
           <span class="em em--xs is-done"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="#em-anchor"></use></svg></span>
-          <span class="step-link__text"><span class="step-link__task">Find your voice</span><span class="step-link__agent">01 · ANCHOR</span></span>
-          <span class="step-link__state" data-home-sidebar-action><span class="step-link__action-label">Review</span><span class="step-link__action-arrow" aria-hidden="true">↗</span></span>
+          <span class="step-link__text"><span class="step-link__task">Find your voice</span><span class="step-link__subtitle">with a 1-on-1 advisor</span></span>
+          <span class="step-link__state" data-home-sidebar-action><span class="step-link__chevron" aria-hidden="true">›</span></span>
         </a>
         <a class="step-link is-preview is-locked" href="chat.html?agent=anchor&amp;notice=extract-locked" data-unlocked-href="chat.html?agent=extract" data-agent-link="extract" data-home-sidebar-card="extract" aria-disabled="true" style="--c:#BFD0DF">
           <span class="em em--xs is-locked"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="#em-extract"></use></svg></span>
-          <span class="step-link__text"><span class="step-link__task">Tell your story</span><span class="step-link__agent">02 · EXTRACT</span></span>
-          <span class="step-link__state" data-home-sidebar-action title="Finish ANCHOR to unlock"><span class="step-link__action-label">Locked</span><span class="step-link__action-arrow" aria-hidden="true">●</span></span>
+          <span class="step-link__text"><span class="step-link__task">Tell your story</span><span class="step-link__subtitle">with a strategist</span></span>
+          <span class="step-link__state" data-home-sidebar-action><span class="step-link__chevron" aria-hidden="true">›</span></span>
         </a>
         <a class="step-link is-preview" href="chat.html?agent=radar" data-agent-link="radar" style="--c:#5FB597" hidden>
           <span class="em em--xs is-locked"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="#em-radar"></use></svg></span>
@@ -123,12 +124,14 @@
       <div class="home-sidebar__footer" data-tour-id="account">
         <span class="home-sidebar__atmosphere" aria-hidden="true"></span>
         <div class="saved-note" data-save-status><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg> Everything is saved</div>
+        <div class="home-sidebar__account-shell">
         <div class="user home-sidebar__account">
           <span class="user__avatar" data-account-avatar>MG</span>
           <span class="user__identity"><span class="user__name" data-account-name>Mike Gonzalez</span><span class="user__sub" data-account-business>Freedom Builderz Coaching</span></span>
           <a class="user__settings" href="account.html" data-account-signout aria-label="Sign out"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.55V21h-4v-.08a1.7 1.7 0 0 0-1.03-1.55 1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15 1.7 1.7 0 0 0 3.05 14H3v-4h.05A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 8.97 4.6 1.7 1.7 0 0 0 10 3.05V3h4v.05a1.7 1.7 0 0 0 1.03 1.55 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9 1.7 1.7 0 0 0 20.95 10H21v4h-.05A1.7 1.7 0 0 0 19.4 15Z"></path></svg></a>
         </div>
         <a class="home-sidebar__signout" href="account.html" data-account-signout><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3M14 4h5a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-5"></path></svg><span>Sign Out</span></a>
+        </div>
       </div>
     </nav>
 
@@ -168,11 +171,13 @@
           <header class="home-section-head"><h2>Your <span data-access-count>2</span>-step roadmap</h2><p>Follow these steps to set up your authority and grow your impact.</p></header>
           <div class="home-roadmap__grid">
             <a class="spec home-roadmap-card home-roadmap-card--gold" href="chat.html?agent=anchor" data-agent-link="anchor" data-home-card="anchor">
+              <span class="home-roadmap-card__haze" aria-hidden="true"></span>
               <span class="home-roadmap-card__step">01</span><div class="home-roadmap-card__art"><img src="assets/images/dashboard-anchor-platform.png" alt="" aria-hidden="true"></div>
               <div class="home-roadmap-card__copy"><p class="home-roadmap-card__agent">Anchor</p><small>Positioning Strategist</small><h3>Find Your Voice</h3><p>Clarify what makes you unique and build your authority.</p></div>
               <footer><span class="status status--done" data-home-card-status>✓ Complete</span><span data-home-card-action>View Details →</span></footer>
             </a>
             <a class="spec home-roadmap-card home-roadmap-card--emerald is-locked" href="chat.html?agent=anchor&amp;notice=extract-locked" data-unlocked-href="chat.html?agent=extract" data-agent-link="extract" data-home-card="extract" aria-disabled="true">
+              <span class="home-roadmap-card__haze" aria-hidden="true"></span>
               <span class="home-roadmap-card__step">02</span><div class="home-roadmap-card__art"><img src="assets/images/dashboard-extract-platform.png" alt="" aria-hidden="true"></div>
               <div class="home-roadmap-card__copy"><p class="home-roadmap-card__agent">Extract</p><small>Expertise Interviewer</small><h3>Tell Your Story</h3><p>Share your expertise and map your knowledge.</p></div>
               <footer><span class="status status--locked" data-home-card-status>Locked</span><span data-home-card-action data-progression-label>Finish ANCHOR to unlock</span></footer>

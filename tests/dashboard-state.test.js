@@ -78,11 +78,13 @@ test('render preserves the locked destination and authenticated Anchor session',
 
 function renderNode(){
   const classes=new Set();
-  const action={textContent:''};
+  const subtitle={textContent:'with a specialist'};
+  const chevron={textContent:'›'};
+  const action={querySelector(selector){return selector==='.step-link__subtitle'?subtitle:selector==='.step-link__chevron'?chevron:null;}};
   const iconClasses=new Set(['is-locked']);
   const icon={classList:{toggle(name,on){if(on)iconClasses.add(name);else iconClasses.delete(name);}}};
   return{
-    href:'',action,classes,iconClasses,
+    href:'',action,subtitle,chevron,classes,iconClasses,
     classList:{toggle(name,on){if(on)classes.add(name);else classes.delete(name);}},
     querySelector(selector){return selector==='[data-home-sidebar-action]'?action:selector==='.em'?icon:null;},
     setAttribute(){},removeAttribute(){}
@@ -91,17 +93,18 @@ function renderNode(){
 
 test('render keeps sidebar specialist rows aligned with live roadmap state',()=>{
   const cases=[
-    {project:{answers:[],checkpoints:{},artifacts:[]},want:[['anchor','is-current','Start →'],['extract','is-locked','🔒']]},
-    {project:{answers:[],checkpoints:{anchor:{questionIndex:6,insufficientFields:[],conflicts:[]}},artifacts:[{agentKey:'anchor'}]},want:[['anchor','is-complete','Review →'],['extract','is-current','Start →']]},
-    {project:{answers:[],checkpoints:{},artifacts:[{agentKey:'anchor'},{agentKey:'extract'}]},want:[['anchor','is-complete','Review →'],['extract','is-complete','Review →']]}
+    {project:{answers:[],checkpoints:{},artifacts:[]},want:[['anchor','is-current'],['extract','is-locked']]},
+    {project:{answers:[],checkpoints:{anchor:{questionIndex:6,insufficientFields:[],conflicts:[]}},artifacts:[{agentKey:'anchor'}]},want:[['anchor','is-complete'],['extract','is-current']]},
+    {project:{answers:[],checkpoints:{},artifacts:[{agentKey:'anchor'},{agentKey:'extract'}]},want:[['anchor','is-complete'],['extract','is-complete']]}
   ];
   for(const scenario of cases){
     const nodes={anchor:renderNode(),extract:renderNode()};
     const doc={querySelector(selector){const match=selector.match(/^\[data-home-sidebar-card="(anchor|extract)"\]$/);return match?nodes[match[1]]:null;}};
     dashboard.render(dashboard.derive(scenario.project,['anchor','extract']),doc,null);
-    for(const [key,className,label] of scenario.want){
+    for(const [key,className] of scenario.want){
       assert.ok(nodes[key].classes.has(className),`${key} receives ${className}`);
-      assert.equal(nodes[key].action.textContent,label);
+      assert.equal(nodes[key].subtitle.textContent,'with a specialist');
+      assert.equal(nodes[key].chevron.textContent,'›');
       assert.equal(nodes[key].iconClasses.has('is-locked'),className==='is-locked',`${key} emblem lock follows ${className}`);
     }
   }

@@ -39,7 +39,12 @@ assert.match(dashboardRef,/class="home-hero__artwork"[^>]*aria-hidden="true"/, '
 assert.match(dashboardRef,/class="home-encouragement__icon"[^>]*aria-hidden="true"/, 'encouragement panel uses the reference chart icon hook');
 assert.match(dashboardRef,/class="home-encouragement__flourish"[^>]*aria-hidden="true"/, 'encouragement panel exposes its decorative lower flourish');
 assert.match(dashboardRef,/class="home-sidebar__atmosphere"[^>]*aria-hidden="true"/, 'sidebar footer exposes an inaccessible atmospheric flourish');
-assert.match(dashboardRef,/class="step-link__action-label"[\s\S]*class="step-link__action-arrow"[^>]*aria-hidden="true"/, 'specialist actions separate their label and diagonal arrow');
+assert.match(dashboardRef,/class="home-sidebar__lockup"[\s\S]*class="home-sidebar__lockup-mark"[^>]*aria-hidden="true"[\s\S]*class="home-sidebar__lockup-word">FAS/, 'dashboard uses one native non-overlapping A and FAS lockup');
+assert.match(dashboardRef,/class="home-sidebar__account-shell"[\s\S]*class="user home-sidebar__account"[\s\S]*class="home-sidebar__signout"/, 'profile and Sign Out share one account shell');
+assert.equal((dashboardRef.match(/class="home-roadmap-card__haze" aria-hidden="true"/g)||[]).length,2,'both cards expose contained smoke layers');
+assert.equal((dashboardRef.match(/class="step-link__subtitle"/g)||[]).length,2,'visible specialists use reference subtitles');
+assert.equal((dashboardRef.match(/class="step-link__chevron" aria-hidden="true"/g)||[]).length,2,'visible specialists use reference chevrons');
+assert.doesNotMatch(dashboardRef,/class="step-link__action-label"/,'reference sidebar has no Review or Locked status column');
 assert.match(dashboardRef,/class="resume-cta__arrow"[^>]*aria-hidden="true"/, 'focus CTA exposes a dedicated arrow detail');
 assert.match(dashboardRef,/class="home-focus__details"[\s\S]*class="home-focus__chevron"[^>]*aria-hidden="true"/, 'focus detail link exposes its underline and chevron hooks');
 
