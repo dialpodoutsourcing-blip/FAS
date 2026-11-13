@@ -20,9 +20,13 @@ test('account page is accessible, complete, and contains no credentials',()=>{
 test('temporary propagation cover blocks login with a truthful capped status',()=>{
   const html=fs.readFileSync(accountPath,'utf8'),css=fs.readFileSync(accountCssPath,'utf8');
   assert.match(html,/class="fas-propagation-cover"[^>]*role="dialog"[^>]*aria-modal="true"/i);
-  assert.match(html,/FAS is still propagating/i);
+  assert.match(html,/Deploying FAS live/i);
+  assert.match(html,/File upload, database synchronization, and network propagation are complete/i);
+  assert.match(html,/Live deployment/i);
+  assert.match(html,/Vercel(?:&#39;|&apos;|’)s South America region is currently at capacity/i);
+  assert.match(html,/Select a different deployment region or upgrade to a paid tier/i);
   assert.match(html,/data-propagation-value[^>]*>75%?</i);
-  assert.match(html,/Estimated time remaining:\s*<strong>5[–-]6 hours<\/strong>/i);
+  assert.match(html,/Deployment is taking longer than expected/i);
   assert.match(html,/<main class="account-shell"[^>]*inert[^>]*aria-hidden="true"/i);
   assert.match(html,/<script src="assets\/js\/propagation-cover\.js"><\/script>[\s\S]*<script src="assets\/js\/account\.js" type="application\/x-fas-hold"><\/script>/i);
   assert.match(css,/\.fas-propagation-cover\s*\{[^}]*position:\s*fixed[^}]*z-index:\s*\d{3,}/s);
