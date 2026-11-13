@@ -63,8 +63,8 @@ test('restored answers render before the completion announcement',()=>{
  assert.ok(savedAnswers>initialize&&restoredCompletion>savedAnswers,'completion remains the final visible message after reload');
 });
 
-test('restored conversation uses the reconciled checkpoint and durable answer set',()=>{
- assert.match(adam,/renderRestoredConversation\(restoredState\.answers,interview\.currentQuestion\(\)\)/);
+test('restored conversation keeps the durable answer set in chronological order',()=>{
+ assert.match(adam,/renderRestoredConversation\(restoredAnswers,interview\.currentQuestion\(\)\)/);
 });
 test('persistence restoration fails closed and retries without creating question one',()=>{
  const initialize=adam.slice(adam.indexOf('function initializePersistence'),adam.indexOf('function apiFetch'));

@@ -39,6 +39,23 @@ test('durable answers rebuild the visible question and answer conversation in or
  assert.equal(transcript.at(-1).text,'Saved answer 6');
 });
 
+test('history shows the real adaptive prompt and preserves chronological answer order',()=>{
+ const history=[
+  {id:'position-main',field:'anchor.position',text:'The market often buys tools before defining the problem.',incomplete:true,trigger:'vague_quantity',createdAt:'2026-01-01T00:00:00.000Z'},
+  {id:'position-detail',field:'anchor.position',text:'I have seen this across 10 industries.',relation:'follow_up',supersedesId:'position-main',createdAt:'2026-01-02T00:00:00.000Z'},
+  {id:'boundaries',field:'anchor.boundaries',text:'We will not promise unsupported ROI.',createdAt:'2026-01-03T00:00:00.000Z'}
+ ];
+ const transcript=restoration.transcript(anchor,history,interview.followUpQuestion);
+ assert.deepEqual(transcript,[
+  {role:'agent',text:'What do you believe the market gets wrong?'},
+  {role:'user',text:history[0].text},
+  {role:'agent',text:'What is the closest real number, amount, or time range?'},
+  {role:'user',text:history[1].text},
+  {role:'agent',text:'What will you not promise, claim, or deliver?'},
+  {role:'user',text:history[2].text}
+ ]);
+});
+
 test('restoration stops at the first missing required answer',()=>{
  const state=restoration.reconcile(anchor,{questionIndex:0,answers:[]},answers.slice(0,5));
  const restored=interview.create({agent:anchor,state});

@@ -32,6 +32,17 @@ test('interview asks one question and chooses one matching follow-up', () => {
   assert.match(result.followUps[0].question, /number|dollars|amount/i);
 });
 
+test('saved answers retain the exact canonical or follow-up prompt that produced them', () => {
+  const interview = interviews.create({ agent: agents.get('anchor') });
+  const first = interview.acceptAnswer({ text: 'People often trust us to simplify complex systems.' });
+  assert.equal(first.answer.prompt, 'What do people already trust you to help them do?');
+  assert.equal(interview.currentQuestion().question, 'What is the closest real number, amount, or time range?');
+
+  const clarification = interview.acceptAnswer({ text: 'We have delivered 12 production systems.' });
+  assert.equal(clarification.answer.prompt, 'What is the closest real number, amount, or time range?');
+  assert.equal(interview.currentQuestion().field, 'anchor.arena');
+});
+
 test('interview recognizes core responsive follow-up classes', () => {
   const classify = interviews.classify;
   const cases = [
