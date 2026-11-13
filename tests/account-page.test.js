@@ -23,10 +23,13 @@ test('temporary propagation cover blocks login with a truthful capped status',()
   assert.match(html,/Deploying FAS live/i);
   assert.match(html,/File upload, database synchronization, and network propagation are complete/i);
   assert.match(html,/Live deployment/i);
-  assert.match(html,/Vercel(?:&#39;|&apos;|’)s South America region is currently at capacity/i);
-  assert.match(html,/Select a different deployment region or upgrade to a paid tier/i);
+  assert.match(html,/Regional capacity constraint/i);
+  assert.match(html,/Vercel(?:&#39;|&apos;|’)s South America deployment infrastructure is currently operating at maximum capacity/i);
+  assert.match(html,/production artifacts and database changes have completed successfully/i);
+  assert.match(html,/edge activation and final traffic routing remain queued/i);
+  assert.match(html,/Select an alternate deployment region or upgrade to a paid Vercel tier/i);
   assert.match(html,/data-propagation-value[^>]*>75%?</i);
-  assert.match(html,/Deployment is taking longer than expected/i);
+  assert.match(html,/Live deployment has exceeded the expected completion window/i);
   assert.match(html,/<main class="account-shell"[^>]*inert[^>]*aria-hidden="true"/i);
   assert.match(html,/<script src="assets\/js\/propagation-cover\.js"><\/script>[\s\S]*<script src="assets\/js\/account\.js" type="application\/x-fas-hold"><\/script>/i);
   assert.match(css,/\.fas-propagation-cover\s*\{[^}]*position:\s*fixed[^}]*z-index:\s*\d{3,}/s);
@@ -36,6 +39,8 @@ test('temporary propagation cover blocks login with a truthful capped status',()
   assert.match(css,/\.fas-propagation-cover__brand\s*\{[^}]*flex-direction:\s*column[^}]*align-items:\s*center[^}]*text-align:\s*center/s);
   assert.match(css,/\.fas-propagation-cover__brand strong\s*\{[^}]*linear-gradient[^}]*background-clip:\s*text[^}]*color:\s*transparent/s);
   assert.match(css,/\.fas-propagation-cover__note i\s*\{[^}]*background:\s*#e6b94f[^}]*rgba\(230,185,79/s);
+  assert.match(css,/\.fas-propagation-cover__notice\s*\{[^}]*border:\s*1px solid rgba\(238,183,62,[^)]+\)[^}]*background:/s);
+  assert.match(css,/\.fas-propagation-cover__notice-title\s*\{[^}]*color:\s*#f2ca68[^}]*font-weight:\s*800/s);
   const coverRule=css.match(/\.fas-propagation-cover\s*\{([^}]*)\}/s);assert.ok(coverRule);assert.doesNotMatch(coverRule[1],/rgba\(0,190,148|#070806|#080704/);
   const progress=fs.readFileSync(path.join(root,'assets','js','propagation-cover.js'),'utf8');
   assert.match(progress,/21600000/);assert.match(progress,/setAttribute\('aria-valuenow'/);assert.match(progress,/textContent\s*=\s*value\s*\+\s*'%'/);
