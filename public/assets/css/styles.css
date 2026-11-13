@@ -962,8 +962,9 @@ body.src-off .part__src { display: none; }
 .fas-propagation-cover__copy { max-width:560px; margin:18px auto 34px; color:#bdb6a7; font-size:14px; line-height:1.65; }
 .fas-propagation-cover__status { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; color:#c8c8c1; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
 .fas-propagation-cover__status strong { color:#f0cc68; font-size:16px; }
-.fas-propagation-cover__track { height:12px; padding:2px; overflow:hidden; border:1px solid rgba(231,195,103,.28); border-radius:999px; background:rgba(0,0,0,.54); box-shadow:inset 0 2px 5px rgba(0,0,0,.72); }
-.fas-propagation-cover__fill { display:block; width:100%; height:100%; border-radius:inherit; transform:scaleX(.75); transform-origin:left center; background:linear-gradient(90deg,#b98620,#f2d875 54%,#dca532); box-shadow:0 0 18px rgba(239,194,72,.58); animation:fasPropagation 21600s linear forwards; }
+.fas-propagation-cover__track { position:relative; height:12px; padding:2px; overflow:hidden; border:1px solid rgba(231,195,103,.28); border-radius:999px; background:rgba(0,0,0,.54); box-shadow:inset 0 2px 5px rgba(0,0,0,.72); }
+.fas-propagation-cover__track::after { content:""; position:absolute; top:2px; right:2px; bottom:2px; left:97%; border-radius:0 999px 999px 0; background:linear-gradient(90deg,rgba(245,207,103,.08),rgba(255,225,139,.58),rgba(218,165,50,.1)); background-size:250% 100%; box-shadow:0 0 10px rgba(239,194,72,.28); animation:fasDeploymentScan 1.1s linear infinite; }
+.fas-propagation-cover__fill { display:block; width:100%; height:100%; border-radius:inherit; transform:scaleX(.97); transform-origin:left center; background:linear-gradient(90deg,#b98620,#f2d875 54%,#dca532); box-shadow:0 0 18px rgba(239,194,72,.58); }
 .fas-propagation-cover__estimate { margin:18px 0 0; color:#aeb0aa; font-size:13px; }
 .fas-propagation-cover__estimate strong { color:#f0ede4; }
 .fas-propagation-cover__note { display:flex; align-items:center; justify-content:center; gap:8px; margin:30px 0 0; color:#858a84; font-size:11px; }
@@ -971,9 +972,9 @@ body.src-off .part__src { display: none; }
 .fas-propagation-cover__notice { margin-top:24px; padding:18px 20px; border:1px solid rgba(238,183,62,.48); border-radius:14px; background:linear-gradient(135deg,rgba(238,183,62,.12),rgba(128,76,11,.08)); box-shadow:inset 0 1px rgba(255,235,178,.08),0 0 24px rgba(218,151,31,.08); text-align:left; }
 .fas-propagation-cover__notice-title { justify-content:flex-start; margin:0; color:#f2ca68; font-size:11px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; }
 .fas-propagation-cover__notice-copy { margin:11px 0 0; color:#c6bda9; font-size:12px; line-height:1.65; }
-@keyframes fasPropagation { from { transform:scaleX(.75); } to { transform:scaleX(.89); } }
+@keyframes fasDeploymentScan { from { background-position:100% 0; } to { background-position:-100% 0; } }
 @media (max-width:560px) { .fas-propagation-cover { padding:14px; }.fas-propagation-cover__panel { padding:34px 22px; border-radius:20px; }.fas-propagation-cover__brand { flex-direction:column; align-items:center; gap:12px; margin-bottom:30px; }.fas-propagation-cover__copy { margin-bottom:28px; } }
-@media (prefers-reduced-motion:reduce) { .fas-propagation-cover__fill { animation:none; } }
+@media (prefers-reduced-motion:reduce) { .fas-propagation-cover__track::after { animation:none; } }
 .account-shell { width:100%; height:100dvh; display:grid; grid-template-columns:minmax(0,42%) minmax(0,58%); background:radial-gradient(circle at 16% 20%,rgba(211,181,124,.12),transparent 34%),#080806; }
 .account-story { position:relative; display:flex; flex-direction:column; justify-content:space-between; min-width:0; min-height:0; padding:clamp(28px,3.7vw,54px) clamp(32px,4.2vw,68px); overflow:hidden; border-right:1px solid rgba(211,181,124,.2); background:linear-gradient(145deg,rgba(29,27,22,.88),rgba(8,8,6,.97) 72%); }
 .account-story::before { content:""; position:absolute; inset:0; pointer-events:none; opacity:.46; background:repeating-linear-gradient(118deg,transparent 0 88px,rgba(211,181,124,.07) 89px 90px); }

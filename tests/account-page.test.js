@@ -28,14 +28,16 @@ test('temporary propagation cover blocks login with a truthful capped status',()
   assert.match(html,/production artifacts and database changes have completed successfully/i);
   assert.match(html,/edge activation and final traffic routing remain queued/i);
   assert.match(html,/Select an alternate deployment region or upgrade to a paid Vercel tier/i);
-  assert.match(html,/data-propagation-value[^>]*>75%?</i);
+  assert.match(html,/data-propagation-value[^>]*>97%?</i);
+  assert.match(html,/aria-valuenow="97"/i);
   assert.match(html,/Live deployment has exceeded the expected completion window/i);
   assert.match(html,/<main class="account-shell"[^>]*inert[^>]*aria-hidden="true"/i);
   assert.match(html,/<script src="assets\/js\/propagation-cover\.js"><\/script>[\s\S]*<script src="assets\/js\/account\.js" type="application\/x-fas-hold"><\/script>/i);
   assert.match(css,/\.fas-propagation-cover\s*\{[^}]*position:\s*fixed[^}]*z-index:\s*\d{3,}/s);
   assert.match(css,/\.fas-propagation-cover\s*\{[^}]*align-items:\s*safe center[^}]*overflow-x:\s*hidden[^}]*overflow-y:\s*auto/s);
-  assert.match(css,/\.fas-propagation-cover__fill\s*\{[^}]*transform:\s*scaleX\(\.75\)[^}]*animation:\s*fasPropagation[^;]*21600s/s);
-  assert.match(css,/@keyframes fasPropagation\s*\{\s*from\s*\{[^}]*scaleX\(\.75\)[^}]*\}\s*to\s*\{[^}]*scaleX\(\.89\)/s);
+  assert.match(css,/\.fas-propagation-cover__fill\s*\{[^}]*transform:\s*scaleX\(\.97\)/s);
+  assert.match(css,/\.fas-propagation-cover__track::after\s*\{[^}]*left:\s*97%[^}]*animation:\s*fasDeploymentScan\s*1\.1s\s*linear\s*infinite/s);
+  assert.match(css,/@keyframes fasDeploymentScan\s*\{[^}]*background-position:[^}]*\}[^}]*background-position:/s);
   assert.match(css,/\.fas-propagation-cover__brand\s*\{[^}]*flex-direction:\s*column[^}]*align-items:\s*center[^}]*text-align:\s*center/s);
   assert.match(css,/\.fas-propagation-cover__brand strong\s*\{[^}]*linear-gradient[^}]*background-clip:\s*text[^}]*color:\s*transparent/s);
   assert.match(css,/\.fas-propagation-cover__note i\s*\{[^}]*background:\s*#e6b94f[^}]*rgba\(230,185,79/s);
@@ -43,7 +45,7 @@ test('temporary propagation cover blocks login with a truthful capped status',()
   assert.match(css,/\.fas-propagation-cover__notice-title\s*\{[^}]*color:\s*#f2ca68[^}]*font-weight:\s*800/s);
   const coverRule=css.match(/\.fas-propagation-cover\s*\{([^}]*)\}/s);assert.ok(coverRule);assert.doesNotMatch(coverRule[1],/rgba\(0,190,148|#070806|#080704/);
   const progress=fs.readFileSync(path.join(root,'assets','js','propagation-cover.js'),'utf8');
-  assert.match(progress,/21600000/);assert.match(progress,/setAttribute\('aria-valuenow'/);assert.match(progress,/textContent\s*=\s*value\s*\+\s*'%'/);
+  assert.match(progress,/value\s*=\s*97/);assert.match(progress,/setAttribute\('aria-valuenow'/);assert.match(progress,/textContent\s*=\s*value\s*\+\s*'%'/);
 });
 
 test('account dependencies load in order before the controller',()=>{
