@@ -31,6 +31,21 @@
     return{run:function(key,task){if(pending[key])return pending[key];var started;try{started=Promise.resolve(task());}catch(error){started=Promise.reject(error);}pending[key]=started.finally(function(){delete pending[key];});return pending[key];}};
   }
 
+  function createExportCache(storage){
+    var completed={},pending={};
+    return{get:function(key,task){
+      if(Object.prototype.hasOwnProperty.call(completed,key))return Promise.resolve(completed[key]);
+      if(pending[key])return pending[key];
+      var stored;
+      try{stored=storage&&storage.read?Promise.resolve(storage.read(key)):Promise.resolve(null);}catch(error){stored=Promise.resolve(null);}
+      pending[key]=stored.catch(function(){return null;}).then(function(value){
+        if(value!==null&&value!==undefined){completed[key]=value;return value;}
+        return Promise.resolve().then(task).then(function(generated){completed[key]=generated;if(storage&&storage.write)return Promise.resolve(storage.write(key,generated)).catch(function(){}).then(function(){return generated;});return generated;});
+      }).finally(function(){delete pending[key];});
+      return pending[key];
+    }};
+  }
+
   function normalizeView(value){return value==='list'?'list':'cards';}
   function getStorage(host,key){try{return host&&host[key]||null;}catch(error){return null;}}
   function createViewPreference(storage,key){
@@ -40,5 +55,5 @@
     };
   }
 
-  return{buildItems:buildItems,createExportGate:createExportGate,normalizeView:normalizeView,getStorage:getStorage,createViewPreference:createViewPreference};
+  return{buildItems:buildItems,createExportGate:createExportGate,createExportCache:createExportCache,normalizeView:normalizeView,getStorage:getStorage,createViewPreference:createViewPreference};
 });

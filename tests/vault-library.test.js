@@ -63,6 +63,35 @@ test('createExportGate shares one in-flight export and clears after it settles',
   assert.equal(starts,2);
 });
 
+test('createExportCache reuses a completed export and persists it for a later page load',async()=>{
+  const saved=new Map(),storage={
+    read:key=>Promise.resolve(saved.get(key)||null),
+    write:(key,value)=>{saved.set(key,value);return Promise.resolve();}
+  };
+  let starts=0;
+  const first=vault.createExportCache(storage);
+  const generated=await first.get('anchor:2:pdf:editorial',()=>{starts+=1;return Promise.resolve({blob:'pdf-bytes',filename:'report.pdf'});});
+  const repeated=await first.get('anchor:2:pdf:editorial',()=>{starts+=1;return Promise.resolve({blob:'wrong'});});
+  const afterReload=await vault.createExportCache(storage).get('anchor:2:pdf:editorial',()=>{starts+=1;return Promise.resolve({blob:'wrong'});});
+
+  assert.deepEqual(generated,{blob:'pdf-bytes',filename:'report.pdf'});
+  assert.equal(repeated,generated);
+  assert.deepEqual(afterReload,generated);
+  assert.equal(starts,1);
+});
+
+test('createExportCache isolates formats and themes and does not retain failed exports',async()=>{
+  const cache=vault.createExportCache(),starts=[];
+  const task=key=>()=>{starts.push(key);return key==='failed'?Promise.reject(new Error('failed')):Promise.resolve(key);};
+
+  assert.equal(await cache.get('a:pdf:light',task('light')),'light');
+  assert.equal(await cache.get('a:pdf:dark',task('dark')),'dark');
+  assert.equal(await cache.get('a:docx:default',task('docx')),'docx');
+  await assert.rejects(cache.get('failed',task('failed')),/failed/);
+  assert.equal(await cache.get('failed',task('recovered')),'recovered');
+  assert.deepEqual(starts,['light','dark','docx','failed','recovered']);
+});
+
 test('buildItems orders known specialists first and derives a safe meaningful summary',()=>{
   const project={artifacts:[
     {id:'unknown',agentKey:'custom',currentVersion:1},

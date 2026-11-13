@@ -40,7 +40,7 @@ test('premium Anchor renders a distinct adaptive twelve-page PDF in every approv
  for(const theme of themes){
   const pdf=await service.renderPdf(premiumAnchor(),{theme});buffers.push(pdf);
   assert.equal(pdf.subarray(0,5).toString(),'%PDF-');assert.ok(pdf.length>12000,theme+' should contain substantive designed content');
-  const document=await PDFDocument.load(pdf);assert.ok(document.getPageCount()>=12&&document.getPageCount()<=16);assert.equal(document.getTitle(),'Trusted Expert Blueprint');assert.match(document.getSubject(),/premium.*anchor/i);assert.ok((document.getKeywords()||'').includes(theme));
+  const document=await PDFDocument.load(pdf);assert.ok(document.getPageCount()>=12&&document.getPageCount()<=30);assert.equal(document.getTitle(),'Trusted Expert Blueprint');assert.match(document.getSubject(),/premium.*anchor/i);assert.ok((document.getKeywords()||'').includes(theme));
  }
  assert.notDeepEqual(buffers[0],buffers[1]);assert.notDeepEqual(buffers[1],buffers[2]);
 });
@@ -50,6 +50,8 @@ test('adaptive Anchor PDF renderer does not slice or ellipsize expanded analysis
  const editorial=source.slice(source.indexOf('function drawEditorialPage'),source.indexOf('async function renderAnchorReport'));
  assert.doesNotMatch(editorial,/paragraphs\|\|\[\]\)\.slice|items\|\|\[\]\)\.slice|maxLines:7/);
  assert.match(editorial,/objectionResponses/);assert.match(editorial,/activationScorecard/);
+ assert.doesNotMatch(source,/candidate\s*\+\s*['"]…/,'visible report copy must never end in a truncation ellipsis');
+ assert.match(source,/drawCompleteReportAppendix/,'the designed summary must be backed by a lossless full-content appendix');
 });
 
 function premiumExtract(){
