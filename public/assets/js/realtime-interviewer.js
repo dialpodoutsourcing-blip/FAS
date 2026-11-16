@@ -26,12 +26,13 @@
     var makeAbortController = options.abortControllerFactory || (typeof AbortController !== 'undefined' ? function () { return new AbortController(); } : null);
     var onState = options.onState || function () {};
     var onPartialTranscript = options.onPartialTranscript || function () {};
+    var onPartialControl = options.onPartialControl || function () { return false; };
     var onFinalTranscript = options.onFinalTranscript || function () {};
     var onError = options.onError || function () {};
     var onCaptureChange = options.onCaptureChange || function () {};
     var scheduleTimeout = options.setTimeout || setTimeout;
     var cancelTimeout = options.clearTimeout || clearTimeout;
-    var transcriptSettleMs = Number.isFinite(options.transcriptSettleMs) ? Math.max(0, options.transcriptSettleMs) : 1500;
+    var transcriptSettleMs = Number.isFinite(options.transcriptSettleMs) ? Math.max(0, options.transcriptSettleMs) : 500;
     var peer = null;
     var channel = null;
     var audio = null;
@@ -49,6 +50,7 @@
     var partials = new Map();
     var latestPartial = '';
     var finalizedItems = new Set();
+    var consumedItems = new Set();
     var finalizedTurns = new Set();
     var pendingSegments = [];
     var transcriptSettleTimer = null;
@@ -182,6 +184,7 @@
       var text = normalizedText(data.transcript || data.text || partials.get(itemId));
       if (!itemId) { speechActive=false;reportRecoverableError('That spoken turn could not be identified safely. Please repeat or continue.', 'voice_transcript_identity_missing', text);return; }
       if (!turnId) turnId = itemId;
+      if (consumedItems.has(itemId)) { finalizedItems.add(itemId); partials.delete(itemId); latestPartial = ''; return; }
       if (!text || finalizedItems.has(itemId) || finalizedTurns.has(turnId)) return;
       finalizedItems.add(itemId);
       finalizedTurns.add(turnId);
@@ -210,10 +213,13 @@
       }
       if (data.type === 'conversation.item.input_audio_transcription.delta' || data.type === 'input_audio_transcription.delta') {
         var itemId = normalizedText(data.item_id || data.itemId || 'current');
+        if (consumedItems.has(itemId)) return;
         var partial = normalizedText((partials.get(itemId) || '') + ' ' + String(data.delta || ''));
         partials.set(itemId, partial);
         latestPartial = partial;
-        onPartialTranscript({ itemId: itemId === 'current' ? '' : itemId, text: partial });
+        var partialTurn={ itemId: itemId === 'current' ? '' : itemId, text: partial };
+        onPartialTranscript(partialTurn);
+        if (onPartialControl(partialTurn) === true) { consumedItems.add(itemId); partials.delete(itemId); latestPartial = ''; }
         return;
       }
       if (data.type === 'conversation.item.input_audio_transcription.completed' || data.type === 'input_audio_transcription.completed') {

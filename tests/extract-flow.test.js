@@ -217,6 +217,11 @@ test('standalone Talk commands are handled without saving answers',()=>{
  assert.match(adam,/stop\(\{waitFor:voiceTurnPromise\}\)/,'ending waits for a finalized in-flight turn');
 });
 
+test('partial Talk commands are intercepted before completed transcripts can be saved',()=>{
+ assert.match(adam,/onPartialControl:function\(partial\)/);
+ assert.match(adam,/classifyVoiceCommand\(partial\.text\)/);
+});
+
 test('Talk can navigate directly to EXTRACT after completion',()=>{
  assert.match(adam,/return\{type:'go_to_extract'\}/);
  assert.match(adam,/command\.type==='go_to_extract'/);

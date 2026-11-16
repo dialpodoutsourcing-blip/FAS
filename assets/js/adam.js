@@ -448,6 +448,11 @@
       onState:voiceStateChanged,
       onCaptureChange:syncVoiceCaptureControl,
       onPartialTranscript:function(partial){FAS.voice.setTranscript(partial.text);},
+      onPartialControl:function(partial){
+        if(retryConfirmationPending){var decision=FAS.retry&&FAS.retry.classifyConfirmation(partial.text);if(decision===null)return false;handleRetryConfirmation(partial.text,'talk');return true;}
+        if(FAS.retry&&FAS.retry.classify(partial.text)==='request'){requestRetryConfirmation(partial.text,'talk');return true;}
+        var command=classifyVoiceCommand(partial.text);if(!command)return false;handleVoiceCommand(command);return true;
+      },
       onFinalTranscript:handleVoiceTurn,
       onError:voiceFailed
     });

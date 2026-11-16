@@ -180,6 +180,21 @@ test('voice control phrases are commands and never profile answers', () => {
   assert.deepEqual(classify('Start at the beginning', 'anchor'), { type:'navigate', field:'anchor.authority' });
 });
 
+test('polite repeat requests are controls without matching answers that mention repeating work', () => {
+  const classify = interviews.classifyCommand;
+  assert.deepEqual(classify('Can you repeat the question please?', 'anchor'), { type:'repeat' });
+  assert.deepEqual(classify('Could you say that again?', 'anchor'), { type:'repeat' });
+  assert.deepEqual(classify('Please repeat that question.', 'anchor'), { type:'repeat' });
+  assert.equal(classify('I repeat this process for every client.', 'anchor'), null);
+});
+
+test('polite mode and ending requests are voice controls', () => {
+  const classify = interviews.classifyCommand;
+  assert.deepEqual(classify('Can you switch to typing please?', 'anchor'), { type:'switch_to_type' });
+  assert.deepEqual(classify('Please end the interview.', 'anchor'), { type:'end' });
+  assert.equal(classify('Typing is part of my client interview process.', 'anchor'), null);
+});
+
 test('spoken-answer validation rejects filler, greetings, unknowns, and cut fragments',()=>{
   const validate=interviews.validateSpokenAnswer;
   for(const text of ['Ahmm','um uh hmm','Hello','Okay','Unknown',"I don't know",'not sure','I help','because the']){

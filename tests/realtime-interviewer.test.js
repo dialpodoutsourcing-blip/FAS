@@ -139,6 +139,36 @@ test('maps Realtime events to truthful states and finalizes each normalized turn
   assert.doesNotMatch(h.errors[0].message, /private upstream detail/);
 });
 
+test('consumes a partial voice control once and never delivers its completed transcript as an answer', async () => {
+  const { createRealtimeInterviewer } = load();
+  const controls = [];
+  const h = harness({
+    onPartialControl: partial => {
+      controls.push(partial.text);
+      return partial.text === 'Can you repeat the question please';
+    }
+  });
+  const controller = createRealtimeInterviewer(h.options);
+  await controller.start(); h.peer.channel.readyState = 'open'; h.peer.channel.emit('open');
+  h.peer.channel.emit('message', { type: 'conversation.item.input_audio_transcription.delta', item_id: 'item-1', delta: 'Can you ' });
+  h.peer.channel.emit('message', { type: 'conversation.item.input_audio_transcription.delta', item_id: 'item-1', delta: 'repeat the question please' });
+  h.peer.channel.emit('message', { type: 'conversation.item.input_audio_transcription.delta', item_id: 'item-1', delta: ' repeat the question please' });
+  h.peer.channel.emit('message', { type: 'conversation.item.input_audio_transcription.completed', item_id: 'item-1', transcript: 'Can you repeat the question please', turn_id: 'turn-1' });
+  assert.deepEqual(controls, ['Can you', 'Can you repeat the question please']);
+  assert.deepEqual(h.finals, []);
+});
+
+test('uses a 500 millisecond settling window by default for ordinary completed speech', async () => {
+  const { createRealtimeInterviewer } = load();
+  const delays = [];
+  const h = harness({ transcriptSettleMs: undefined, setTimeout: (fn, delay) => { delays.push(delay); return { fn }; } });
+  const controller = createRealtimeInterviewer(h.options);
+  await controller.start(); h.peer.channel.readyState = 'open'; h.peer.channel.emit('open');
+  h.peer.channel.emit('message', { type: 'conversation.item.input_audio_transcription.completed', item_id: 'item-1', transcript: 'An ordinary answer', turn_id: 'turn-1' });
+  assert.deepEqual(delays, [500]);
+  assert.deepEqual(h.finals, []);
+});
+
 test('combines completed transcript segments when speech resumes during the settling window', async () => {
   const { createRealtimeInterviewer } = load();
   const timers = [];
