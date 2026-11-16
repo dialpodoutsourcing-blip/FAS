@@ -61,6 +61,7 @@ assert.match(chat, /VOICE ANALYSIS/, 'right-side HUD identifies its analysis rol
 for (const field of ['accepted','question','processed','latest','list']) assert.match(chat,new RegExp('data-talk-progress-'+field),'Talk progress exposes real '+field+' data');
 for (const field of ['state','microphone','words','turns']) assert.match(chat,new RegExp('data-talk-session-'+field),'Talk session exposes measured '+field+' data');
 for (const invented of ['VOICE.02','94%','-12 DB','018 MS','NOISE GATE']) assert.doesNotMatch(chat,new RegExp(invented.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i'),'Talk HUD removes invented '+invented+' copy');
+assert.doesNotMatch(chat,/class="voice-signal"/,'Talk analysis panel contains no decorative pseudo-telemetry');
 assert.match(chat, /data-voice-status[^>]+aria-live="polite"/, 'voice mode exposes an accessible live status');
 const voiceAudio = chat.match(/<audio\b[^>]*data-voice-audio[^>]*>/)?.[0] || '';
 assert.ok(voiceAudio, 'voice mode includes ADAM audio playback');
