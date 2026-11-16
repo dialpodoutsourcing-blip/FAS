@@ -46,6 +46,7 @@ function harness(overrides) {
   const finals = [];
   const errors = [];
   const captures = [];
+  const metrics = [];
   const lifecycle = new LifecycleTarget();
   const options = Object.assign({
     agentKey: 'anchor',
@@ -60,9 +61,10 @@ function harness(overrides) {
     onFinalTranscript: value => { finals.push(value); },
     onError: error => errors.push(error),
     onCaptureChange: active => captures.push(active),
+    onMetrics: value => metrics.push(value),
     transcriptSettleMs: 0
   }, overrides || {});
-  return { peer, track, stream, mediaCalls, mediaDevices, audio, requests, states, partials, finals, errors, captures, lifecycle, options };
+  return { peer, track, stream, mediaCalls, mediaDevices, audio, requests, states, partials, finals, errors, captures, metrics, lifecycle, options };
 }
 
 function deferred() { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; }
@@ -118,16 +120,19 @@ test('maps Realtime events to truthful states and finalizes each normalized turn
   await controller.start();
   h.peer.channel.readyState = 'open'; h.peer.channel.emit('open');
   h.peer.channel.emit('message', { type: 'input_audio_buffer.speech_started' });
+  assert.equal(controller.state(), 'hearing');
   h.peer.channel.emit('message', { type: 'conversation.item.input_audio_transcription.delta', item_id: 'item-1', delta: '  My ' });
   h.peer.channel.emit('message', { type: 'conversation.item.input_audio_transcription.delta', item_id: 'item-1', delta: ' answer  ' });
   assert.equal(controller.partialTranscript(), 'My answer');
   assert.equal(h.partials.at(-1).text, 'My answer');
+  assert.deepEqual(h.metrics.at(-1), { transcriptWords: 2, finalizedTurns: 0 });
   h.peer.channel.emit('message', { type: 'input_audio_buffer.speech_stopped' });
   assert.equal(controller.state(), 'thinking');
   const completed = { type: 'conversation.item.input_audio_transcription.completed', item_id: 'item-1', transcript: '  My   answer. ', turn_id: 'turn-1' };
   h.peer.channel.emit('message', completed);
   h.peer.channel.emit('message', completed);
   assert.deepEqual(h.finals, [{ turnId: 'turn-1', itemId: 'item-1', text: 'My answer.' }]);
+  assert.deepEqual(h.metrics.at(-1), { transcriptWords: 2, finalizedTurns: 1 });
   h.peer.channel.emit('message', { type: 'response.output_audio.delta' });
   assert.equal(controller.state(), 'speaking');
   h.peer.channel.emit('message', { type: 'response.done' });
