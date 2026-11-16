@@ -55,5 +55,8 @@
     };
   }
 
-  return{buildItems:buildItems,createExportGate:createExportGate,createExportCache:createExportCache,normalizeView:normalizeView,getStorage:getStorage,createViewPreference:createViewPreference};
+  function selectRouteItem(items,route){var key=route&&route.agentKey;if(!key||!Array.isArray(items))return null;return items.find(function(item){return item&&item.agentKey===key;})||null;}
+  function createPdfPreviewLauncher(options){options=options||{};return function(item,origin){if(!item||!item.version)return Promise.reject(new Error('No completed PDF is available.'));return options.preview.open({artifact:item.version,title:item.title,origin:origin,prepare:function(){return options.prepare(item.version,'pdf',item.version.exportTheme);}});};}
+
+  return{buildItems:buildItems,createExportGate:createExportGate,createExportCache:createExportCache,normalizeView:normalizeView,getStorage:getStorage,createViewPreference:createViewPreference,selectRouteItem:selectRouteItem,createPdfPreviewLauncher:createPdfPreviewLauncher};
 });

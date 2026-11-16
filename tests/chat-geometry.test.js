@@ -158,7 +158,7 @@ browserTest('anchor completion modal is centered, contained, and exposes one foc
     await page.locator('[data-completion-panel]').evaluate(node=>node.showModal());
     const result=await page.evaluate(()=>{
       const modal=document.querySelector('[data-completion-panel]'),card=modal.querySelector('.completion-panel__card'),action=document.querySelector('[data-completion-generate]'),r=card.getBoundingClientRect();
-      return{modal:{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height},actionCount:modal.querySelectorAll('button,a').length,focused:document.activeElement===action,position:getComputedStyle(modal).position,zIndex:Number(getComputedStyle(modal).zIndex)};
+      return{modal:{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height},actionCount:modal.querySelectorAll('button:not([hidden]),a:not([hidden])').length,focused:document.activeElement===action,position:getComputedStyle(modal).position,zIndex:Number(getComputedStyle(modal).zIndex)};
     });
     assert.ok(result.modal.left>300&&result.modal.right<1380,`modal spans ${result.modal.left}..${result.modal.right}`);
     assert.ok(result.modal.top>120&&result.modal.bottom<825,`modal spans ${result.modal.top}..${result.modal.bottom}`);

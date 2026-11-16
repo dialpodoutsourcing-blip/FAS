@@ -291,6 +291,8 @@
   var completedTurnIds = new Set();
   var completionPanel = $('[data-completion-panel]');
   var completionButton = $('[data-completion-generate]');
+  var completionViewPdf = $('[data-completion-view-pdf]');
+  var completionRetry = $('[data-completion-retry]');
   var completionStatus = $('[data-completion-status]');
   var completionModalControl = FAS.completionModal.create(completionPanel);
   var retryConfirmationPending = false;
@@ -314,6 +316,7 @@
     return interviewCoordinator;
   }
   function getCompletionUrl(){var params=new URLSearchParams();params.set('asset',FAS.agent.current.key);if(projectId!=='local-default')params.set('project',projectId);if(sessionId)params.set('session',sessionId);return'review.html?'+params.toString();}
+  function getVaultPdfUrl(){return FAS.completedWorkActions.buildVaultPdfUrl({agentKey:FAS.agent.current.key,projectId:projectId,sessionId:sessionId});}
   function restartCurrentAgent(){var params=new URLSearchParams(window.location.search);params.set('agent',FAS.agent.current.key);params.set('restart','1');window.location.assign('chat.html?'+params.toString());}
   function retryReply(message,source){FAS.chat.addMessage({role:'agent',tag:'ADAM',text:message});if(source==='talk'&&voiceInterviewer){voiceInterviewer.resume();syncVoiceCaptureControl();return voiceInterviewer.speak(message);}return Promise.resolve(message);}
   function requestRetryConfirmation(text,source,trigger){if(retryConfirmationPending)return Promise.resolve();retryConfirmationPending=true;retryConfirmationSource=source==='talk'?'talk':'type';if(text)FAS.chat.addMessage({role:'user',tag:'YOU',text:text});retryConfirmationModal.open({agentName:FAS.agent.current.name,trigger:trigger});setVoiceStatus('Waiting for retry confirmation. Choose yes or no.',false);if(retryConfirmationSource==='talk'&&voiceInterviewer){voiceInterviewer.resume();syncVoiceCaptureControl();}return Promise.resolve();}
@@ -324,7 +327,7 @@
   function renderEditableSavedAnswers(project){var feed=$('[data-agent-saved]');if(!feed)return;var answers=latestAgentAnswers(project);if(!answers.length)return;feed.textContent='';answers.forEach(function(answer){var item=document.createElement('div'),top=document.createElement('div'),name=document.createElement('span'),status=document.createElement('span'),value=document.createElement('span'),edit=document.createElement('button');item.className='feed__item';top.className='feed__top';name.className='feed__name';name.textContent=(answer.field||answer.field_path||'Saved answer').replace(/[._-]+/g,' ');status.className='status status--draft';status.textContent='Saved';value.className='feed__value';value.textContent=answer.text||(answer.value&&answer.value.text)||answer.value||'';edit.className='btn btn--text';edit.type='button';edit.setAttribute('data-edit-answer',answer.id);edit.textContent='Edit';top.appendChild(name);top.appendChild(status);top.appendChild(edit);item.appendChild(top);item.appendChild(value);feed.appendChild(item);});}
   function completionDeliverable(){return FAS.agent.current.deliverable||FAS.agent.current.title;}
   function completionModalOpen(){return completionModalControl.isOpen();}
-  function completionModalKeydown(event){if(!completionModalOpen())return;if(event.key==='Escape'){event.preventDefault();return;}if(event.key==='Tab'){event.preventDefault();if(completionButton)completionButton.focus();}}
+  function completionModalKeydown(event){if(!completionModalOpen())return;if(event.key==='Escape'){event.preventDefault();return;}if(event.key==='Tab'){var controls=[completionButton,completionViewPdf,completionRetry].filter(function(node){return node&&!node.hidden&&!node.disabled;}),index=controls.indexOf(document.activeElement),next=event.shiftKey?(index<=0?controls.length-1:index-1):(index<0||index===controls.length-1?0:index+1);if(controls.length){event.preventDefault();controls[next].focus();}}}
   function presentCompletionChoice(message,retry){
     var title=$('[data-completion-title]'),copy=$('[data-completion-copy]'),eyebrow=$('[data-completion-eyebrow]'),deliverable=completionDeliverable();
     announceCompletion();artifactRetryPending=Boolean(retry);
@@ -332,11 +335,14 @@
     if(eyebrow)eyebrow.textContent=FAS.agent.current.name+' COMPLETE';
     if(copy)copy.textContent='You\u2019ve completed '+FAS.agent.current.name+'. Your answers are safely saved. Let\u2019s turn them into your '+deliverable+'.';
     if(completionStatus)completionStatus.textContent=message||'';
-    if(completionButton){completionButton.disabled=false;completionButton.removeAttribute('aria-disabled');completionButton.textContent=retry?'Retry Generation':'Generate '+deliverable;}
+    if(completionButton){completionButton.hidden=false;completionButton.disabled=false;completionButton.removeAttribute('aria-disabled');completionButton.textContent=retry?'Retry Generation':'Generate '+deliverable;}
+    if(completionViewPdf)completionViewPdf.hidden=true;
+    if(completionRetry)completionRetry.hidden=true;
     completionModalControl.open();
     if(form)form.removeAttribute('aria-busy');
     window.setTimeout(function(){if(completionButton)completionButton.focus();},0);
   }
+  function presentCompletedArtifactChoice(){var title=$('[data-completion-title]'),copy=$('[data-completion-copy]'),eyebrow=$('[data-completion-eyebrow]');announceCompletion();if(title)title.textContent=FAS.agent.current.name+' is already complete';if(eyebrow)eyebrow.textContent=FAS.agent.current.name+' COMPLETE';if(copy)copy.textContent='Your '+FAS.agent.current.name+' answers are already finished and safely saved.';if(completionStatus)completionStatus.textContent='View your finished PDF in the Vault or retry the interview.';if(completionButton)completionButton.hidden=true;if(completionViewPdf)completionViewPdf.hidden=false;if(completionRetry)completionRetry.hidden=false;completionModalControl.open();if(form)form.removeAttribute('aria-busy');window.setTimeout(function(){if(completionViewPdf)completionViewPdf.focus();},0);}
   function hideCompletionChoice(){completionModalControl.close();}
   function enterCompletedConversation(project){completedConversation=true;completedSummary=buildCompletedSummary(project);hideCompletionChoice();if(input){input.disabled=false;input.placeholder='Ask ADAM anything or choose your next step…';}var button=form&&form.querySelector('[type="submit"]');if(button){button.disabled=false;button.textContent='Send';}var legacy=$('[data-agent-completion]');if(legacy)legacy.hidden=false;renderCurrentQuestion({question:'Your '+FAS.agent.current.name+' work is complete. Ask ADAM a question, edit an answer, or review your saved work.'},false);setVoiceStatus('ADAM is ready to discuss your completed work or help with your next step.',false);}
   function renderCurrentQuestion(question, preserveThread) {
@@ -375,7 +381,7 @@
       renderEditableSavedAnswers(project);
       restoredInterview=restoredState.answers.length>0;
       if(restoredInterview)renderRestoredConversation(restoredAnswers,interview.currentQuestion());else renderCurrentQuestion(interview.currentQuestion());
-      if(!interview.currentQuestion()&&hasArtifact){enterCompletedConversation(project);return;}
+      if(!interview.currentQuestion()&&hasArtifact){presentCompletedArtifactChoice();return project;}
       if(!interview.currentQuestion()&&!hasArtifact){presentCompletionChoice('',false);return project;}
       return project;
     });
@@ -826,6 +832,8 @@
 
   if(completionPanel){completionPanel.addEventListener('keydown',completionModalKeydown);completionPanel.addEventListener('cancel',function(event){event.preventDefault();});}
   if(completionButton)completionButton.addEventListener('click',function(){generateFromCompletionModal().catch(function(){});});
+  if(completionViewPdf)completionViewPdf.addEventListener('click',function(){window.location.assign(getVaultPdfUrl());});
+  if(completionRetry)completionRetry.addEventListener('click',function(){hideCompletionChoice();requestRetryConfirmation('',voiceIntent==='talk'?'talk':'type',completionRetry);});
 
   document.addEventListener('click', function (event) {
     var view=event.target.closest('[data-view-blueprint]');

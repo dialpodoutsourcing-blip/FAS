@@ -145,3 +145,13 @@ test('storage lookup fails closed when the browser property getter throws',()=>{
   assert.equal(vault.getStorage({localStorage:{getItem(){return'cards';}}},'localStorage').getItem(),'cards');
   assert.equal(vault.getStorage(null,'localStorage'),null);
 });
+
+test('route selection returns the requested specialist current artifact',()=>{
+  const items=[
+    {agentKey:'anchor',title:'Anchor',version:{version:3}},
+    {agentKey:'extract',title:'Extract',version:{version:2}}
+  ];
+  assert.equal(vault.selectRouteItem(items,{agentKey:'extract'}),items[1]);
+  assert.equal(vault.selectRouteItem(items,{agentKey:'voice'}),null);
+  assert.equal(vault.selectRouteItem([], {agentKey:'anchor'}),null);
+});

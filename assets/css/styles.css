@@ -1290,6 +1290,7 @@ html:not(.fas-access-ready) #panel-launch { display: none !important; }
 .vault-pdf-dialog__head h2 { margin-top: 3px; overflow-wrap: anywhere; }
 .vault-pdf-dialog__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .vault-pdf-dialog__status { margin-top: 5px; color: var(--text-2); font-size: 13px; }
+.vault-route-notice { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; padding: 12px 14px; border: 1px solid var(--gold-line); border-radius: var(--r-sm); color: var(--text-2); background: rgba(211,181,124,.06); }
 .vault-pdf-dialog__surface { height: min(78vh,790px); min-height: 360px; padding: 14px; background: #20201e; }
 .vault-pdf-dialog__surface object { width: 100%; height: 100%; border: 0; background: #fff; }
 @media (max-width:720px) { .vault-pdf-dialog { width: calc(100vw - 12px); height: calc(100vh - 12px); }.vault-pdf-dialog__head { align-items: flex-start; flex-direction: column; }.vault-pdf-dialog__actions { width: 100%; justify-content: stretch; }.vault-pdf-dialog__actions .btn { flex: 1 1 auto; }.vault-pdf-dialog__surface { height: 100%; min-height: 0; padding: 6px; } }
