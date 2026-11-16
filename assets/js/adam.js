@@ -80,8 +80,6 @@
       this.state = state;
       $$('[data-orb]').forEach(function (el) { el.setAttribute('data-orb-state', state); });
       $$('[data-orb-label]').forEach(function (el) { el.textContent = LABELS[state]; });
-      var mic = $('[data-voice-mic]');
-      if (mic) mic.setAttribute('aria-pressed', String(state === 'listening'));
       $$('[data-orb-preview]').forEach(function (b) {
         b.setAttribute('aria-pressed', String(b.getAttribute('data-orb-preview') === state));
       });

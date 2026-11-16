@@ -234,6 +234,11 @@ test('Talk exposes compact state copy instead of oversized pause language',()=>{
  assert.doesNotMatch(adam,/paused:\s*'Voice paused'/);
 });
 
+test('orb presentation cannot make the continuously active microphone look off',()=>{
+ const orb=adam.slice(adam.indexOf('FAS.orb = {'),adam.indexOf('var micBtn'));
+ assert.doesNotMatch(orb,/mic\.setAttribute\('aria-pressed'/,'capture control remains the sole owner of the live microphone state');
+});
+
 test('partial Talk commands are intercepted before completed transcripts can be saved',()=>{
  assert.match(adam,/onPartialControl:function\(partial\)/);
  assert.match(adam,/classifyVoiceCommand\(partial\.text\)/);
