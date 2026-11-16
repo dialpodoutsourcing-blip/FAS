@@ -92,6 +92,13 @@ test('createExportCache isolates formats and themes and does not retain failed e
   assert.deepEqual(starts,['light','dark','docx','failed','recovered']);
 });
 
+test('createExportCache bypasses stalled browser storage reads and writes',async()=>{
+  const never=new Promise(()=>{}),cache=vault.createExportCache({read:()=>never,write:()=>never},{storageTimeoutMs:5});
+  const started=Date.now(),result=await cache.get('anchor:pdf',()=>Promise.resolve({blob:'generated'}));
+  assert.deepEqual(result,{blob:'generated'});
+  assert.ok(Date.now()-started<100,'stalled browser cache must not block PDF preparation');
+});
+
 test('buildItems orders known specialists first and derives a safe meaningful summary',()=>{
   const project={artifacts:[
     {id:'unknown',agentKey:'custom',currentVersion:1},

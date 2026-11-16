@@ -31,16 +31,18 @@
     return{run:function(key,task){if(pending[key])return pending[key];var started;try{started=Promise.resolve(task());}catch(error){started=Promise.reject(error);}pending[key]=started.finally(function(){delete pending[key];});return pending[key];}};
   }
 
-  function createExportCache(storage){
+  function settleWithin(value,milliseconds,fallback){return new Promise(function(resolve){var settled=false,timer=setTimeout(function(){if(!settled){settled=true;resolve(fallback);}},milliseconds);Promise.resolve(value).then(function(result){if(!settled){settled=true;clearTimeout(timer);resolve(result);}},function(){if(!settled){settled=true;clearTimeout(timer);resolve(fallback);}});});}
+  function createExportCache(storage,options){
+    var storageTimeoutMs=Number(options&&options.storageTimeoutMs)>0?Number(options.storageTimeoutMs):1500;
     var completed={},pending={};
     return{get:function(key,task){
       if(Object.prototype.hasOwnProperty.call(completed,key))return Promise.resolve(completed[key]);
       if(pending[key])return pending[key];
       var stored;
-      try{stored=storage&&storage.read?Promise.resolve(storage.read(key)):Promise.resolve(null);}catch(error){stored=Promise.resolve(null);}
-      pending[key]=stored.catch(function(){return null;}).then(function(value){
+      try{stored=storage&&storage.read?settleWithin(storage.read(key),storageTimeoutMs,null):Promise.resolve(null);}catch(error){stored=Promise.resolve(null);}
+      pending[key]=stored.then(function(value){
         if(value!==null&&value!==undefined){completed[key]=value;return value;}
-        return Promise.resolve().then(task).then(function(generated){completed[key]=generated;if(storage&&storage.write)return Promise.resolve(storage.write(key,generated)).catch(function(){}).then(function(){return generated;});return generated;});
+        return Promise.resolve().then(task).then(function(generated){completed[key]=generated;if(storage&&storage.write){var writing;try{writing=storage.write(key,generated);}catch(error){writing=null;}return settleWithin(writing,storageTimeoutMs,null).then(function(){return generated;});}return generated;});
       }).finally(function(){delete pending[key];});
       return pending[key];
     }};

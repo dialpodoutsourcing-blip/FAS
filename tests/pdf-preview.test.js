@@ -89,3 +89,15 @@ test('fallback dialog is modal and traps focus among visible controls', async ()
   assert.equal(backward.defaultPrevented,true);
   assert.equal(elements.closeButton.focusCount,2);
 });
+
+test('stalled preparation becomes a retryable error instead of loading forever', async () => {
+  const ui = setup();
+  ui.controller = require('../assets/js/pdf-preview.js').create({
+    elements:ui.elements,
+    urlApi:{createObjectURL:()=> 'blob:unused',revokeObjectURL(){}},
+    preparationTimeoutMs:5
+  });
+  await assert.rejects(ui.controller.open({title:'Slow report',prepare:()=>new Promise(()=>{})}),/timed out/i);
+  assert.equal(ui.elements.retryButton.hidden,false);
+  assert.match(ui.elements.status.textContent,/could not be prepared/i);
+});
