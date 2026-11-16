@@ -841,7 +841,20 @@
     if(turnId&&interviewQuestionTurnIds.has(turnId))return Promise.resolve();
     if(turnId)interviewQuestionTurnIds.add(turnId);
     FAS.chat.setTyping(true);var status=$('[data-answer-status]');if(status)status.textContent='ADAM is considering that in the current question...';
-    return apiFetch('/api/interview-turn-response',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent:{key:FAS.agent.current.key,name:FAS.agent.current.name,title:FAS.agent.current.title},message:value,currentQuestion:currentQuestion.question,history:dialogueState.history(currentQuestion)})},10000).then(function(response){if(!response.ok)throw new Error('Interview conversation unavailable');return response.json();}).then(function(payload){if(payload.kind==='answer_candidate'){FAS.chat.setTyping(false);return continueAnswer();}var message=String(payload.message||'').trim();if(!message)throw new Error('Interview conversation unavailable');dialogueState.record(currentQuestion,'user',value);dialogueState.record(currentQuestion,'assistant',message);conversationHistory.push({role:'user',content:value},{role:'assistant',content:message});FAS.chat.addMessage({role:'user',text:value,tag:'YOU'});FAS.chat.addMessage({role:'agent',tag:'ADAM',text:message});if(status)status.textContent='Still on the same question. Nothing was saved.';if(source==='talk'&&voiceInterviewer&&voiceIntent==='talk')return speakVoicePrompt(message);return message;}).catch(function(){var message='I could not continue that discussion just now. Nothing was saved. The question remains: '+currentQuestion.question;dialogueState.record(currentQuestion,'user',value);dialogueState.record(currentQuestion,'assistant',message);FAS.chat.addMessage({role:'user',text:value,tag:'YOU'});FAS.chat.addMessage({role:'agent',tag:'ADAM',text:message});if(status)status.textContent='Conversation unavailable. The current question is unchanged.';if(source==='talk'&&voiceInterviewer&&voiceIntent==='talk')return speakVoicePrompt(message);return message;}).finally(function(){FAS.chat.setTyping(false);});
+    return apiFetch('/api/interview-turn-response',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent:{key:FAS.agent.current.key,name:FAS.agent.current.name,title:FAS.agent.current.title},message:value,currentQuestion:currentQuestion.question,history:dialogueState.history(currentQuestion)})},10000)
+      .then(function(response){if(!response.ok)throw new Error('Interview conversation unavailable');return response.json();})
+      .catch(function(){return{kind:'discussion',message:'I could not continue that discussion just now. Nothing was saved. The question remains: '+currentQuestion.question,unavailable:true};})
+      .then(function(payload){
+        if(payload.kind==='answer_candidate'){FAS.chat.setTyping(false);return continueAnswer();}
+        var message=String(payload.message||'').trim();
+        if(!message){message='I could not continue that discussion just now. Nothing was saved. The question remains: '+currentQuestion.question;payload.unavailable=true;}
+        dialogueState.record(currentQuestion,'user',value);dialogueState.record(currentQuestion,'assistant',message);
+        conversationHistory.push({role:'user',content:value},{role:'assistant',content:message});
+        FAS.chat.addMessage({role:'user',text:value,tag:'YOU'});FAS.chat.addMessage({role:'agent',tag:'ADAM',text:message});
+        if(status)status.textContent=payload.unavailable?'Conversation unavailable. The current question is unchanged.':'Still on the same question. Nothing was saved.';
+        if(source==='talk'&&voiceInterviewer&&voiceIntent==='talk')return speakVoicePrompt(message);
+        return message;
+      }).finally(function(){FAS.chat.setTyping(false);});
   }
 
   function requestConversationalReply(answer, nextQuestion) {

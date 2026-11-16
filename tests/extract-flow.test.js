@@ -270,6 +270,9 @@ test('Type and Talk route every ordinary turn through persistent topic-locked di
  const typed=adam.slice(adam.indexOf('function send()'),adam.indexOf('if (form) form.addEventListener'));
  assert.ok(typed.indexOf('routeActiveInterviewTurn')<typed.indexOf('answerSubmissionGate.route'),'Type semantic routing decides before answer relevance and saving');
  assert.match(helper,/catch\(function\(\)\{[\s\S]*Nothing was saved/,'API failure keeps the active question without saving');
+ const requestFailure=helper.indexOf('.catch(function(){');
+ const routePayload=helper.indexOf('.then(function(payload)',requestFailure);
+ assert.ok(requestFailure>=0&&routePayload>requestFailure,'request failures are resolved before answer handling or speech so downstream errors cannot duplicate the turn');
 });
 
 test('Talk confirms questionable answers by voice while Type alone opens the modal',()=>{
