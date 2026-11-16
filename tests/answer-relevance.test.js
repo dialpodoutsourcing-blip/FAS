@@ -38,3 +38,9 @@ test('normalizes punctuation and treats malformed or empty input as clarificatio
   assert.equal(assess('  WHAT was that, again?! ', 'anchor.authority', 'What do people ask you for?').status, 'repeat');
   assert.deepEqual(relevance.assess({ text:'', question:null }), { status:'clarify', reason:'empty' });
 });
+
+test('classifies only explicit save or discard replies for relevance confirmation', () => {
+  for (const phrase of ['yes', 'save it', 'yes save it']) assert.equal(relevance.classifyDecision(phrase), true, phrase);
+  for (const phrase of ['no', "don't save it", 'discard it']) assert.equal(relevance.classifyDecision(phrase), false, phrase);
+  for (const phrase of ['restart', 'start over', 'yes retry', 'I have another question']) assert.equal(relevance.classifyDecision(phrase), null, phrase);
+});

@@ -35,6 +35,13 @@
     return false;
   }
 
+  function classifyDecision(value){
+    var text=normalize(value);
+    if(/^(?:yes|save it|yes save it)$/.test(text))return true;
+    if(/^(?:no|don t save it|discard it)$/.test(text))return false;
+    return null;
+  }
+
   function assess(input){
     input=input||{};
     var text=normalize(input.text),question=input.question||{},field=question.field||'';
@@ -45,5 +52,5 @@
     return result('confirm','uncertain_relevance');
   }
 
-  return{assess:assess};
+  return{assess:assess,classifyDecision:classifyDecision};
 });
