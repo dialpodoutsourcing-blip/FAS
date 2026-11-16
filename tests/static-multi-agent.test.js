@@ -19,6 +19,7 @@ assert.match(chat, /data-chat-history-toggle/);
 assert.match(chat, /data-chat-saved-toggle/);
 assert.match(chat, /data-chat-retry/);
 assert.match(chat, /assets\/js\/retry-intent\.js/);
+assert.match(chat, /assets\/js\/interview-question-intent\.js/);
 assert.match(chat, /data-chat-loading/);
 assert.match(chat, /Loading your saved conversation/);
 assert.match(chat, /data-chat-trust-toggle/);
