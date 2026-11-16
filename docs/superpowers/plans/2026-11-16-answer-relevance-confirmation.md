@@ -21,11 +21,11 @@
 
 ## Review Focus
 
-- â€œWhat was that again?â€ repeats the current question and is never saved.
-- â€œI cannot understandâ€ and â€œIâ€™m trying to understand youâ€ clarify/repeat and are never saved.
-- Short field-appropriate answers such as â€œ200 clients,â€ â€œDentists,â€ or â€œJune 15â€ bypass confirmation.
+- “What was that again?” repeats the current question and is never saved.
+- “I cannot understand” and “I’m trying to understand you” clarify/repeat and are never saved.
+- Short field-appropriate answers such as “200 clients,” “Dentists,” or “June 15” bypass confirmation.
 - An ambiguous substantive reply is held, and duplicate voice completion events cannot save it twice.
-- Reload, cancel, or â€œnoâ€ loses only the unconfirmed reply and leaves the durable checkpoint unchanged.
+- Reload, cancel, or “no” loses only the unconfirmed reply and leaves the durable checkpoint unchanged.
 
 ---
 
@@ -41,7 +41,7 @@
 
 - [ ] **Step 1: Write failing tests for reported phrases and false positives**
 
-Add tests asserting that `What was that again?` and `What did you ask me?` return `{type:'repeat'}`; that `I cannot understand` and `I'm trying to understand you` return invalid with `reason:'confusion'`; and that a real answer containing â€œunderstand,â€ such as `I help clients understand their finances`, remains valid.
+Add tests asserting that `What was that again?` and `What did you ask me?` return `{type:'repeat'}`; that `I cannot understand` and `I'm trying to understand you` return invalid with `reason:'confusion'`; and that a real answer containing “understand,” such as `I help clients understand their finances`, remains valid.
 
 - [ ] **Step 2: Run the focused test and verify RED**
 
@@ -88,7 +88,7 @@ Expected: FAIL because the module does not exist.
 
 - [ ] **Step 3: Implement `assess(input)`**
 
-Use anchored meta/conversation patterns first, then field-suffix concept groups derived from the declarative question contracts. Treat field-appropriate answer shapesâ€”numbers, dates, named audiences, quoted language, ordered stepsâ€”as positive evidence. Return `confirm` when the reply is substantive but has neither field evidence nor question-language overlap; do not return `confirm` solely because a valid reply is concise.
+Use anchored meta/conversation patterns first, then field-suffix concept groups derived from the declarative question contracts. Treat field-appropriate answer shapes—numbers, dates, named audiences, quoted language, ordered steps—as positive evidence. Return `confirm` when the reply is substantive but has neither field evidence nor question-language overlap; do not return `confirm` solely because a valid reply is concise.
 
 - [ ] **Step 4: Run the new and engine tests and verify GREEN**
 
@@ -118,7 +118,7 @@ git commit -m "feat: assess interview answer relevance"
 
 - [ ] **Step 1: Write failing modal and shell tests**
 
-Assert the dialog displays the current question and held answer safely with `textContent`, defaults focus to â€œNo, repeat question,â€ traps fallback focus, permits Type dismissal as no, prevents Talk dismissal, and resolves once despite double clicks. Assert accessible label/description hooks and script order before `adam.js`.
+Assert the dialog displays the current question and held answer safely with `textContent`, defaults focus to “No, repeat question,” traps fallback focus, permits Type dismissal as no, prevents Talk dismissal, and resolves once despite double clicks. Assert accessible label/description hooks and script order before `adam.js`.
 
 - [ ] **Step 2: Run modal and static tests and verify RED**
 
@@ -189,7 +189,7 @@ git commit -m "feat: confirm unrelated interview answers"
 - Test: full repository suite
 
 **Interfaces:**
-- Consumes: completed source changes from Tasks 1â€“4.
+- Consumes: completed source changes from Tasks 1–4.
 - Produces: deployment-ready source/public parity.
 
 - [ ] **Step 1: Run the complete suite**
@@ -219,8 +219,8 @@ git commit -m "build: prepare answer relevance confirmation"
 
 ## Self-Review
 
-- Spec coverage: repeat, confusion, accept, confirm, yes/no, Type/Talk, native dialog, reload behavior, and duplicate protection are assigned to Tasks 1â€“4.
-- Interface consistency: `assess` outcomes and modal/controller method names are identical across Tasks 2â€“4.
+- Spec coverage: repeat, confusion, accept, confirm, yes/no, Type/Talk, native dialog, reload behavior, and duplicate protection are assigned to Tasks 1–4.
+- Interface consistency: `assess` outcomes and modal/controller method names are identical across Tasks 2–4.
 - Conservative classification: concise valid answers and false-positive conversational words have explicit tests.
 - Persistence safety: tests require assessment and confirmation before history mutation or coordinator submission.
 - Scope: one cohesive feature; no AI classifier, persistence schema, or unrelated interview refactor is introduced.

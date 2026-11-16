@@ -2,25 +2,25 @@
 
 ## Intent
 
-Prevent conversational or unrelated speech from being stored as interview evidence. Phrases such as â€œWhat was that again?â€, â€œI cannot understand,â€ and â€œIâ€™m trying to understand youâ€ must never be accepted as profile answers.
+Prevent conversational or unrelated speech from being stored as interview evidence. Phrases such as “What was that again?”, “I cannot understand,” and “I’m trying to understand you” must never be accepted as profile answers.
 
 ## Selected approach
 
-Use deterministic local classification. This keeps Type and Talk fast, predictable, and available without another AI request. The alternativeâ€”calling an AI relevance classifier before every saveâ€”was rejected because it adds latency, cost, and a new failure path to every answer.
+Use deterministic local classification. This keeps Type and Talk fast, predictable, and available without another AI request. The alternative—calling an AI relevance classifier before every save—was rejected because it adds latency, cost, and a new failure path to every answer.
 
 ## Behavior
 
 Before durable submission, every Type and Talk response passes through one shared gate:
 
-1. Explicit repeat language, including natural variants such as â€œWhat was that again?â€, repeats the current question and is consumed as a control.
-2. Confusion and meta-conversation such as â€œI cannot understandâ€ or â€œIâ€™m trying to understand youâ€ is never saved. ADAM explains briefly and repeats or clarifies the current question.
+1. Explicit repeat language, including natural variants such as “What was that again?”, repeats the current question and is consumed as a control.
+2. Confusion and meta-conversation such as “I cannot understand” or “I’m trying to understand you” is never saved. ADAM explains briefly and repeats or clarifies the current question.
 3. Clearly usable answers continue to the existing save path.
-4. A substantive response that appears unrelated or cannot be confidently connected to the current question is held in memory and shown back to the user: â€œThis may not answer the current question. Save it anyway?â€
+4. A substantive response that appears unrelated or cannot be confidently connected to the current question is held in memory and shown back to the user: “This may not answer the current question. Save it anyway?”
 5. Yes saves the held response exactly once. No discards it and repeats the current question. Until the decision is made, nothing is persisted or used to advance the interview.
 
 ## Relevance rules
 
-The gate uses the current question, its field, and the specialistâ€™s declarative question contract. It combines field-specific concepts with answer shape and explicit meta/conversational patterns. It will be conservative: short valid answers such as names, numbers, dates, audiences, and concise evidence remain acceptable; only clearly meta/confused input is rejected outright, while uncertain substantive input is confirmed rather than silently discarded.
+The gate uses the current question, its field, and the specialist’s declarative question contract. It combines field-specific concepts with answer shape and explicit meta/conversational patterns. It will be conservative: short valid answers such as names, numbers, dates, audiences, and concise evidence remain acceptable; only clearly meta/confused input is rejected outright, while uncertain substantive input is confirmed rather than silently discarded.
 
 ## UI and accessibility
 
