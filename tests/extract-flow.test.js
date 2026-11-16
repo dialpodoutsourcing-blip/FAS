@@ -229,7 +229,7 @@ test('Type and Talk route answer relevance before durable submission',()=>{
  assert.ok(typeRoute>=0&&typeSubmit>=0,'Type has separate relevance routing and confirmed durable submission paths');
  assert.ok(talkRoute>=0&&talkSubmit>talkRoute,'Talk relevance gate precedes durable submission');
  assert.match(adam,/answerSubmissionGate\.hasPending\(\)/,'pending relevance confirmation intercepts yes or no');
- assert.match(adam,/answerConfirmationModal\.resolve\([^,]+,(?:'type'|'voice')\)/,'typed and spoken decisions use the one-shot modal path');
+ assert.match(adam,/answerSubmissionGate\.resolve\(answerDecision\)/,'typed and spoken decisions use the one-shot held-answer gate');
 });
 
 test('Talk confirms questionable answers by voice while Type alone opens the modal',()=>{
@@ -246,6 +246,18 @@ test('Talk confirms questionable answers by voice while Type alone opens the mod
  assert.match(pending,/answerSubmissionGate\.resolve\(answerDecision\)/,'spoken yes or no resolves the held answer without requiring an open modal');
  const partial=adam.slice(adam.indexOf('onPartialControl:function(partial)'),adam.indexOf('if(retryConfirmationPending)',adam.indexOf('onPartialControl:function(partial)')));
  assert.match(partial,/answerSubmissionGate\.resolve\(answerDecision\)/,'partial spoken decisions resolve through the hands-free gate');
+});
+
+test('pending relevance decisions use dedicated semantics in Talk and Type',()=>{
+ const partial=adam.slice(adam.indexOf('onPartialControl:function(partial)'),adam.indexOf('if(retryConfirmationPending)',adam.indexOf('onPartialControl:function(partial)')));
+ const final=adam.slice(adam.indexOf('function handleVoiceTurn'),adam.indexOf('if(retryConfirmationPending)',adam.indexOf('function handleVoiceTurn')));
+ const typed=adam.slice(adam.indexOf('function send()'),adam.indexOf('if(retryConfirmationPending)',adam.indexOf('function send()')));
+ for(const path of [partial,final,typed]){
+  assert.match(path,/FAS\.answerRelevance\.classifyDecision\(/,'relevance confirmation does not reuse restart semantics');
+  assert.match(path,/answerSubmissionGate\.resolve\(answerDecision\)/,'each mode resolves the same held answer gate');
+  assert.doesNotMatch(path,/FAS\.retry\.classifyConfirmation\(/,'restart confirmation vocabulary cannot save a relevance answer');
+ }
+ assert.match(final,/requestSpokenAnswerDecision\(\)/,'an invalid Talk decision is acknowledged by voice');
 });
 
 test('Talk can navigate directly to EXTRACT after completion',()=>{
