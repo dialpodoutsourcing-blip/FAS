@@ -11,6 +11,7 @@ function assess(text, field, question) {
 test('classifies repeat and confusion language before relevance scoring', () => {
   assert.equal(assess('What was that again?', 'anchor.authority', 'What do people ask you for?').status, 'repeat');
   assert.equal(assess('What did you ask me?', 'anchor.authority', 'What do people ask you for?').status, 'repeat');
+  assert.equal(assess('What was that again? I cannot understand.', 'anchor.authority', 'What do people ask you for?').status, 'repeat');
   assert.equal(assess('I cannot understand', 'anchor.authority', 'What do people ask you for?').status, 'clarify');
   assert.equal(assess("I'm trying to understand you", 'anchor.authority', 'What do people ask you for?').status, 'clarify');
 });

@@ -192,6 +192,7 @@ test('natural requests to hear the question again are repeat controls', () => {
   const classify = interviews.classifyCommand;
   assert.deepEqual(classify('What was that again?', 'anchor'), { type:'repeat' });
   assert.deepEqual(classify('What did you ask me?', 'anchor'), { type:'repeat' });
+  assert.deepEqual(classify('What was that again? I cannot understand.', 'anchor'), { type:'repeat' });
 });
 
 test('polite mode and ending requests are voice controls', () => {
