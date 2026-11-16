@@ -272,6 +272,7 @@
   var completionAnnounced = false;
   var blueprintPromise = null;
   var conversationHistory = [];
+  var dialogueState = FAS.createInterviewDialogueState({historyLimit:24});
   var voiceInterviewer = null;
   var voiceStart = null;
   var voiceTurnPromise = null;
@@ -633,8 +634,10 @@
     FAS.voice.setTranscript(turn.text);
     if(completedConversation)return submitPostCompletionMessage(turn.text,'talk',turn.turnId);
     if(voiceIntent!=='talk'){preserveVoiceDraft(turn.text);return Promise.resolve();}
-    var sideQuestion=FAS.interviewQuestionIntent&&FAS.interviewQuestionIntent.classify({text:turn.text,currentQuestion:interview&&interview.currentQuestion()});
-    if(sideQuestion)return answerInterviewSideQuestion(turn.text,'talk',turn.turnId);
+    return routeActiveInterviewTurn(turn.text,'talk',turn.turnId,function(){return continueVoiceAnswer(turn);});
+  }
+
+  function continueVoiceAnswer(turn){
     var validation=FAS.interview.validateSpokenAnswer(turn.text,interview&&interview.currentQuestion());
     if(!validation.valid){
       var currentQuestion=interview&&interview.currentQuestion(),clarification=validation.message+(currentQuestion?' '+currentQuestion.question:'');
@@ -832,16 +835,13 @@
     }
   };
 
-  function answerInterviewSideQuestion(text,source,turnId){
+  function routeActiveInterviewTurn(text,source,turnId,continueAnswer){
     var value=String(text||'').trim(),currentQuestion=interview&&interview.currentQuestion();
     if(!value||!currentQuestion)return Promise.resolve();
     if(turnId&&interviewQuestionTurnIds.has(turnId))return Promise.resolve();
     if(turnId)interviewQuestionTurnIds.add(turnId);
-    var returnCues=['With that clarified, here is the same question:','Keeping us on this point, the question remains:','Now let us return to the question we are answering:'];
-    var fallbackCues=['I could not explain that clearly just now. The current question is still:','I was not able to answer that just now. Let us keep the same question in view:','That explanation is unavailable at the moment. Nothing was saved, and the question remains:'];
-    FAS.chat.addMessage({role:'user',text:value,tag:'YOU'});conversationHistory.push({role:'user',content:value});FAS.chat.setTyping(true);
-    var status=$('[data-answer-status]');if(status)status.textContent='ADAM is clarifying the current question...';
-    return apiFetch('/api/interview-question-response',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent:{key:FAS.agent.current.key,name:FAS.agent.current.name,title:FAS.agent.current.title},message:value,currentQuestion:currentQuestion.question,history:conversationHistory.slice(0,-1).slice(-8)})},8000).then(function(response){if(!response.ok)throw new Error('Interview guidance unavailable');return response.json();}).then(function(payload){var answer=String(payload.message||'').trim();if(!answer)throw new Error('Interview guidance unavailable');return answer+' '+returnCues[copySequence++%returnCues.length]+' '+currentQuestion.question;}).catch(function(){return fallbackCues[copySequence++%fallbackCues.length]+' '+currentQuestion.question;}).then(function(message){conversationHistory.push({role:'assistant',content:message});FAS.chat.addMessage({role:'agent',tag:'ADAM',text:message});if(status)status.textContent='The current question is unchanged. Nothing was saved.';if(source==='talk'&&voiceInterviewer&&voiceIntent==='talk')return speakVoicePrompt(message);return message;}).finally(function(){FAS.chat.setTyping(false);});
+    FAS.chat.setTyping(true);var status=$('[data-answer-status]');if(status)status.textContent='ADAM is considering that in the current question...';
+    return apiFetch('/api/interview-turn-response',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent:{key:FAS.agent.current.key,name:FAS.agent.current.name,title:FAS.agent.current.title},message:value,currentQuestion:currentQuestion.question,history:dialogueState.history(currentQuestion)})},10000).then(function(response){if(!response.ok)throw new Error('Interview conversation unavailable');return response.json();}).then(function(payload){if(payload.kind==='answer_candidate'){FAS.chat.setTyping(false);return continueAnswer();}var message=String(payload.message||'').trim();if(!message)throw new Error('Interview conversation unavailable');dialogueState.record(currentQuestion,'user',value);dialogueState.record(currentQuestion,'assistant',message);conversationHistory.push({role:'user',content:value},{role:'assistant',content:message});FAS.chat.addMessage({role:'user',text:value,tag:'YOU'});FAS.chat.addMessage({role:'agent',tag:'ADAM',text:message});if(status)status.textContent='Still on the same question. Nothing was saved.';if(source==='talk'&&voiceInterviewer&&voiceIntent==='talk')return speakVoicePrompt(message);return message;}).catch(function(){var message='I could not continue that discussion just now. Nothing was saved. The question remains: '+currentQuestion.question;dialogueState.record(currentQuestion,'user',value);dialogueState.record(currentQuestion,'assistant',message);FAS.chat.addMessage({role:'user',text:value,tag:'YOU'});FAS.chat.addMessage({role:'agent',tag:'ADAM',text:message});if(status)status.textContent='Conversation unavailable. The current question is unchanged.';if(source==='talk'&&voiceInterviewer&&voiceIntent==='talk')return speakVoicePrompt(message);return message;}).finally(function(){FAS.chat.setTyping(false);});
   }
 
   function requestConversationalReply(answer, nextQuestion) {
@@ -910,9 +910,8 @@
     input.value = '';
     input.focus();
     if(status)status.textContent='Checking answer…';
-    var typedQuestion=FAS.interviewQuestionIntent&&FAS.interviewQuestionIntent.classify({text:text,currentQuestion:interview.currentQuestion()});
-    if(typedQuestion)return answerInterviewSideQuestion(text,'type',createTurnId('type'));
-    return answerSubmissionGate.route({text:text,source:'type',turnId:createTurnId('type'),agentKey:FAS.agent.current.key},submitTypedAnswer);
+    var typedTurnId=createTurnId('type');
+    return routeActiveInterviewTurn(text,'type',typedTurnId,function(){return answerSubmissionGate.route({text:text,source:'type',turnId:typedTurnId,agentKey:FAS.agent.current.key},submitTypedAnswer);});
   }
 
   if (form) form.addEventListener('submit', function (e) { e.preventDefault(); send(); });
