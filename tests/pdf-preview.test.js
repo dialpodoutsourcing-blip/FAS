@@ -3,21 +3,23 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-function node() {
+function node(native = true) {
   const listeners = {};
   return {
     hidden: false, disabled: false, textContent: '', href: '', download: '', data: '', open: false, focusCount: 0,
     addEventListener(type, listener) { (listeners[type] ||= []).push(listener); },
     dispatch(type, extra = {}) { const event = { target: this, preventDefault() { this.defaultPrevented = true; }, ...extra }; (listeners[type] || []).forEach(fn => fn(event)); return event; },
-    setAttribute(name, value) { this[name] = String(value); },
-    removeAttribute(name) { delete this[name]; },
-    showModal() { this.open = true; }, close() { this.open = false; }, focus() { this.focusCount += 1; }
+    setAttribute(name, value) { this[name] = name === 'open' ? true : String(value); },
+    removeAttribute(name) { if(name === 'open') this.open = false; else delete this[name]; },
+    focus() { this.focusCount += 1; }
   };
 }
 
+function nativeDialog(value) { value.showModal = function(){ this.open = true; }; value.close = function(){ this.open = false; }; return value; }
+
 function setup() {
   const urls = [], revoked = [];
-  const elements = { dialog: node(), title: node(), status: node(), viewer: node(), openLink: node(), downloadLink: node(), retryButton: node(), closeButton: node() };
+  const elements = { dialog: nativeDialog(node()), title: node(), status: node(), viewer: node(), openLink: node(), downloadLink: node(), retryButton: node(), closeButton: node() };
   const api = require('../assets/js/pdf-preview.js');
   const controller = api.create({
     elements,
@@ -71,4 +73,19 @@ test('close button uses the same cleanup path', async () => {
   ui.elements.closeButton.dispatch('click');
   assert.deepEqual(ui.revoked, ['blob:pdf-1']);
   assert.equal(ui.controller.isOpen(), false);
+});
+
+test('fallback dialog is modal and traps focus among visible controls', async () => {
+  const elements = { dialog: node(false), title: node(), status: node(), viewer: node(), openLink: node(), downloadLink: node(), retryButton: node(), closeButton: node() };
+  const api = require('../assets/js/pdf-preview.js');
+  const controller = api.create({elements,urlApi:{createObjectURL:()=> 'blob:fallback',revokeObjectURL(){}}});
+  await controller.open({title:'Fallback',prepare:async()=>({blob:new Blob(['%PDF'])})});
+  assert.equal(elements.dialog['aria-modal'],'true');
+  assert.equal(elements.dialog['data-fallback-modal'],'');
+  const forward = elements.dialog.dispatch('keydown',{key:'Tab',target:elements.closeButton});
+  assert.equal(forward.defaultPrevented,true);
+  assert.equal(elements.openLink.focusCount,1);
+  const backward = elements.dialog.dispatch('keydown',{key:'Tab',shiftKey:true,target:elements.openLink});
+  assert.equal(backward.defaultPrevented,true);
+  assert.equal(elements.closeButton.focusCount,2);
 });

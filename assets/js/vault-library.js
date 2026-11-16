@@ -57,6 +57,7 @@
 
   function selectRouteItem(items,route){var key=route&&route.agentKey;if(!key||!Array.isArray(items))return null;return items.find(function(item){return item&&item.agentKey===key;})||null;}
   function createPdfPreviewLauncher(options){options=options||{};return function(item,origin){if(!item||!item.version)return Promise.reject(new Error('No completed PDF is available.'));return options.preview.open({artifact:item.version,title:item.title,origin:origin,prepare:function(){return options.prepare(item.version,'pdf',item.version.exportTheme);}});};}
+  function emptyState(route){if(route&&route.preview==='pdf')return{title:'Your PDF is not ready yet.',copy:'We found the completed interview, but no saved PDF artifact is available. Try again or retry answering from the specialist chat.',retryable:true};return{title:'You do not have any completed work yet.',copy:'Finish a specialist document and it will appear here.',retryable:false};}
 
-  return{buildItems:buildItems,createExportGate:createExportGate,createExportCache:createExportCache,normalizeView:normalizeView,getStorage:getStorage,createViewPreference:createViewPreference,selectRouteItem:selectRouteItem,createPdfPreviewLauncher:createPdfPreviewLauncher};
+  return{buildItems:buildItems,createExportGate:createExportGate,createExportCache:createExportCache,normalizeView:normalizeView,getStorage:getStorage,createViewPreference:createViewPreference,selectRouteItem:selectRouteItem,createPdfPreviewLauncher:createPdfPreviewLauncher,emptyState:emptyState};
 });

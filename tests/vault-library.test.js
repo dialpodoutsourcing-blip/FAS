@@ -155,3 +155,12 @@ test('route selection returns the requested specialist current artifact',()=>{
   assert.equal(vault.selectRouteItem(items,{agentKey:'voice'}),null);
   assert.equal(vault.selectRouteItem([], {agentKey:'anchor'}),null);
 });
+
+test('empty deep-linked Vault reports a retryable missing PDF instead of generic onboarding',()=>{
+  assert.deepEqual(vault.emptyState({preview:'pdf',agentKey:'anchor'}),{
+    title:'Your PDF is not ready yet.',
+    copy:'We found the completed interview, but no saved PDF artifact is available. Try again or retry answering from the specialist chat.',
+    retryable:true
+  });
+  assert.equal(vault.emptyState({}).retryable,false);
+});

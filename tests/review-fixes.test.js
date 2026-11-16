@@ -168,7 +168,7 @@ test('PDF control opens a three-brand chooser while DOCX remains direct',()=>{
 });
 
 test('Vault renders current library items and uses the exact saved version for view and PDF',()=>{
- const ui=fs.readFileSync(path.join(__dirname,'..','assets','js','artifact-ui.js'),'utf8');
+ const ui=fs.readFileSync(path.join(__dirname,'..','assets','js','artifact-ui.js'),'utf8'),library=fs.readFileSync(path.join(__dirname,'..','assets','js','vault-library.js'),'utf8');
  assert.match(ui,/store\.loadProject\(\)/);
  assert.match(ui,/FAS\.vaultLibrary\.buildItems\(project,FAS\.agents&&FAS\.agents\.keys\|\|\[\]\)/);
  assert.match(ui,/runVaultExport\(item\.version,'pdf',item\.version\.exportTheme\)/);
@@ -176,7 +176,8 @@ test('Vault renders current library items and uses the exact saved version for v
  assert.match(ui,/runVaultExport\(item\.version,/);
  assert.match(ui,/buildReview\(item\.version,/);
  assert.match(ui,/origin&&origin\.isConnected&&typeof origin\.focus==='function'/);
- assert.match(ui,/You do not have any completed work yet/);
+ assert.match(library,/You do not have any completed work yet/);
+ assert.match(library,/Your PDF is not ready yet/);
  assert.match(ui,/We could not load your Vault/);
 });
 
