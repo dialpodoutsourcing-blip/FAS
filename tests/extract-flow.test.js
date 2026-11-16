@@ -254,18 +254,22 @@ test('Type and Talk route answer relevance before durable submission',()=>{
  assert.match(adam,/answerSubmissionGate\.hasPending\(\)/,'pending relevance confirmation intercepts yes or no');
  assert.match(adam,/answerSubmissionGate\.resolve\(answerDecision\)/,'typed and spoken decisions use the one-shot held-answer gate');
 });
-test('Type and Talk answer contextual questions without saving or advancing',()=>{
- assert.match(adam,/function answerInterviewSideQuestion/);
- assert.match(adam,/FAS\.interviewQuestionIntent\.classify/);
- assert.match(adam,/apiFetch\('\/api\/interview-question-response'/);
- const helper=adam.slice(adam.indexOf('function answerInterviewSideQuestion'),adam.indexOf('function requestConversationalReply'));
- assert.match(helper,/currentQuestion\.question/);
+test('Type and Talk route every ordinary turn through persistent topic-locked dialogue',()=>{
+ assert.match(adam,/FAS\.createInterviewDialogueState/);
+ assert.match(adam,/function routeActiveInterviewTurn/);
+ assert.match(adam,/apiFetch\('\/api\/interview-turn-response'/);
+ const helper=adam.slice(adam.indexOf('function routeActiveInterviewTurn'),adam.indexOf('function requestConversationalReply'));
+ assert.match(helper,/dialogueState\.history\(currentQuestion\)/);
+ assert.match(helper,/payload\.kind==='answer_candidate'/);
+ assert.match(helper,/continueAnswer\(\)/);
+ assert.match(helper,/dialogueState\.record\(currentQuestion,'user'/);
  assert.match(helper,/speakVoicePrompt\(message\)/);
- assert.doesNotMatch(helper,/interviewCoordinator\.submit|answerSubmissionGate\.route|acceptAnswer/);
+ assert.doesNotMatch(helper,/interviewCoordinator\.submit|answerSubmissionGate\.route|acceptAnswer/,'discussion itself cannot save or advance');
  const talk=adam.slice(adam.indexOf('function handleVoiceTurn'),adam.indexOf('function submitVoiceAnswer'));
- assert.ok(talk.indexOf('interviewQuestionIntent.classify')<talk.indexOf('validateSpokenAnswer'),'Talk questions are intercepted before answer validation');
+ assert.ok(talk.indexOf('routeActiveInterviewTurn')<talk.indexOf('validateSpokenAnswer'),'Talk semantic routing decides before answer validation');
  const typed=adam.slice(adam.indexOf('function send()'),adam.indexOf('if (form) form.addEventListener'));
- assert.ok(typed.indexOf('interviewQuestionIntent.classify')<typed.indexOf('answerSubmissionGate.route'),'Type questions are intercepted before answer relevance and saving');
+ assert.ok(typed.indexOf('routeActiveInterviewTurn')<typed.indexOf('answerSubmissionGate.route'),'Type semantic routing decides before answer relevance and saving');
+ assert.match(helper,/catch\(function\(\)\{[\s\S]*Nothing was saved/,'API failure keeps the active question without saving');
 });
 
 test('Talk confirms questionable answers by voice while Type alone opens the modal',()=>{

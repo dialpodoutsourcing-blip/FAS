@@ -86,6 +86,7 @@ const accessScript = chat.indexOf('<script src="assets/js/agent-access.js"></scr
 const adamScript = chat.indexOf('<script src="assets/js/adam.js"></script>');
 const retryModalScript = chat.indexOf('<script src="assets/js/retry-confirmation-modal.js"></script>');
 const answerRelevanceScript = chat.indexOf('<script src="assets/js/answer-relevance.js"></script>');
+const dialogueStateScript = chat.indexOf('<script src="assets/js/interview-dialogue-state.js"></script>');
 const answerModalScript = chat.indexOf('<script src="assets/js/answer-confirmation-modal.js"></script>');
 const answerGateScript = chat.indexOf('<script src="assets/js/answer-submission-gate.js"></script>');
 const coordinatorScript = chat.indexOf('<script src="assets/js/interview-coordinator.js"></script>');
@@ -97,6 +98,7 @@ assert.ok(coordinatorScript > agentsScript && coordinatorScript < adamScript, 'd
 assert.ok(interviewerScript > coordinatorScript && interviewerScript < adamScript, 'Realtime interviewer loads before the chat controller');
 assert.ok(retryModalScript > coordinatorScript && retryModalScript < adamScript, 'retry modal controller loads before the chat controller');
 assert.ok(answerRelevanceScript > coordinatorScript && answerRelevanceScript < adamScript, 'answer relevance classifier loads before the chat controller');
+assert.ok(dialogueStateScript > answerRelevanceScript && dialogueStateScript < adamScript, 'question-local dialogue state loads before the chat controller');
 assert.ok(answerModalScript > coordinatorScript && answerModalScript < adamScript, 'answer confirmation controller loads before the chat controller');
 assert.ok(answerGateScript > coordinatorScript && answerGateScript < adamScript, 'answer submission gate loads before the chat controller');
 
