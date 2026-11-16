@@ -245,6 +245,8 @@ test('speakThenListen keeps capture off until the exact prompt finishes', async 
   const turn = controller.speakThenListen('Who most needs that result right now?');
   assert.equal(h.track.enabled, false);
   assert.equal(controller.captureActive(), false);
+  assert.notEqual(controller.state(), 'paused', 'internal echo protection is not exposed as a user pause');
+  assert.doesNotMatch(h.states.join(','), /paused/, 'prompt playback never publishes a paused state');
   assert.equal(h.peer.channel.sent.at(-1).type, 'response.create');
   h.peer.channel.emit('message', { type:'response.done' });
   assert.equal(await turn, true);

@@ -471,8 +471,8 @@
 
   function syncVoiceCaptureControl(){
     var active=Boolean(voiceInterviewer&&voiceInterviewer.captureActive&&voiceInterviewer.captureActive());
-    talkSessionMetrics.microphone=active?'ACTIVE':'PAUSED';refreshTalkSession();
-    if(micBtn){micBtn.setAttribute('aria-pressed',String(active));micBtn.setAttribute('aria-label',active?'Pause microphone':'Start or resume microphone');}
+    talkSessionMetrics.microphone=active?'ACTIVE':voiceIntent==='talk'&&voicePrompting?'ECHO GUARD':'OFF';refreshTalkSession();
+    if(micBtn){micBtn.setAttribute('aria-pressed',String(voiceIntent==='talk'));micBtn.setAttribute('aria-label',voiceIntent==='talk'?(active?'Microphone active':'ADAM speaking; microphone resumes automatically'):'Start voice interview');}
     if(active!==lastCaptureActive){lastCaptureActive=active;emit('fas:mic',{listening:active});}
   }
 
@@ -490,7 +490,6 @@
   function voiceStateChanged(state){
     if(LABELS[state])FAS.orb.setState(state);
     updateTalkSessionState(state);
-    if(state==='paused'&&!voiceSaving&&!voicePrompting&&voiceIntent!=='type'&&voiceIntent!=='ended'&&voiceIntent!=='completing')voiceIntent='paused';
     var copy={connecting:'Connecting your voice session…',listening:'Listening. Answer naturally when you are ready.',hearing:'I can hear you. Keep speaking naturally.',thinking:'Saving your answer and preparing the next question…',speaking:'ADAM is responding. You can interrupt at any time.',paused:'Voice is paused. Press the mic to resume.',stopped:'Voice session ended. Continue with Type whenever you like.',error:'The voice connection needs attention.',unsupported:'Voice is unavailable in this browser. Type mode is still ready.'};
     if(copy[state])setVoiceStatus(copy[state],state==='error'||state==='unsupported');
     syncVoiceCaptureControl();
@@ -586,7 +585,8 @@
       var target=interview&&interview.navigate(command.field);
       if(target){renderCurrentQuestion(target,false);setVoiceStatus('Returning to '+command.field.split('.').pop()+'.',false);return speakVoicePrompt(target.question);}
     }else if(command.type==='pause'){
-      voiceIntent='paused';voiceInterviewer.pause();setVoiceStatus('Voice is paused. Press the mic to resume.',false);
+      var activeQuestion=interview&&interview.currentQuestion(),keepListening='Talk stays on so you can continue hands-free.'+(activeQuestion?' '+activeQuestion.question:'');
+      setVoiceStatus('Talk remains active and listening.',false);return speakVoicePrompt(keepListening);
     }else if(command.type==='switch_to_type'){
       switchToTyping();
     }else if(command.type==='go_to_extract'){
@@ -649,14 +649,13 @@
 
   function submitVoiceAnswer(turn){
     if(voiceTurnPromise){
-      if(voiceInterviewer)voiceInterviewer.pause();
       preserveVoiceDraft(turn.text);
       setVoiceStatus('I caught additional words while the prior answer was saving. They are waiting in Type for review.',true);
       return voiceTurnPromise;
     }
     if(!interviewCoordinator){preserveVoiceDraft(turn.text);voiceFailed({code:'voice_not_ready'});return Promise.resolve();}
     var generation=voiceGeneration;
-    voiceSaving=true;if(voiceInterviewer)voiceInterviewer.pause();syncVoiceCaptureControl();
+    voiceSaving=true;syncVoiceCaptureControl();
     conversationHistory.push({role:'user',content:turn.text,voiceTurnId:turn.turnId});
     FAS.orb.setState('thinking');
     setVoiceStatus('Saving your spoken answer…',false);
@@ -720,7 +719,7 @@
     var state=voiceInterviewer.state();
     if(state==='paused'){voiceIntent='talk';voiceGeneration+=1;var resumed=voiceInterviewer.resume();syncVoiceCaptureControl();return resumed;}
     if(state==='error'||state==='unsupported'||state==='stopped')return retryVoiceInterview();
-    if(state==='listening'||state==='thinking'||state==='speaking'){voiceIntent='paused';voiceGeneration+=1;voiceInterviewer.pause();syncVoiceCaptureControl();return;}
+    if(state==='listening'||state==='hearing'||state==='thinking'||state==='speaking'){setVoiceStatus('Talk is active. Use Type or End to leave hands-free mode.',false);syncVoiceCaptureControl();return Promise.resolve(true);}
     if(state==='idle')return startVoiceInterview();
   }
 

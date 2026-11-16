@@ -216,6 +216,17 @@ test('standalone Talk commands are handled without saving answers',()=>{
  assert.match(adam,/stop\(\{waitFor:voiceTurnPromise\}\)/,'ending waits for a finalized in-flight turn');
 });
 
+test('Talk stays continuously active until an explicit exit',()=>{
+ const commands=adam.slice(adam.indexOf('function handleVoiceCommand'),adam.indexOf('function restoreBlueprintRetry'));
+ const mic=adam.slice(adam.indexOf('function handleVoiceMicClick'),adam.indexOf('function retryVoiceInterview'));
+ const submit=adam.slice(adam.indexOf('function submitVoiceAnswer'),adam.indexOf('function switchToTyping'));
+ assert.doesNotMatch(commands,/voiceIntent='paused'|Voice is paused/,'spoken pause cannot disable hands-free Talk');
+ assert.match(commands,/command\.type==='pause'[\s\S]*speakVoicePrompt/,'a pause request is answered by voice while Talk remains active');
+ assert.doesNotMatch(mic,/voiceIntent='paused'|voiceInterviewer\.pause\(\)/,'the live mic is not an on/off toggle');
+ assert.doesNotMatch(submit,/voiceInterviewer\.pause\(\)/,'durable saving does not turn off capture');
+ assert.match(adam,/aria-label/,'the continuous mic retains an accessible live-state label');
+});
+
 test('partial Talk commands are intercepted before completed transcripts can be saved',()=>{
  assert.match(adam,/onPartialControl:function\(partial\)/);
  assert.match(adam,/classifyVoiceCommand\(partial\.text\)/);
