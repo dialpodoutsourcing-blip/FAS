@@ -30,6 +30,7 @@
     var onFinalTranscript = options.onFinalTranscript || function () {};
     var onError = options.onError || function () {};
     var onCaptureChange = options.onCaptureChange || function () {};
+    var onMetrics = options.onMetrics || function () {};
     var scheduleTimeout = options.setTimeout || setTimeout;
     var cancelTimeout = options.clearTimeout || clearTimeout;
     var transcriptSettleMs = Number.isFinite(options.transcriptSettleMs) ? Math.max(0, options.transcriptSettleMs) : 500;
@@ -60,6 +61,8 @@
     var lifecycleBound = false;
     var abortController = null;
     var speechResolver = null;
+    var transcriptWords = 0;
+    var finalizedTurnCount = 0;
 
     function setState(value) {
       if (currentState === value) return;
@@ -69,6 +72,8 @@
 
     function captureActive() { return Boolean(!stopped&&!stopRequested&&!cleaned&&localStream&&localStream.getAudioTracks&&localStream.getAudioTracks().some(function(track){return track.enabled!==false;})); }
     function notifyCapture() { onCaptureChange(captureActive()); }
+    function wordCount(value) { var text=normalizedText(value);return text?text.split(' ').length:0; }
+    function notifyMetrics() { onMetrics({transcriptWords:transcriptWords,finalizedTurns:finalizedTurnCount}); }
 
     function safeError(message, code) {
       var error = new Error(message);
@@ -188,6 +193,9 @@
       if (!text || finalizedItems.has(itemId) || finalizedTurns.has(turnId)) return;
       finalizedItems.add(itemId);
       finalizedTurns.add(turnId);
+      transcriptWords=wordCount(text);
+      finalizedTurnCount+=1;
+      notifyMetrics();
       partials.delete(itemId);
       latestPartial = '';
       pendingSegments.push({ turnId: turnId, itemId: itemId, text: text });
@@ -202,7 +210,7 @@
         speechActive = true;
         clearTranscriptSettleTimer();
         if (responseActive) cancelSpeech();
-        if (!paused && !stopped) setState('listening');
+        if (!paused && !stopped) setState('hearing');
         return;
       }
       if (data.type === 'input_audio_buffer.speech_stopped') {
@@ -217,6 +225,8 @@
         var partial = normalizedText((partials.get(itemId) || '') + ' ' + String(data.delta || ''));
         partials.set(itemId, partial);
         latestPartial = partial;
+        transcriptWords=wordCount(partial);
+        notifyMetrics();
         var partialTurn={ itemId: itemId === 'current' ? '' : itemId, text: partial };
         onPartialTranscript(partialTurn);
         if (onPartialControl(partialTurn) === true) { consumedItems.add(itemId); partials.delete(itemId); latestPartial = ''; }

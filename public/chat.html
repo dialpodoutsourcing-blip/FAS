@@ -236,31 +236,23 @@
             <div class="voice-console">
             <aside class="voice-hud" data-voice-hud aria-hidden="true">
               <span class="voice-hud__scan"></span>
-              <div class="voice-hud__head"><span>ADAM // LIVE PROCESS</span><i></i></div>
+              <div class="voice-hud__head"><span>INTERVIEW PROGRESS</span><i></i></div>
               <div class="voice-hud__grid">
-                <span>CHANNEL</span><strong>VOICE.02</strong>
-                <span>SIGNAL</span><strong>STABLE</strong>
-                <span>MEMORY</span><strong>SYNCED</strong>
-                <span>PROOF GATE</span><strong>ACTIVE</strong>
+                <span>ACCEPTED</span><strong data-talk-progress-accepted>0</strong>
+                <span>QUESTION</span><strong data-talk-progress-question>—</strong>
+                <span>PROCESSED</span><strong data-talk-progress-processed>0</strong>
+                <span>LATEST</span><strong data-talk-progress-latest>WAITING</strong>
               </div>
-              <div class="voice-hud__meter"><span style="--hud-level:86%"></span></div>
-              <div class="voice-hud__meter"><span style="--hud-level:63%"></span></div>
-              <div class="voice-hud__stream"><div class="voice-hud__track">01001101 // PARSING<br>10110110 // MAPPING<br>00101101 // CHECKING<br>11010010 // READY<br>01001101 // PARSING</div></div>
+              <div class="voice-hud__stream"><div class="voice-hud__track" data-talk-progress-list>No accepted answers yet.</div></div>
             </aside>
             <aside class="voice-hud voice-hud--signal" data-voice-hud-secondary aria-hidden="true">
               <span class="voice-hud__scan"></span>
               <div class="voice-hud__head"><span>VOICE ANALYSIS</span><i></i></div>
-              <div class="voice-signal">
-                <div class="voice-signal__radar"><span></span><i></i></div>
-                <div class="voice-signal__spectrum">
-                  <span style="--s:34%;--sd:-.2s"></span><span style="--s:78%;--sd:-.7s"></span><span style="--s:52%;--sd:-1.1s"></span><span style="--s:91%;--sd:-.4s"></span><span style="--s:46%;--sd:-1.4s"></span><span style="--s:69%;--sd:-.9s"></span><span style="--s:38%;--sd:-1.7s"></span><span style="--s:84%;--sd:-.1s"></span>
-                </div>
-              </div>
               <div class="voice-hud__grid voice-hud__grid--signal">
-                <span>INPUT</span><strong>-12 DB</strong>
-                <span>CLARITY</span><strong>94%</strong>
-                <span>NOISE GATE</span><strong>OPEN</strong>
-                <span>BUFFER</span><strong>018 MS</strong>
+                <span>SESSION</span><strong data-talk-session-state>IDLE</strong>
+                <span>MICROPHONE</span><strong data-talk-session-microphone>PAUSED</strong>
+                <span>WORDS HEARD</span><strong data-talk-session-words>0</strong>
+                <span>VOICE TURNS</span><strong data-talk-session-turns>0</strong>
               </div>
             </aside>
             <div class="voice__stage" data-orb data-orb-state="idle">

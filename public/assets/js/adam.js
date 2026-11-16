@@ -51,6 +51,7 @@
     idle: 'Tap the mic and start talking',
     connecting: 'Connecting securely…',
     listening: 'Listening...',
+    hearing: 'Hearing you...',
     thinking: 'Thinking...',
     speaking: 'ADAM is talking',
     paused: 'Voice paused',
@@ -289,6 +290,7 @@
   var completedConversation = false;
   var completedSummary = '';
   var completedTurnIds = new Set();
+  var talkSessionMetrics = {state:'IDLE',microphone:'PAUSED',transcriptWords:0,finalizedTurns:0};
   var completionPanel = $('[data-completion-panel]');
   var completionButton = $('[data-completion-generate]');
   var completionViewPdf = $('[data-completion-view-pdf]');
@@ -390,6 +392,19 @@
   function presentCompletedArtifactChoice(){var title=$('[data-completion-title]'),copy=$('[data-completion-copy]'),eyebrow=$('[data-completion-eyebrow]');announceCompletion();if(title)title.textContent=FAS.agent.current.name+' is already complete';if(eyebrow)eyebrow.textContent=FAS.agent.current.name+' COMPLETE';if(copy)copy.textContent='Your '+FAS.agent.current.name+' answers are already finished and safely saved.';if(completionStatus)completionStatus.textContent='View your finished PDF in the Vault or retry the interview.';if(completionButton)completionButton.hidden=true;if(completionViewPdf)completionViewPdf.hidden=false;if(completionRetry)completionRetry.hidden=false;completionModalControl.open();if(form)form.removeAttribute('aria-busy');window.setTimeout(function(){if(completionViewPdf)completionViewPdf.focus();},0);}
   function hideCompletionChoice(){completionModalControl.close();}
   function enterCompletedConversation(project){completedConversation=true;completedSummary=buildCompletedSummary(project);hideCompletionChoice();if(input){input.disabled=false;input.placeholder='Ask ADAM anything or choose your next step…';}var button=form&&form.querySelector('[type="submit"]');if(button){button.disabled=false;button.textContent='Send';}var legacy=$('[data-agent-completion]');if(legacy)legacy.hidden=false;renderCurrentQuestion({question:'Your '+FAS.agent.current.name+' work is complete. Ask ADAM a question, edit an answer, or review your saved work.'},false);setVoiceStatus('ADAM is ready to discuss your completed work or help with your next step.',false);}
+  function talkFieldLabel(value){var field=String(value||'').split('.').pop().replace(/[_-]+/g,' ').trim();return field?field.toUpperCase():'WAITING';}
+  function talkQuestionCount(){return(FAS.agent.current&&FAS.agent.current.chapters||[]).reduce(function(total,chapter){return total+(chapter.questions||[]).length;},0);}
+  function refreshTalkProgress(){
+    var checkpoint=interview&&interview.checkpoint?interview.checkpoint():null,answers=checkpoint&&checkpoint.answers||[],total=talkQuestionCount(),current=checkpoint?Math.min(Number(checkpoint.questionIndex||0)+(interview.currentQuestion()?1:0),total):0,fields={};
+    answers.forEach(function(answer){if(answer&&answer.field)fields[answer.field]=true;});
+    setText('[data-talk-progress-accepted]',String(answers.length));
+    setText('[data-talk-progress-question]',total?(current+' / '+total):'—');
+    setText('[data-talk-progress-processed]',String(Object.keys(fields).length));
+    setText('[data-talk-progress-latest]',answers.length?talkFieldLabel(answers[answers.length-1].field):'WAITING');
+    var list=$('[data-talk-progress-list]');if(list){list.textContent='';if(!answers.length)list.textContent='No accepted answers yet.';else answers.slice(-3).forEach(function(answer){var row=document.createElement('div');row.textContent=answer.prompt||talkFieldLabel(answer.field);list.appendChild(row);});}
+  }
+  function refreshTalkSession(){setText('[data-talk-session-state]',talkSessionMetrics.state);setText('[data-talk-session-microphone]',talkSessionMetrics.microphone);setText('[data-talk-session-words]',String(talkSessionMetrics.transcriptWords));setText('[data-talk-session-turns]',String(talkSessionMetrics.finalizedTurns));}
+  function updateTalkSessionState(state){var labels={idle:'IDLE',connecting:'CONNECTING',listening:'READY',hearing:'HEARING',thinking:'PROCESSING',speaking:'ADAM SPEAKING',paused:'PAUSED',stopped:'ENDED',error:'ERROR',unsupported:'UNAVAILABLE'};talkSessionMetrics.state=labels[state]||String(state||'IDLE').toUpperCase();refreshTalkSession();}
   function renderCurrentQuestion(question, preserveThread) {
     if (!question) return;
     $$('[data-agent-question]').forEach(function(node){node.textContent=question.question;});
@@ -397,6 +412,7 @@
       var visible = $('.bubble__text--q', thread);
       if (visible) visible.textContent = question.question;
     }
+    refreshTalkProgress();
   }
   function renderRestoredConversation(answers,currentQuestion){
     var typing=thread&&$('[data-chat-typing]',thread),history=$('[data-chat-history]'),items=FAS.interviewRestoration.transcript(FAS.agent.current,answers,FAS.interview&&FAS.interview.followUpQuestion);
@@ -426,6 +442,7 @@
       renderEditableSavedAnswers(project);
       restoredInterview=restoredState.answers.length>0;
       if(restoredInterview)renderRestoredConversation(restoredAnswers,interview.currentQuestion());else renderCurrentQuestion(interview.currentQuestion());
+      refreshTalkProgress();
       if(!interview.currentQuestion()&&hasArtifact){presentCompletedArtifactChoice();return project;}
       if(!interview.currentQuestion()&&!hasArtifact){presentCompletionChoice('',false);return project;}
       return project;
@@ -451,6 +468,7 @@
 
   function syncVoiceCaptureControl(){
     var active=Boolean(voiceInterviewer&&voiceInterviewer.captureActive&&voiceInterviewer.captureActive());
+    talkSessionMetrics.microphone=active?'ACTIVE':'PAUSED';refreshTalkSession();
     if(micBtn){micBtn.setAttribute('aria-pressed',String(active));micBtn.setAttribute('aria-label',active?'Pause microphone':'Start or resume microphone');}
     if(active!==lastCaptureActive){lastCaptureActive=active;emit('fas:mic',{listening:active});}
   }
@@ -468,8 +486,9 @@
 
   function voiceStateChanged(state){
     if(LABELS[state])FAS.orb.setState(state);
+    updateTalkSessionState(state);
     if(state==='paused'&&!voiceSaving&&!voicePrompting&&voiceIntent!=='type'&&voiceIntent!=='ended'&&voiceIntent!=='completing')voiceIntent='paused';
-    var copy={connecting:'Connecting your voice session…',listening:'Listening. Answer naturally when you are ready.',thinking:'Saving your answer and preparing the next question…',speaking:'ADAM is responding. You can interrupt at any time.',paused:'Voice is paused. Press the mic to resume.',stopped:'Voice session ended. Continue with Type whenever you like.',error:'The voice connection needs attention.',unsupported:'Voice is unavailable in this browser. Type mode is still ready.'};
+    var copy={connecting:'Connecting your voice session…',listening:'Listening. Answer naturally when you are ready.',hearing:'I can hear you. Keep speaking naturally.',thinking:'Saving your answer and preparing the next question…',speaking:'ADAM is responding. You can interrupt at any time.',paused:'Voice is paused. Press the mic to resume.',stopped:'Voice session ended. Continue with Type whenever you like.',error:'The voice connection needs attention.',unsupported:'Voice is unavailable in this browser. Type mode is still ready.'};
     if(copy[state])setVoiceStatus(copy[state],state==='error'||state==='unsupported');
     syncVoiceCaptureControl();
   }
@@ -493,6 +512,7 @@
       onState:voiceStateChanged,
       onCaptureChange:syncVoiceCaptureControl,
       onPartialTranscript:function(partial){FAS.voice.setTranscript(partial.text);},
+      onMetrics:function(metrics){talkSessionMetrics.transcriptWords=metrics.transcriptWords;talkSessionMetrics.finalizedTurns=metrics.finalizedTurns;refreshTalkSession();},
       onPartialControl:function(partial){
         if(answerSubmissionGate.hasPending())return false;
         if(retryConfirmationPending){var decision=FAS.retry&&FAS.retry.classifyConfirmation(partial.text);if(decision===null)return false;handleRetryConfirmation(partial.text,'talk');return true;}
@@ -639,6 +659,7 @@
     var answerSaved=false,status=$('[data-answer-status]'),completionUrl=getCompletionUrl();
     var work=interviewCoordinator.submit({text:turn.text,source:'talk',turnId:turn.turnId}).then(function(result){
       answerSaved=true;
+      refreshTalkProgress();
       if(status)status.textContent='Answer saved.';
       emit('fas:answer-saved',{answer:result.saved});emit('fas:checkpoint',{checkpoint:result.checkpoint});
       if(result.saved)FAS.chat.addMessage({role:'user',text:turn.text,tag:'YOU'});
@@ -851,7 +872,7 @@
     if(form)form.setAttribute('aria-busy','true');if(submitButton)submitButton.disabled=true;
     var durableSaved=false;
     return interviewCoordinator.submit({text:record.text,source:'type',turnId:record.turnId}).then(function(result){
-      durableSaved=true;if(status)status.textContent='Answer saved.';emit('fas:answer-saved',{answer:result.saved});emit('fas:checkpoint',{checkpoint:result.checkpoint});
+      durableSaved=true;refreshTalkProgress();if(status)status.textContent='Answer saved.';emit('fas:answer-saved',{answer:result.saved});emit('fas:checkpoint',{checkpoint:result.checkpoint});
       if(result.nextQuestion){FAS.chat.addMessage({role:'agent',text:result.message});renderCurrentQuestion({question:result.nextQuestion},true);}
       if(result.summary)FAS.chat.addMessage({role:'note',text:'Checkpoint saved Â· Review recent answers anytime in History.',tag:'CHECKPOINT',variant:'checkpoint'});
       if(result.completion.gaps.length)emit('fas:interview-gap',{gaps:result.completion.gaps});if(!interview.currentQuestion())presentCompletionChoice('',false);return result;
