@@ -284,3 +284,12 @@ test('recoverable voice errors keep listening and use truthful guidance',()=>{
  assert.match(adam,/preserveVoiceDraft\(error\.draft\)/);
 });
 
+test('Talk HUD refreshes from restored, navigated, and accepted interview state',()=>{
+ assert.match(adam,/renderCurrentQuestion[\s\S]*refreshTalkProgress\(\)/,'question navigation refreshes progress');
+ assert.match(adam,/restoredInterview=restoredState\.answers\.length>0;[\s\S]*refreshTalkProgress\(\)/,'restored answers populate progress');
+ const spokenSave=adam.slice(adam.indexOf('function submitVoiceAnswer'),adam.indexOf('function switchToTyping'));
+ assert.match(spokenSave,/refreshTalkProgress\(\)/,'accepted spoken answers refresh progress');
+ const typedSave=adam.slice(adam.indexOf('function submitTypedAnswer'),adam.indexOf('function send()'));
+ assert.match(typedSave,/refreshTalkProgress\(\)/,'accepted typed answers refresh progress');
+});
+

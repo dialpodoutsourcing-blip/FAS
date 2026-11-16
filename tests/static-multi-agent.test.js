@@ -58,6 +58,9 @@ assert.match(chat, /class="voice-console"/, 'Talk uses one premium three-column 
 assert.match(chat, /class="voice-bottom-dock"/, 'Talk groups transcript and real voice controls in a bottom dock');
 assert.doesNotMatch(chat.match(/<section class="voice"[\s\S]*?<\/section>/)?.[0]||'', />\s*(Attach|Browse|Use Tools)\s*</, 'Talk does not expose unsupported decorative tools');
 assert.match(chat, /VOICE ANALYSIS/, 'right-side HUD identifies its analysis role');
+for (const field of ['accepted','question','processed','latest','list']) assert.match(chat,new RegExp('data-talk-progress-'+field),'Talk progress exposes real '+field+' data');
+for (const field of ['state','microphone','words','turns']) assert.match(chat,new RegExp('data-talk-session-'+field),'Talk session exposes measured '+field+' data');
+for (const invented of ['VOICE.02','94%','-12 DB','018 MS','NOISE GATE']) assert.doesNotMatch(chat,new RegExp(invented.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i'),'Talk HUD removes invented '+invented+' copy');
 assert.match(chat, /data-voice-status[^>]+aria-live="polite"/, 'voice mode exposes an accessible live status');
 const voiceAudio = chat.match(/<audio\b[^>]*data-voice-audio[^>]*>/)?.[0] || '';
 assert.ok(voiceAudio, 'voice mode includes ADAM audio playback');
@@ -117,6 +120,10 @@ assert.match(adam, /URL\.createObjectURL/, 'saved work export creates a local do
 assert.match(adam, /\.wave span[\s\S]*Math\.random\(\)[\s\S]*--wave-height/s, 'voice ticker receives varied bar heights');
 assert.match(adam, /--wave-speed/, 'voice ticker receives varied animation speeds');
 assert.match(adam, /--wave-floor/, 'voice ticker receives varied minimum pulse sizes');
+assert.match(adam,/function refreshTalkProgress\(/,'Talk progress has a dedicated real-data renderer');
+assert.match(adam,/interview\.checkpoint\(\)/,'Talk progress reads accepted interview state');
+assert.match(adam,/onMetrics:function\(metrics\)/,'Talk session consumes measured Realtime metrics');
+assert.match(adam,/hearing:/,'ADAM recognizes actual user speech as a distinct state');
 assert.match(adam, /tab-voice[\s\S]*activateVoiceMode/, 'selecting Talk starts or resumes the hands-free interview');
 assert.match(adam, /submitPostCompletionMessage/, 'completed Type and Talk messages use the advisory conversation path');
 assert.match(adam, /\/api\/advisory-response/, 'completed conversation calls the advisory endpoint');
