@@ -772,7 +772,9 @@ body.src-off .part__src { display: none; }
 .retry-confirmation[data-fallback-modal] .retry-confirmation__panel { width: min(520px, 100%); border: 1px solid var(--gold-line); border-radius: 18px; background-color: #0b0b08; box-shadow: 0 28px 90px rgba(0,0,0,.78); box-sizing: border-box; }
 .retry-confirmation__panel { padding: clamp(24px, 5vw, 38px); background: radial-gradient(circle at 90% 0, rgba(211,181,124,.13), transparent 38%); }
 .retry-confirmation h2 { margin-top: 6px; font-family: var(--font-heading); font-size: clamp(28px, 5vw, 40px); line-height: 1.05; }
-.retry-confirmation [data-retry-confirmation-description] { margin-top: 14px; color: var(--text-2); line-height: 1.6; }
+.retry-confirmation [data-retry-confirmation-description], .retry-confirmation [data-answer-confirmation-description] { margin-top: 14px; color: var(--text-2); line-height: 1.6; }
+.answer-confirmation__label { margin: 18px 0 6px; color: var(--gold); font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.answer-confirmation__quote { margin: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.025); color: var(--text); line-height: 1.5; overflow-wrap: anywhere; }
 .retry-confirmation__actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 28px; }
 .retry-confirmation__confirm { border-color: rgba(224,95,82,.55); color: #ffb2aa; }
 .retry-confirmation__confirm:hover { border-color: #e05f52; background: rgba(224,95,82,.12); color: #ffd2cd; }

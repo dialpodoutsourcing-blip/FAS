@@ -49,6 +49,8 @@ const restorationScript=chat.indexOf('assets/js/interview-restoration.js');
 assert.ok(restorationScript>=0&&restorationScript<controllerScript,'chat loads durable interview restoration before its controller');
 assert.match(chat, /<dialog[^>]+data-retry-confirmation[^>]+aria-labelledby="retry-confirmation-title"[^>]+aria-describedby="retry-confirmation-description"/, 'chat includes an accessible retry confirmation dialog');
 for(const hook of ['data-retry-confirm','data-retry-cancel'])assert.match(chat,new RegExp(hook),`retry dialog exposes ${hook}`);
+assert.match(chat, /<dialog[^>]+data-answer-confirmation[^>]+aria-labelledby="answer-confirmation-title"[^>]+aria-describedby="answer-confirmation-description"/, 'chat includes an accessible answer relevance dialog');
+for(const hook of ['data-answer-confirm','data-answer-cancel','data-answer-confirmation-question','data-answer-confirmation-answer'])assert.match(chat,new RegExp(hook),`answer relevance dialog exposes ${hook}`);
 assert.match(chat, /data-voice-ambient[^>]+aria-hidden="true"/, 'voice panel includes decorative ambient wavelengths');
 assert.match(chat, /data-voice-hud[^>]+aria-hidden="true"/, 'voice panel includes a decorative processing HUD');
 assert.match(chat, /data-voice-hud-secondary[^>]+aria-hidden="true"/, 'voice panel includes a decorative right-side analysis HUD');
@@ -78,6 +80,8 @@ const agentsScript = chat.indexOf('<script src="assets/js/agents.js"></script>')
 const accessScript = chat.indexOf('<script src="assets/js/agent-access.js"></script>');
 const adamScript = chat.indexOf('<script src="assets/js/adam.js"></script>');
 const retryModalScript = chat.indexOf('<script src="assets/js/retry-confirmation-modal.js"></script>');
+const answerRelevanceScript = chat.indexOf('<script src="assets/js/answer-relevance.js"></script>');
+const answerModalScript = chat.indexOf('<script src="assets/js/answer-confirmation-modal.js"></script>');
 const coordinatorScript = chat.indexOf('<script src="assets/js/interview-coordinator.js"></script>');
 const interviewerScript = chat.indexOf('<script src="assets/js/realtime-interviewer.js"></script>');
 assert.ok(agentsScript >= 0, 'chat loads the specialist registry');
@@ -86,6 +90,8 @@ assert.ok(adamScript > agentsScript, 'specialist registry loads before the chat 
 assert.ok(coordinatorScript > agentsScript && coordinatorScript < adamScript, 'durable coordinator loads before the chat controller');
 assert.ok(interviewerScript > coordinatorScript && interviewerScript < adamScript, 'Realtime interviewer loads before the chat controller');
 assert.ok(retryModalScript > coordinatorScript && retryModalScript < adamScript, 'retry modal controller loads before the chat controller');
+assert.ok(answerRelevanceScript > coordinatorScript && answerRelevanceScript < adamScript, 'answer relevance classifier loads before the chat controller');
+assert.ok(answerModalScript > coordinatorScript && answerModalScript < adamScript, 'answer confirmation controller loads before the chat controller');
 
 [
   'data-agent-name', 'data-agent-title', 'data-agent-step', 'data-agent-chip',
