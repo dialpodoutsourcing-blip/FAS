@@ -17,35 +17,13 @@ test('account page is accessible, complete, and contains no credentials',()=>{
   assert.doesNotMatch(html,/sb_(publishable|secret)|service.role|access_token|refresh_token/i);
 });
 
-test('temporary propagation cover blocks login with a truthful capped status',()=>{
+test('production account page exposes the normal interactive login',()=>{
   const html=fs.readFileSync(accountPath,'utf8'),css=fs.readFileSync(accountCssPath,'utf8');
-  assert.match(html,/class="fas-propagation-cover"[^>]*role="dialog"[^>]*aria-modal="true"/i);
-  assert.match(html,/Deploying FAS live/i);
-  assert.match(html,/File upload, database synchronization, and network propagation are complete/i);
-  assert.match(html,/Live deployment/i);
-  assert.match(html,/Regional capacity constraint/i);
-  assert.match(html,/Vercel(?:&#39;|&apos;|’)s South America deployment infrastructure is currently operating at maximum capacity/i);
-  assert.match(html,/production artifacts and database changes have completed successfully/i);
-  assert.match(html,/edge activation and final traffic routing remain queued/i);
-  assert.match(html,/Select an alternate deployment region or upgrade to a paid Vercel tier/i);
-  assert.match(html,/data-propagation-value[^>]*>93%?</i);
-  assert.match(html,/aria-valuenow="93"/i);
-  assert.match(html,/Live deployment has exceeded the expected completion window/i);
-  assert.match(html,/<main class="account-shell"[^>]*inert[^>]*aria-hidden="true"/i);
-  assert.match(html,/<script src="assets\/js\/propagation-cover\.js"><\/script>[\s\S]*<script src="assets\/js\/account\.js" type="application\/x-fas-hold"><\/script>/i);
-  assert.match(css,/\.fas-propagation-cover\s*\{[^}]*position:\s*fixed[^}]*z-index:\s*\d{3,}/s);
-  assert.match(css,/\.fas-propagation-cover\s*\{[^}]*align-items:\s*safe center[^}]*overflow-x:\s*hidden[^}]*overflow-y:\s*auto/s);
-  assert.match(css,/\.fas-propagation-cover__fill\s*\{[^}]*transform:\s*scaleX\(\.93\)/s);
-  assert.match(css,/\.fas-propagation-cover__track::after\s*\{[^}]*left:\s*93%[^}]*animation:\s*fasDeploymentScan\s*1\.1s\s*linear\s*infinite/s);
-  assert.match(css,/@keyframes fasDeploymentScan\s*\{[^}]*background-position:[^}]*\}[^}]*background-position:/s);
-  assert.match(css,/\.fas-propagation-cover__brand\s*\{[^}]*flex-direction:\s*column[^}]*align-items:\s*center[^}]*text-align:\s*center/s);
-  assert.match(css,/\.fas-propagation-cover__brand strong\s*\{[^}]*linear-gradient[^}]*background-clip:\s*text[^}]*color:\s*transparent/s);
-  assert.match(css,/\.fas-propagation-cover__note i\s*\{[^}]*background:\s*#e6b94f[^}]*rgba\(230,185,79/s);
-  assert.match(css,/\.fas-propagation-cover__notice\s*\{[^}]*border:\s*1px solid rgba\(238,183,62,[^)]+\)[^}]*background:/s);
-  assert.match(css,/\.fas-propagation-cover__notice-title\s*\{[^}]*color:\s*#f2ca68[^}]*font-weight:\s*800/s);
-  const coverRule=css.match(/\.fas-propagation-cover\s*\{([^}]*)\}/s);assert.ok(coverRule);assert.doesNotMatch(coverRule[1],/rgba\(0,190,148|#070806|#080704/);
-  const progress=fs.readFileSync(path.join(root,'assets','js','propagation-cover.js'),'utf8');
-  assert.match(progress,/value\s*=\s*93/);assert.match(progress,/setAttribute\('aria-valuenow'/);assert.match(progress,/textContent\s*=\s*value\s*\+\s*'%'/);
+  assert.doesNotMatch(html,/fas-propagation-cover|propagation-cover\.js|application\/x-fas-hold/i);
+  assert.match(html,/<main class="account-shell">/i);
+  assert.match(html,/<script src="assets\/js\/account\.js"><\/script>/i);
+  assert.doesNotMatch(css,/\.fas-propagation-cover/);
+  assert.equal(fs.existsSync(path.join(root,'assets','js','propagation-cover.js')),false);
 });
 
 test('account dependencies load in order before the controller',()=>{
