@@ -5,7 +5,7 @@
   function result(status,reason){return{status:status,reason:reason};}
   function words(value){return normalize(value).split(' ').filter(Boolean);}
 
-  var repeat=/^(?:repeat|repeat the question|repeat that|say that again|ask me the question again|what was that again|what did you ask me)$/;
+  var repeat=/^(?:repeat|repeat the question|repeat that|say that again|ask me the question again|(?:what was that again|what did you ask me)(?: i (?:cannot|can t|don t|do not) understand)?)$/;
   var confusion=/^(?:i (?:cannot|can t|don t|do not) understand(?: you| the question| what you mean)?|i (?:am|m) trying to understand you|what do you mean|i am confused|i m confused)$/;
   var audience=/\b(?:dentists?|coaches?|consultants?|founders?|owners?|leaders?|teams?|businesses?|companies?|clients?|customers?|people|parents?|women|men|professionals?|creators?|agencies|industr(?:y|ies)|markets?|audiences?|buyers?)\b/;
   var help=/\b(?:help|ask|advice|fix|solve|known|expert|support|teach|guide|build|create|improve|grow|understand)\b/;
