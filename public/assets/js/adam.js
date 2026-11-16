@@ -494,7 +494,7 @@
       onCaptureChange:syncVoiceCaptureControl,
       onPartialTranscript:function(partial){FAS.voice.setTranscript(partial.text);},
       onPartialControl:function(partial){
-        if(answerSubmissionGate.hasPending()){var answerDecision=FAS.retry&&FAS.retry.classifyConfirmation(partial.text);if(answerDecision===null)return false;answerSubmissionGate.resolve(answerDecision);return true;}
+        if(answerSubmissionGate.hasPending()){var answerDecision=FAS.answerRelevance.classifyDecision(partial.text);if(answerDecision===null)return false;answerSubmissionGate.resolve(answerDecision);return true;}
         if(retryConfirmationPending){var decision=FAS.retry&&FAS.retry.classifyConfirmation(partial.text);if(decision===null)return false;handleRetryConfirmation(partial.text,'talk');return true;}
         if(FAS.retry&&FAS.retry.classify(partial.text)==='request'){requestRetryConfirmation(partial.text,'talk');return true;}
         var command=classifyVoiceCommand(partial.text);if(!command)return false;handleVoiceCommand(command);return true;
@@ -604,7 +604,7 @@
   }
 
   function handleVoiceTurn(turn){
-    if(answerSubmissionGate.hasPending()){var answerDecision=FAS.retry&&FAS.retry.classifyConfirmation(turn.text);if(answerDecision!==null)answerSubmissionGate.resolve(answerDecision);else requestSpokenAnswerDecision();return Promise.resolve();}
+    if(answerSubmissionGate.hasPending()){var answerDecision=FAS.answerRelevance.classifyDecision(turn.text);if(answerDecision!==null)answerSubmissionGate.resolve(answerDecision);else requestSpokenAnswerDecision();return Promise.resolve();}
     if(retryConfirmationPending)return handleRetryConfirmation(turn.text,'talk');
     if(FAS.retry&&FAS.retry.classify(turn.text)==='request')return requestRetryConfirmation(turn.text,'talk');
     var command=classifyVoiceCommand(turn.text);
@@ -862,7 +862,7 @@
     if (!input) return;
     if(form&&form.getAttribute('aria-busy')==='true')return;
     var retryText=input.value.trim();
-    if(answerSubmissionGate.hasPending()){if(!retryText){input.focus();return;}var answerDecision=FAS.retry&&FAS.retry.classifyConfirmation(retryText);input.value='';input.focus();if(answerDecision===null){var relevanceStatus=$('[data-answer-status]');if(relevanceStatus)relevanceStatus.textContent='Choose yes to save that answer or no to repeat the question.';return;}answerConfirmationModal.resolve(answerDecision,'type');return;}
+    if(answerSubmissionGate.hasPending()){if(!retryText){input.focus();return;}var answerDecision=FAS.answerRelevance.classifyDecision(retryText);input.value='';input.focus();if(answerDecision===null){var relevanceStatus=$('[data-answer-status]');if(relevanceStatus)relevanceStatus.textContent='Choose yes to save that answer or no to repeat the question.';return;}answerSubmissionGate.resolve(answerDecision);return;}
     if(retryConfirmationPending){if(!retryText){input.focus();return;}input.value='';input.focus();handleRetryConfirmation(retryText,'type');return;}
     if(FAS.retry&&FAS.retry.classify(retryText)==='request'){input.value='';input.focus();requestRetryConfirmation(retryText,'type');return;}
     if(completedConversation){var postText=retryText;if(!postText){input.focus();return;}input.value='';input.focus();submitPostCompletionMessage(postText,'type',createTurnId('type'));return;}
