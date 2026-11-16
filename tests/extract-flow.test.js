@@ -231,6 +231,19 @@ test('Type and Talk route answer relevance before durable submission',()=>{
  assert.match(adam,/answerSubmissionGate\.hasPending\(\)/,'pending relevance confirmation intercepts yes or no');
  assert.match(adam,/answerSubmissionGate\.resolve\(answerDecision\)/,'typed and spoken decisions use the one-shot held-answer gate');
 });
+test('Type and Talk answer contextual questions without saving or advancing',()=>{
+ assert.match(adam,/function answerInterviewSideQuestion/);
+ assert.match(adam,/FAS\.interviewQuestionIntent\.classify/);
+ assert.match(adam,/apiFetch\('\/api\/interview-question-response'/);
+ const helper=adam.slice(adam.indexOf('function answerInterviewSideQuestion'),adam.indexOf('function requestConversationalReply'));
+ assert.match(helper,/currentQuestion\.question/);
+ assert.match(helper,/speakVoicePrompt\(message\)/);
+ assert.doesNotMatch(helper,/interviewCoordinator\.submit|answerSubmissionGate\.route|acceptAnswer/);
+ const talk=adam.slice(adam.indexOf('function handleVoiceTurn'),adam.indexOf('function submitVoiceAnswer'));
+ assert.ok(talk.indexOf('interviewQuestionIntent.classify')<talk.indexOf('validateSpokenAnswer'),'Talk questions are intercepted before answer validation');
+ const typed=adam.slice(adam.indexOf('function send()'),adam.indexOf('if (form) form.addEventListener'));
+ assert.ok(typed.indexOf('interviewQuestionIntent.classify')<typed.indexOf('answerSubmissionGate.route'),'Type questions are intercepted before answer relevance and saving');
+});
 
 test('Talk confirms questionable answers by voice while Type alone opens the modal',()=>{
  const spoken=adam.slice(adam.indexOf('function requestSpokenAnswerDecision'),adam.indexOf('function presentAnswerConfirmation'));

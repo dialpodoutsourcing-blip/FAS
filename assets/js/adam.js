@@ -290,6 +290,8 @@
   var completedConversation = false;
   var completedSummary = '';
   var completedTurnIds = new Set();
+  var interviewQuestionTurnIds = new Set();
+  var copySequence = 0;
   var talkSessionMetrics = {state:'IDLE',microphone:'PAUSED',transcriptWords:0,finalizedTurns:0};
   var completionPanel = $('[data-completion-panel]');
   var completionButton = $('[data-completion-generate]');
@@ -336,7 +338,8 @@
     return Promise.resolve(copy);
   }
   function requestSpokenAnswerDecision(){
-    var copy='That may not answer the current question. Should I save it anyway? Say yes to save it, or no to hear the question again.';
+    var choices=['That may not answer the current question. It is not saved yet. Say yes to save it anyway, or no to hear the question again.','I am not sure that responds to this question, so I have held it without saving. Say yes to keep it, or no to repeat the question.','That response may be off topic. Nothing has been saved. Say yes if it is your answer, or no and I will ask the question again.'];
+    var copy=choices[copySequence++%choices.length];
     setVoiceStatus('Waiting for your spoken yes or no. The answer is not saved yet.',false);
     return speakVoicePrompt(copy);
   }
@@ -632,6 +635,8 @@
     FAS.voice.setTranscript(turn.text);
     if(completedConversation)return submitPostCompletionMessage(turn.text,'talk',turn.turnId);
     if(voiceIntent!=='talk'){preserveVoiceDraft(turn.text);return Promise.resolve();}
+    var sideQuestion=FAS.interviewQuestionIntent&&FAS.interviewQuestionIntent.classify({text:turn.text,currentQuestion:interview&&interview.currentQuestion()});
+    if(sideQuestion)return answerInterviewSideQuestion(turn.text,'talk',turn.turnId);
     var validation=FAS.interview.validateSpokenAnswer(turn.text,interview&&interview.currentQuestion());
     if(!validation.valid){
       var currentQuestion=interview&&interview.currentQuestion(),clarification=validation.message+(currentQuestion?' '+currentQuestion.question:'');
@@ -830,6 +835,18 @@
     }
   };
 
+  function answerInterviewSideQuestion(text,source,turnId){
+    var value=String(text||'').trim(),currentQuestion=interview&&interview.currentQuestion();
+    if(!value||!currentQuestion)return Promise.resolve();
+    if(turnId&&interviewQuestionTurnIds.has(turnId))return Promise.resolve();
+    if(turnId)interviewQuestionTurnIds.add(turnId);
+    var returnCues=['With that clarified, here is the same question:','Keeping us on this point, the question remains:','Now let us return to the question we are answering:'];
+    var fallbackCues=['I could not explain that clearly just now. The current question is still:','I was not able to answer that just now. Let us keep the same question in view:','That explanation is unavailable at the moment. Nothing was saved, and the question remains:'];
+    FAS.chat.addMessage({role:'user',text:value,tag:'YOU'});conversationHistory.push({role:'user',content:value});FAS.chat.setTyping(true);
+    var status=$('[data-answer-status]');if(status)status.textContent='ADAM is clarifying the current question...';
+    return apiFetch('/api/interview-question-response',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent:{key:FAS.agent.current.key,name:FAS.agent.current.name,title:FAS.agent.current.title},message:value,currentQuestion:currentQuestion.question,history:conversationHistory.slice(0,-1).slice(-8)})},8000).then(function(response){if(!response.ok)throw new Error('Interview guidance unavailable');return response.json();}).then(function(payload){var answer=String(payload.message||'').trim();if(!answer)throw new Error('Interview guidance unavailable');return answer+' '+returnCues[copySequence++%returnCues.length]+' '+currentQuestion.question;}).catch(function(){return fallbackCues[copySequence++%fallbackCues.length]+' '+currentQuestion.question;}).then(function(message){conversationHistory.push({role:'assistant',content:message});FAS.chat.addMessage({role:'agent',tag:'ADAM',text:message});if(status)status.textContent='The current question is unchanged. Nothing was saved.';if(source==='talk'&&voiceInterviewer&&voiceIntent==='talk')return speakVoicePrompt(message);return message;}).finally(function(){FAS.chat.setTyping(false);});
+  }
+
   function requestConversationalReply(answer, nextQuestion) {
     var fallback = nextQuestion;
     FAS.chat.setTyping(true);
@@ -896,6 +913,8 @@
     input.value = '';
     input.focus();
     if(status)status.textContent='Checking answer…';
+    var typedQuestion=FAS.interviewQuestionIntent&&FAS.interviewQuestionIntent.classify({text:text,currentQuestion:interview.currentQuestion()});
+    if(typedQuestion)return answerInterviewSideQuestion(text,'type',createTurnId('type'));
     return answerSubmissionGate.route({text:text,source:'type',turnId:createTurnId('type'),agentKey:FAS.agent.current.key},submitTypedAnswer);
   }
 
