@@ -25,20 +25,13 @@ test('configured pages redirect unauthenticated visitors with a safe local retur
   assert.equal(result.mode,'redirect');assert.equal(assigned[0],'account.html?return=chat.html%3Fagent%3Danchor');
 });
 
-test('temporary launch gate redirects every authenticated non-owner to the propagation screen',async()=>{
+test('authenticated members reach their existing account context without an owner-only launch gate',async()=>{
   const guard=optionalRequire('../assets/js/auth-guard.js');assert.ok(guard,'auth guard exists');
   const assigned=[],events=[];
-  const result=await guard.protect({config:{configured:true},auth:{requireSession:async()=>({accessToken:'still-valid',user:{id:'user-2',email:'client@example.com'}}),getUser:async()=>({id:'user-2',email:'client@example.com'}),clearSession:()=>events.push('auth-clear')},context:{load(){throw new Error('non-owner context must not load');},clear:()=>events.push('context-clear')},location:{pathname:'/index.html',search:'',assign:value=>assigned.push(value)}});
-  assert.deepEqual(result,{mode:'redirect',destination:'account.html',reason:'launch-hold'});
-  assert.deepEqual(events,['auth-clear','context-clear']);
-  assert.deepEqual(assigned,['account.html']);
-});
-
-test('temporary launch gate rejects a tampered cached owner email using the server-verified identity',async()=>{
-  const guard=optionalRequire('../assets/js/auth-guard.js'),assigned=[],events=[];
-  const result=await guard.protect({config:{configured:true},auth:{requireSession:async()=>({accessToken:'valid-client-token',user:{id:'user-2',email:ownerEmail}}),getUser:async()=>({id:'user-2',email:'client@example.com'}),clearSession:()=>events.push('auth-clear')},context:{load(){throw new Error('tampered identity must not load context');},clear:()=>events.push('context-clear')},location:{assign:value=>assigned.push(value)}});
-  assert.deepEqual(result,{mode:'redirect',destination:'account.html',reason:'launch-hold'});
-  assert.deepEqual(events,['auth-clear','context-clear']);assert.deepEqual(assigned,['account.html']);
+  const stored={workspaceId:'workspace-2',projectId:'project-2',sessions};
+  const result=await guard.protect({config:{configured:true},auth:{requireSession:async()=>({accessToken:'still-valid',user:{id:'user-2',email:'client@example.com'}}),getUser:async()=>({id:'user-2',email:'client@example.com'}),clearSession:()=>events.push('auth-clear')},context:{load:()=>stored,clear:()=>events.push('context-clear')},location:{pathname:'/index.html',search:'',assign:value=>assigned.push(value)}});
+  assert.deepEqual(result,{mode:'supabase',session:{accessToken:'still-valid',user:{id:'user-2',email:'client@example.com'}},context:stored});
+  assert.deepEqual(events,[]);assert.deepEqual(assigned,[]);
 });
 
 test('configured pages reuse the refreshed session and valid account context',async()=>{
