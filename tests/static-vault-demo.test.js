@@ -16,8 +16,10 @@ assert.doesNotMatch(vault, /Download everything/i, 'vault has no generic portfol
 assert.doesNotMatch(vault, /assets\/pdfs\/fas-.*-demo\.pdf/, 'vault has no bundled demo PDF links');
 
 const libraryIndex = vault.indexOf('assets/js/vault-library.js');
+const pdfPreviewIndex = vault.indexOf('assets/js/pdf-preview.js');
 const uiIndex = vault.indexOf('assets/js/artifact-ui.js');
 assert.ok(libraryIndex >= 0, 'vault loads the library selector');
+assert.ok(pdfPreviewIndex >= 0 && pdfPreviewIndex < uiIndex, 'vault loads PDF preview support before its controller');
 assert.ok(uiIndex > libraryIndex, 'vault loads the library selector before the controller');
 
 assert.match(styles, /\.vault-library\s*\{/, 'vault has a dynamic library layout');
@@ -38,5 +40,9 @@ assert.match(styles, /@media[^\{]*\(max-width:\s*1100px\)[\s\S]*\.vault-library-
 assert.match(styles, /@media[^\{]*\(max-width:\s*820px\)[\s\S]*\.vault-library--cards[^}]*1fr/, 'card grid becomes one column at compact widths');
 assert.match(styles, /\.vault-preview-dialog__head\s*>\s*div:first-child\s*\{[^}]*min-width:\s*0/s, 'preview title flex child may shrink');
 assert.match(styles, /\.vault-preview-dialog__head h2\s*\{[^}]*overflow-wrap:\s*anywhere/s, 'long preview titles wrap without horizontal overflow');
+assert.match(styles, /\.vault-pdf-dialog\s*\{/, 'vault includes a dedicated PDF viewer dialog');
+assert.match(styles, /\.vault-pdf-dialog__head\s*\{[^}]*position:\s*sticky/s, 'PDF viewer controls remain visible');
+assert.match(styles, /\.vault-pdf-dialog__surface\s*\{[^}]*height:\s*min\(/s, 'PDF surface has a bounded responsive height');
+assert.match(styles, /\.vault-pdf-dialog__status\s*\{/, 'PDF preparation and errors remain visible');
 
 console.log('Dynamic Vault shell and styles checks passed.');
