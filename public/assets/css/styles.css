@@ -1964,7 +1964,8 @@ body[data-page="home"] .home-content { min-height: 0; padding-top: 54px; grid-te
 .chat-page .voice-console .voice-hud__grid--signal strong:nth-of-type(2) { color:var(--voice-live); }
 .chat-page .voice-console .voice-signal__spectrum span:nth-child(4n) { background:linear-gradient(180deg,#f7d879,var(--voice-live)); }
 .chat-page .voice-console .vorb { width:220px; height:220px; }
-.chat-page .voice-console .vorb__core { width:138px; height:138px; background:radial-gradient(circle at 37% 28%,#fff7d7 0 4%,#f7d47c 25%,#d59a20 56%,#5d3908 100%); box-shadow:inset 0 0 0 1px rgba(255,244,196,.55),0 0 45px rgba(228,174,43,.38); }
+.chat-page .voice-console .vorb__core { width:138px; height:138px; background:radial-gradient(circle at 37% 28%,#fff7d7 0 4%,#f7d47c 25%,#d59a20 56%,#5d3908 100%); box-shadow:inset 0 0 0 1px rgba(255,244,196,.55),0 0 45px rgba(228,174,43,.38); animation:none; }
+.chat-page .voice-console [data-orb-state="speaking"] .vorb__core { animation:orbTalk .5s ease-in-out infinite alternate; }
 .chat-page .voice-console .vorb::before { border-color:rgba(241,195,77,.66); box-shadow:0 0 22px rgba(224,166,30,.17); }
 .chat-page .voice-console .vorb::after { border-color:rgba(241,195,77,.12) rgba(241,195,77,.65); }
 .chat-page .voice-console .vorb__ripple { inset:39px; border-color:#e8b43c; }

@@ -222,6 +222,7 @@ assert.match(styles, /@media \(max-height:\s*760px\)[\s\S]*#panel-voice \.vorb/s
 assert.match(styles, /\.wave span\s*\{[^}]*background:\s*var\(--gold\)[^}]*animation:\s*none/s, 'voice ticker is still by default');
 assert.match(styles, /\[data-orb-state="hearing"\] \.wave span\s*\{[^}]*animation:\s*waveTicker/s, 'waveform animates only while the user is speaking');
 assert.match(styles, /\[data-orb-state="speaking"\] \.orb\s*\{[^}]*animation:\s*orbTalk/s, 'orb animates while ADAM is speaking');
+assert.match(styles, /\.chat-page \.voice-console \.vorb__core\s*\{[^}]*animation:\s*none/s, 'Talk orb overrides the global idle breathing animation');
 assert.doesNotMatch(styles, /\[data-orb-state="speaking"\] \.wave span\s*\{[^}]*animation:/s, 'ADAM speech does not animate the user waveform');
 assert.match(styles, /@keyframes waveTicker/, 'voice ticker has an organic bar animation');
 assert.match(styles, /\.chat-page #panel-voice \.voice__controls\s*\{[^}]*gap:\s*10px/s, 'voice controls stay in a compact centered group');
