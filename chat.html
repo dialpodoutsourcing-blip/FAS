@@ -354,9 +354,13 @@
       <span class="completion-panel__eyebrow" data-completion-eyebrow>ANCHOR COMPLETE</span>
       <span class="completion-panel__seal" aria-hidden="true">✓</span>
       <h2 id="completion-title" data-completion-title>You’ve completed ANCHOR</h2>
-      <p data-completion-copy>You’ve completed ANCHOR. Your answers are safely saved. Let’s turn them into your Trusted Expert Statement.</p>
+      <p data-completion-copy>Your ANCHOR answers are already finished and safely saved.</p>
       <p class="completion-panel__status" data-completion-status aria-live="polite"></p>
-      <button class="btn btn--gold completion-panel__generate" type="button" data-completion-generate>Generate Trusted Expert Statement</button>
+      <div class="completion-panel__actions">
+        <button class="btn btn--gold completion-panel__generate" type="button" data-completion-generate hidden>Generate Trusted Expert Statement</button>
+        <button class="btn btn--gold" type="button" data-completion-view-pdf>View PDF</button>
+        <button class="btn" type="button" data-completion-retry>Retry answering</button>
+      </div>
     </div>
   </dialog>
 
@@ -385,6 +389,7 @@
   <script src="assets/js/retry-intent.js"></script>
   <script src="assets/js/retry-confirmation-modal.js"></script>
   <script src="assets/js/completion-modal.js"></script>
+  <script src="assets/js/completed-work-actions.js"></script>
   <script src="assets/js/realtime-interviewer.js"></script>
   <script src="assets/js/artifacts.js"></script>
   <script src="assets/js/anchor-artifact-upgrade.js"></script>
