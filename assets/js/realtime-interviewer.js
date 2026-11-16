@@ -348,10 +348,10 @@
 
     function speakThenListen(text) {
       if (responseActive) cancelSpeech();
-      if (localStream && localStream.getAudioTracks) localStream.getAudioTracks().forEach(function (track) { track.enabled = false; });
-      notifyCapture();
       var spoken = speak(text);
       if (spoken === false) return Promise.resolve(false);
+      if (localStream && localStream.getAudioTracks) localStream.getAudioTracks().forEach(function (track) { track.enabled = false; });
+      notifyCapture();
       return Promise.resolve(spoken).then(function (finished) {
         if (!finished || stopped || stopRequested || cleaned) return false;
         return resume();

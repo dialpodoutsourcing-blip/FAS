@@ -254,6 +254,17 @@ test('speakThenListen keeps capture off until the exact prompt finishes', async 
   assert.equal(controller.captureActive(), true);
 });
 
+test('queued prompt before channel readiness never strands microphone capture off', async () => {
+  const { createRealtimeInterviewer } = load();
+  const h = harness();
+  const controller = createRealtimeInterviewer(h.options);
+  await controller.start();
+  assert.equal(await controller.speakThenListen('Welcome to the interview.'), false);
+  assert.equal(h.track.enabled, true);
+  assert.equal(controller.captureActive(), true);
+  assert.notEqual(controller.state(), 'paused');
+});
+
 test('speech playback failure is reported without disabling the Type fallback', async () => {
   const { createRealtimeInterviewer } = load();
   const h = harness();
