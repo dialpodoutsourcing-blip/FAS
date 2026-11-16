@@ -169,6 +169,30 @@ browserTest('anchor completion modal is centered, contained, and exposes one foc
   });
 });
 
+browserTest('restored completion actions are equal, centered, and visually separated',async()=>{
+  await withPage({width:1680,height:945},async page=>{
+    await page.evaluate(()=>{
+      const modal=document.querySelector('[data-completion-panel]');
+      document.querySelector('[data-completion-generate]').hidden=true;
+      document.querySelector('[data-completion-view-pdf]').hidden=false;
+      document.querySelector('[data-completion-retry]').hidden=false;
+      modal.showModal();
+      document.querySelector('[data-completion-view-pdf]').focus();
+    });
+    const result=await page.evaluate(()=>{
+      const row=document.querySelector('.completion-panel__actions'),buttons=[...row.querySelectorAll('button:not([hidden])')],rowRect=row.getBoundingClientRect(),rects=buttons.map(button=>button.getBoundingClientRect()),styles=buttons.map(button=>getComputedStyle(button));
+      return{count:buttons.length,rowWidth:rowRect.width,widths:rects.map(rect=>rect.width),gap:rects[1].left-rects[0].right,centers:rects.map(rect=>rect.left+rect.width/2),rowCenter:rowRect.left+rowRect.width/2,heights:rects.map(rect=>rect.height),outlines:styles.map(style=>style.outlineOffset)};
+    });
+    assert.equal(result.count,2);
+    assert.ok(Math.abs(result.widths[0]-result.widths[1])<=1,`button widths differ: ${result.widths.join(', ')}`);
+    assert.ok(result.widths[0]>=180,`buttons are too narrow at ${result.widths[0]}px`);
+    assert.ok(result.gap>=12,`button gap is only ${result.gap}px`);
+    assert.ok(result.heights.every(height=>height>=56),`button heights are ${result.heights.join(', ')}`);
+    assert.ok(Math.abs((result.centers[0]+result.centers[1])/2-result.rowCenter)<=1,'actions are not centered as one group');
+    assert.ok(Number.parseFloat(result.outlines[0])<=2,`focus outline is detached by ${result.outlines[0]}`);
+  });
+});
+
 browserTest('completion modal stays visible in Talk and native modality keeps focus out of the background',async()=>{
   await withPage({width:1280,height:800},async page=>{
     await page.evaluate(()=>{document.querySelector('#panel-text').hidden=true;document.querySelector('#panel-voice').hidden=false;document.querySelector('[data-completion-panel]').showModal();});
