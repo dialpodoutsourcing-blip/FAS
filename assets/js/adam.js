@@ -306,6 +306,40 @@
     getMode:function(){return retryConfirmationSource;},
     onDecision:function(decision){handleRetryDecision(decision,retryConfirmationSource);}
   });
+  var answerConfirmationSource = 'type';
+  var answerSubmissionGate = null;
+  var answerConfirmationModal = FAS.createAnswerConfirmationModal({
+    dialog:$('[data-answer-confirmation]'),
+    title:$('[data-answer-confirmation-title]'),
+    description:$('[data-answer-confirmation-description]'),
+    question:$('[data-answer-confirmation-question]'),
+    answer:$('[data-answer-confirmation-answer]'),
+    confirmButton:$('[data-answer-confirm]'),
+    cancelButton:$('[data-answer-cancel]'),
+    getMode:function(){return answerConfirmationSource;},
+    onDecision:function(decision){if(answerSubmissionGate)answerSubmissionGate.resolve(decision);}
+  });
+  function repeatHeldQuestion(input,assessment,question){
+    var copy=assessment&&assessment.reason==='declined_confirmation'?'Okay, I did not save that. ':'';
+    copy+=(question&&question.question)||'Please answer the current question.';
+    FAS.chat.addMessage({role:'agent',tag:'ADAM',text:copy});
+    setVoiceStatus('The answer was not saved. Repeating the current question.',false);
+    if(input&&input.source==='talk'&&voiceInterviewer&&voiceIntent==='talk')return speakVoicePrompt(copy);
+    return Promise.resolve(copy);
+  }
+  function clarifyHeldAnswer(input,assessment,question){
+    var copy='I did not understand that as an answer. '+((question&&question.question)||'Please answer the current question.');
+    FAS.chat.addMessage({role:'agent',tag:'ADAM',text:copy});setVoiceStatus('That response was not saved. ADAM is repeating the question.',false);
+    if(input&&input.source==='talk'&&voiceInterviewer&&voiceIntent==='talk')return speakVoicePrompt(copy);
+    return Promise.resolve(copy);
+  }
+  answerSubmissionGate=FAS.createAnswerSubmissionGate({
+    assess:FAS.answerRelevance.assess,
+    getQuestion:function(){return interview&&interview.currentQuestion();},
+    onRepeat:repeatHeldQuestion,
+    onClarify:clarifyHeldAnswer,
+    onConfirm:function(pending){answerConfirmationSource=pending.input.source==='talk'?'talk':'type';if(answerConfirmationSource==='talk'&&voiceInterviewer)voiceInterviewer.pause();answerConfirmationModal.open({question:pending.question.question,answer:pending.input.text});setVoiceStatus('This answer may not match the question. Confirm whether to save it.',false);}
+  });
   var lastCaptureActive = false;
   var turnSequence = 0;
   function setChatLoading(active){var loading=$('[data-chat-loading]'),workspace=$('.chat-shell__workspace');if(loading)loading.hidden=!active;if(workspace)workspace.setAttribute('aria-busy',String(Boolean(active)));}
@@ -449,6 +483,7 @@
       onCaptureChange:syncVoiceCaptureControl,
       onPartialTranscript:function(partial){FAS.voice.setTranscript(partial.text);},
       onPartialControl:function(partial){
+        if(answerSubmissionGate.hasPending()){var answerDecision=FAS.retry&&FAS.retry.classifyConfirmation(partial.text);if(answerDecision===null)return false;answerConfirmationModal.resolve(answerDecision,'voice');return true;}
         if(retryConfirmationPending){var decision=FAS.retry&&FAS.retry.classifyConfirmation(partial.text);if(decision===null)return false;handleRetryConfirmation(partial.text,'talk');return true;}
         if(FAS.retry&&FAS.retry.classify(partial.text)==='request'){requestRetryConfirmation(partial.text,'talk');return true;}
         var command=classifyVoiceCommand(partial.text);if(!command)return false;handleVoiceCommand(command);return true;
@@ -558,6 +593,7 @@
   }
 
   function handleVoiceTurn(turn){
+    if(answerSubmissionGate.hasPending()){var answerDecision=FAS.retry&&FAS.retry.classifyConfirmation(turn.text);if(answerDecision!==null)answerConfirmationModal.resolve(answerDecision,'voice');else retryReply('Please say yes to save that answer or no to repeat the question.','talk');return Promise.resolve();}
     if(retryConfirmationPending)return handleRetryConfirmation(turn.text,'talk');
     if(FAS.retry&&FAS.retry.classify(turn.text)==='request')return requestRetryConfirmation(turn.text,'talk');
     var command=classifyVoiceCommand(turn.text);
@@ -572,6 +608,10 @@
       setVoiceStatus('I need more useful information before saving this answer.',false);
       return speakVoicePrompt(clarification);
     }
+    return answerSubmissionGate.route({text:turn.text,source:'talk',turnId:turn.turnId,agentKey:FAS.agent.current.key},submitVoiceAnswer);
+  }
+
+  function submitVoiceAnswer(turn){
     if(voiceTurnPromise){
       if(voiceInterviewer)voiceInterviewer.pause();
       preserveVoiceDraft(turn.text);
@@ -793,10 +833,25 @@
     return work.catch(function(error){artifactRetryPending=true;presentCompletionChoice('Your answers are safe. Generation needs another try.',true);throw error;});
   }
 
+  function submitTypedAnswer(record){
+    var text=record.text,status=$('[data-answer-status]'),submitButton=form&&form.querySelector('[type="submit"]');
+    FAS.chat.addMessage({role:'user',text:text,tag:'YOU'});conversationHistory.push({role:'user',content:text});
+    if(status)status.textContent='Saving answerâ€¦';emit('fas:send',{text:text});
+    if(form)form.setAttribute('aria-busy','true');if(submitButton)submitButton.disabled=true;
+    var durableSaved=false;
+    return interviewCoordinator.submit({text:record.text,source:'type',turnId:record.turnId}).then(function(result){
+      durableSaved=true;if(status)status.textContent='Answer saved.';emit('fas:answer-saved',{answer:result.saved});emit('fas:checkpoint',{checkpoint:result.checkpoint});
+      if(result.nextQuestion){FAS.chat.addMessage({role:'agent',text:result.message});renderCurrentQuestion({question:result.nextQuestion},true);}
+      if(result.summary)FAS.chat.addMessage({role:'note',text:'Checkpoint saved Â· Review recent answers anytime in History.',tag:'CHECKPOINT',variant:'checkpoint'});
+      if(result.completion.gaps.length)emit('fas:interview-gap',{gaps:result.completion.gaps});if(!interview.currentQuestion())presentCompletionChoice('',false);return result;
+    }).catch(function(){if(!durableSaved){if(status)status.textContent='Save failed. Your answer is ready to retry and has not been stored.';if(input&&!input.value)input.value=text;}else{artifactRetryPending=true;if(status)status.textContent='Your answers are saved, but the blueprint could not be prepared. Retry blueprint.';if(submitButton)submitButton.textContent='Retry blueprint';}}).finally(function(){if(!blueprintPromise&&!completionModalOpen()){if(form)form.removeAttribute('aria-busy');if(submitButton)submitButton.disabled=false;}});
+  }
+
   function send() {
     if (!input) return;
     if(form&&form.getAttribute('aria-busy')==='true')return;
     var retryText=input.value.trim();
+    if(answerSubmissionGate.hasPending()){if(!retryText){input.focus();return;}var answerDecision=FAS.retry&&FAS.retry.classifyConfirmation(retryText);input.value='';input.focus();if(answerDecision===null){var relevanceStatus=$('[data-answer-status]');if(relevanceStatus)relevanceStatus.textContent='Choose yes to save that answer or no to repeat the question.';return;}answerConfirmationModal.resolve(answerDecision,'type');return;}
     if(retryConfirmationPending){if(!retryText){input.focus();return;}input.value='';input.focus();handleRetryConfirmation(retryText,'type');return;}
     if(FAS.retry&&FAS.retry.classify(retryText)==='request'){input.value='';input.focus();requestRetryConfirmation(retryText,'type');return;}
     if(completedConversation){var postText=retryText;if(!postText){input.focus();return;}input.value='';input.focus();submitPostCompletionMessage(postText,'type',createTurnId('type'));return;}
@@ -804,28 +859,12 @@
     if (interview && !interview.currentQuestion()) {if(artifactRetryPending){var retryStatus=$('[data-answer-status]'),retryButton=form&&form.querySelector('[type="submit"]');announceCompletion();if(retryStatus)retryStatus.textContent='Generating your blueprint…';if(retryButton)retryButton.textContent='Building…';generateBlueprint(completionUrl,retryStatus).catch(function(){if(form)form.removeAttribute('aria-busy');if(retryStatus)retryStatus.textContent='Blueprint generation failed. Your answers are saved; try again.';if(retryButton){retryButton.disabled=false;retryButton.textContent='Retry blueprint';}});}else window.location.assign(completionUrl);return; }
     var text = input.value.trim();
     if (!text) { input.focus(); return; }
-    FAS.chat.addMessage({ role: 'user', text: text, tag: 'YOU' });
-    conversationHistory.push({role:'user',content:text});
+    var status = $('[data-answer-status]');
+    if (!interview || !projectStore || !interviewCoordinator) { if(status)status.textContent='Interview is still loading. Your answer has not been submitted.'; return; }
     input.value = '';
     input.focus();
-    var status = $('[data-answer-status]');
-    if (status) status.textContent = 'Saving answer…';
-    emit('fas:send', { text: text });
-    if (!interview || !projectStore || !interviewCoordinator) { if(status)status.textContent='Interview is still loading. Your answer is still in this page history.'; return; }
-    var submitButton=form&&form.querySelector('[type="submit"]');
-    if(form)form.setAttribute('aria-busy','true');if(submitButton)submitButton.disabled=true;
-    var durableSaved=false;
-    interviewCoordinator.submit({text:text,source:'type',turnId:createTurnId('type')}).then(function (result) {
-      durableSaved=true;
-      if(status)status.textContent='Answer saved.';
-      emit('fas:answer-saved', { answer: result.saved });
-      emit('fas:checkpoint', { checkpoint: result.checkpoint });
-      if(result.nextQuestion){FAS.chat.addMessage({role:'agent',text:result.message});renderCurrentQuestion({question:result.nextQuestion},true);}
-      if (result.summary) FAS.chat.addMessage({ role: 'note', text: 'Checkpoint saved · Review recent answers anytime in History.', tag: 'CHECKPOINT', variant: 'checkpoint' });
-      var completion = result.completion;
-      if (completion.gaps.length) emit('fas:interview-gap', { gaps: completion.gaps });
-      if(!interview.currentQuestion()){presentCompletionChoice('',false);return;}
-    }).catch(function () {if(!durableSaved){if (status) status.textContent = 'Save failed. Your answer is ready to retry and has not been stored.';if(input&&!input.value)input.value=text;}else{artifactRetryPending=true;if(status)status.textContent='Your answers are saved, but the blueprint could not be prepared. Retry blueprint.';if(submitButton)submitButton.textContent='Retry blueprint';}}).finally(function(){if(!blueprintPromise&&!completionModalOpen()){if(form)form.removeAttribute('aria-busy');if(submitButton)submitButton.disabled=false;}});
+    if(status)status.textContent='Checking answer…';
+    return answerSubmissionGate.route({text:text,source:'type',turnId:createTurnId('type'),agentKey:FAS.agent.current.key},submitTypedAnswer);
   }
 
   if (form) form.addEventListener('submit', function (e) { e.preventDefault(); send(); });

@@ -32,9 +32,8 @@ test('completion generation permits saved pending and incomplete answers only fo
  assert.match(adam,/privateDraft:true/);
 });
 test('completed interviews open the saved blueprint and reject extra chat answers',()=>{
- const completionGuard=adam.indexOf('if (interview && !interview.currentQuestion())');
- const addUserMessage=adam.indexOf("FAS.chat.addMessage({ role: 'user'",adam.indexOf('function send()'));
- assert.ok(completionGuard>=0&&completionGuard<addUserMessage,'completion is checked before another user message is saved');
+ const send=adam.slice(adam.indexOf('function send()'),adam.indexOf('if (form) form.addEventListener'));
+ assert.ok(send.indexOf('if (interview && !interview.currentQuestion())')<send.indexOf('answerSubmissionGate.route'),'completion is checked before another answer is routed for saving');
  assert.match(adam,/projectStore\.saveArtifact[\s\S]*window\.location\.assign\(completionUrl/);
 });
 test('completion is clearly announced before user-confirmed blueprint generation',()=>{
@@ -85,7 +84,7 @@ test('blueprint generation is single-flight and reopens the completed composer f
  assert.match(adam,/finally\(function\(\)\{if\(!blueprintPromise&&!completionModalOpen\(\)\)/);
 });
 test('final saved answer opens the completion modal without generating automatically',()=>{
- const submit=adam.slice(adam.indexOf("interviewCoordinator.submit({text:text,source:'type'"),adam.indexOf("if (form) form.addEventListener"));
+ const submit=adam.slice(adam.indexOf('function submitTypedAnswer'),adam.indexOf('function send()'));
  const complete=submit.slice(submit.indexOf('if(!interview.currentQuestion())'),submit.indexOf('}).catch'));
  assert.match(complete,/presentCompletionChoice\(/);
  assert.doesNotMatch(complete,/generateBlueprint\(/);
@@ -146,7 +145,7 @@ test('AI acknowledgement has a bounded deadline and preserves the exact next-que
 test('AI acknowledgements render in the visible thread before advancing the question display',()=>{
  assert.match(adam,/var target = thread;/, 'new messages target the visible conversation');
  assert.match(adam,/history\.appendChild\(node\.cloneNode\(true\)\)/, 'visible messages are also copied to History');
- const requestIndex=adam.indexOf("interviewCoordinator.submit({text:text,source:'type'");
+ const requestIndex=adam.indexOf("interviewCoordinator.submit({text:record.text,source:'type'");
  const visibleReplyIndex=adam.indexOf("FAS.chat.addMessage({role:'agent',text:result.message}",requestIndex);
  const advanceIndex=adam.indexOf('renderCurrentQuestion({question:result.nextQuestion}',requestIndex);
  assert.ok(requestIndex>=0&&visibleReplyIndex>requestIndex&&advanceIndex>visibleReplyIndex, 'acknowledgement appears before the question display advances');
@@ -220,6 +219,17 @@ test('standalone Talk commands are handled without saving answers',()=>{
 test('partial Talk commands are intercepted before completed transcripts can be saved',()=>{
  assert.match(adam,/onPartialControl:function\(partial\)/);
  assert.match(adam,/classifyVoiceCommand\(partial\.text\)/);
+});
+
+test('Type and Talk route answer relevance before durable submission',()=>{
+ const typeRoute=adam.indexOf("answerSubmissionGate.route({text:text,source:'type'");
+ const typeSubmit=adam.indexOf("interviewCoordinator.submit({text:record.text,source:'type'");
+ const talkRoute=adam.indexOf("answerSubmissionGate.route({text:turn.text,source:'talk'");
+ const talkSubmit=adam.indexOf("interviewCoordinator.submit({text:turn.text,source:'talk'",talkRoute);
+ assert.ok(typeRoute>=0&&typeSubmit>=0,'Type has separate relevance routing and confirmed durable submission paths');
+ assert.ok(talkRoute>=0&&talkSubmit>talkRoute,'Talk relevance gate precedes durable submission');
+ assert.match(adam,/answerSubmissionGate\.hasPending\(\)/,'pending relevance confirmation intercepts yes or no');
+ assert.match(adam,/answerConfirmationModal\.resolve\([^,]+,(?:'type'|'voice')\)/,'typed and spoken decisions use the one-shot modal path');
 });
 
 test('Talk can navigate directly to EXTRACT after completion',()=>{

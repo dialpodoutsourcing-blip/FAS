@@ -82,6 +82,7 @@ const adamScript = chat.indexOf('<script src="assets/js/adam.js"></script>');
 const retryModalScript = chat.indexOf('<script src="assets/js/retry-confirmation-modal.js"></script>');
 const answerRelevanceScript = chat.indexOf('<script src="assets/js/answer-relevance.js"></script>');
 const answerModalScript = chat.indexOf('<script src="assets/js/answer-confirmation-modal.js"></script>');
+const answerGateScript = chat.indexOf('<script src="assets/js/answer-submission-gate.js"></script>');
 const coordinatorScript = chat.indexOf('<script src="assets/js/interview-coordinator.js"></script>');
 const interviewerScript = chat.indexOf('<script src="assets/js/realtime-interviewer.js"></script>');
 assert.ok(agentsScript >= 0, 'chat loads the specialist registry');
@@ -92,6 +93,7 @@ assert.ok(interviewerScript > coordinatorScript && interviewerScript < adamScrip
 assert.ok(retryModalScript > coordinatorScript && retryModalScript < adamScript, 'retry modal controller loads before the chat controller');
 assert.ok(answerRelevanceScript > coordinatorScript && answerRelevanceScript < adamScript, 'answer relevance classifier loads before the chat controller');
 assert.ok(answerModalScript > coordinatorScript && answerModalScript < adamScript, 'answer confirmation controller loads before the chat controller');
+assert.ok(answerGateScript > coordinatorScript && answerGateScript < adamScript, 'answer submission gate loads before the chat controller');
 
 [
   'data-agent-name', 'data-agent-title', 'data-agent-step', 'data-agent-chip',
