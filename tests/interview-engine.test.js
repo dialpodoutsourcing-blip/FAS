@@ -188,6 +188,12 @@ test('polite repeat requests are controls without matching answers that mention 
   assert.equal(classify('I repeat this process for every client.', 'anchor'), null);
 });
 
+test('natural requests to hear the question again are repeat controls', () => {
+  const classify = interviews.classifyCommand;
+  assert.deepEqual(classify('What was that again?', 'anchor'), { type:'repeat' });
+  assert.deepEqual(classify('What did you ask me?', 'anchor'), { type:'repeat' });
+});
+
 test('polite mode and ending requests are voice controls', () => {
   const classify = interviews.classifyCommand;
   assert.deepEqual(classify('Can you switch to typing please?', 'anchor'), { type:'switch_to_type' });
@@ -202,6 +208,17 @@ test('spoken-answer validation rejects filler, greetings, unknowns, and cut frag
     assert.equal(result.valid,false,text);
     assert.match(result.message,/clarify|useful information|caught/i,text);
   }
+});
+
+test('spoken-answer validation rejects confusion without rejecting real answers about understanding',()=>{
+  const validate=interviews.validateSpokenAnswer;
+  for(const text of ['I cannot understand', "I'm trying to understand you"]){
+    const result=validate(text,{question:'Who do you help?'});
+    assert.equal(result.valid,false,text);
+    assert.equal(result.reason,'confusion',text);
+    assert.match(result.message,/repeat|question/i,text);
+  }
+  assert.deepEqual(validate('I help clients understand their finances',{question:'Who do you help?'}),{valid:true,message:'',reason:null});
 });
 
 test('spoken-answer validation accepts substantive answers including concise evidence',()=>{
