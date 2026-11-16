@@ -223,6 +223,11 @@ assert.match(styles, /@media \(max-height:\s*760px\)[\s\S]*#panel-voice \.vorb/s
 assert.match(styles, /\.wave span\s*\{[^}]*background:\s*var\(--gold\)[^}]*animation:\s*none/s, 'voice ticker is still by default');
 assert.match(styles, /\[data-orb-state="hearing"\] \.wave span\s*\{[^}]*animation:\s*waveTicker/s, 'waveform animates only while the user is speaking');
 assert.match(styles, /\[data-orb-state="speaking"\] \.orb\s*\{[^}]*animation:\s*orbTalk/s, 'orb animates while ADAM is speaking');
+assert.match(styles, /\[data-orb-state="listening"\] \.vorb__core\s*\{[^}]*animation:\s*orbListen/s, 'listening has a smooth continuous core motion');
+assert.match(styles, /\[data-orb-state="listening"\] \.vorb__ripple[^}]*animation:\s*listenRipple/s, 'listening has a calm outward signal');
+assert.match(styles, /\[data-orb-state="hearing"\] \.vorb__ripple[^}]*animation:\s*hearingRipple/s, 'hearing becomes more responsive than passive listening');
+assert.match(styles, /\[data-orb-state="speaking"\] \.vorb::after[^}]*animation:\s*speakerOrbit/s, 'ADAM speech has a distinct rotating ring');
+assert.match(styles, /\.chat-page #panel-voice \.voice-console \.voice__state\s*\{[^}]*font:[^;}]*14px/s, 'the central voice label stays compact');
 assert.match(styles, /\.chat-page \.voice-console \.vorb__core\s*\{[^}]*animation:\s*none/s, 'Talk orb overrides the global idle breathing animation');
 assert.doesNotMatch(styles, /\[data-orb-state="speaking"\] \.wave span\s*\{[^}]*animation:/s, 'ADAM speech does not animate the user waveform');
 assert.match(styles, /@keyframes waveTicker/, 'voice ticker has an organic bar animation');

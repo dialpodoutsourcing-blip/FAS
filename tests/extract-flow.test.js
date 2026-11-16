@@ -227,6 +227,13 @@ test('Talk stays continuously active until an explicit exit',()=>{
  assert.match(adam,/aria-label/,'the continuous mic retains an accessible live-state label');
 });
 
+test('Talk exposes compact state copy instead of oversized pause language',()=>{
+ assert.match(adam,/listening:\s*'Listening'/);
+ assert.match(adam,/hearing:\s*'Hearing you'/);
+ assert.match(adam,/speaking:\s*'ADAM speaking'/);
+ assert.doesNotMatch(adam,/paused:\s*'Voice paused'/);
+});
+
 test('partial Talk commands are intercepted before completed transcripts can be saved',()=>{
  assert.match(adam,/onPartialControl:function\(partial\)/);
  assert.match(adam,/classifyVoiceCommand\(partial\.text\)/);

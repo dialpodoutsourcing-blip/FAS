@@ -565,8 +565,20 @@ body.tour-frame [data-tutorial-trigger] { display: none !important; }
 .wave { display: flex; align-items: center; justify-content: center; gap: 3px; width: 100%; max-width: 310px; height: 48px; }
 .wave span { width: 6px; height: var(--wave-height, 10px); border-radius: 999px; background: var(--gold); box-shadow: 0 0 10px rgba(211,181,124,.34); opacity: .55; transform-origin: center; animation: none; }
 [data-orb-state="thinking"] .vorb__spinner { opacity: 1; animation: none; }
+[data-orb-state="listening"] .vorb__core { animation: orbListen 3.6s cubic-bezier(.4,0,.2,1) infinite; }
+[data-orb-state="listening"] .vorb__ripple { animation: listenRipple 3.6s cubic-bezier(.22,.61,.36,1) infinite; }
+[data-orb-state="listening"] .vorb__ripple:nth-child(2) { animation-delay: 1.2s; }
+[data-orb-state="listening"] .vorb__ripple:nth-child(3) { animation-delay: 2.4s; }
+[data-orb-state="hearing"] .vorb__core { animation: orbHear .9s ease-in-out infinite alternate; }
+[data-orb-state="hearing"] .vorb__ripple { animation: hearingRipple 1.25s cubic-bezier(.2,.65,.3,1) infinite; }
 [data-orb-state="speaking"] .orb { animation: orbTalk .5s ease-in-out infinite alternate; }
+[data-orb-state="speaking"] .vorb::after { animation: speakerOrbit 2.8s linear infinite; }
 [data-orb-state="hearing"] .wave span { opacity: 1; filter: brightness(1.2); background: var(--crispy-ivory); animation: waveTicker var(--wave-speed, 1s) ease-in-out var(--wave-delay, 0ms) infinite alternate; }
+@keyframes orbListen { 0%,100% { transform:scale(.985); filter:brightness(.96); box-shadow:0 0 42px rgba(53,214,168,.12),0 0 62px rgba(211,181,124,.2); } 50% { transform:scale(1.025); filter:brightness(1.05); box-shadow:0 0 54px rgba(53,214,168,.2),0 0 78px rgba(211,181,124,.3); } }
+@keyframes listenRipple { 0% { transform:scale(.82); opacity:0; } 18% { opacity:.42; } 75%,100% { transform:scale(1.62); opacity:0; } }
+@keyframes orbHear { from { transform:scale(1.015); filter:brightness(1.02); } to { transform:scale(1.055); filter:brightness(1.14); box-shadow:0 0 72px 12px rgba(53,214,168,.22); } }
+@keyframes hearingRipple { 0% { transform:scale(.9); opacity:.6; } 100% { transform:scale(1.48); opacity:0; } }
+@keyframes speakerOrbit { to { transform:rotate(360deg); } }
 @keyframes ripple { 0% { transform: scale(.9); opacity: .7; } 100% { transform: scale(1.75); opacity: 0; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes orbThink { 0%, 100% { filter: brightness(.78); } 50% { filter: brightness(1.08); } }
@@ -1965,12 +1977,14 @@ body[data-page="home"] .home-content { min-height: 0; padding-top: 54px; grid-te
 .chat-page .voice-console .voice-signal__spectrum span:nth-child(4n) { background:linear-gradient(180deg,#f7d879,var(--voice-live)); }
 .chat-page .voice-console .vorb { width:220px; height:220px; }
 .chat-page .voice-console .vorb__core { width:138px; height:138px; background:radial-gradient(circle at 37% 28%,#fff7d7 0 4%,#f7d47c 25%,#d59a20 56%,#5d3908 100%); box-shadow:inset 0 0 0 1px rgba(255,244,196,.55),0 0 45px rgba(228,174,43,.38); animation:none; }
+.chat-page .voice-console [data-orb-state="listening"] .vorb__core { animation:orbListen 3.6s cubic-bezier(.4,0,.2,1) infinite; }
+.chat-page .voice-console [data-orb-state="hearing"] .vorb__core { animation:orbHear .9s ease-in-out infinite alternate; }
 .chat-page .voice-console [data-orb-state="speaking"] .vorb__core { animation:orbTalk .5s ease-in-out infinite alternate; }
 .chat-page .voice-console .vorb::before { border-color:rgba(241,195,77,.66); box-shadow:0 0 22px rgba(224,166,30,.17); }
 .chat-page .voice-console .vorb::after { border-color:rgba(241,195,77,.12) rgba(241,195,77,.65); }
 .chat-page .voice-console .vorb__ripple { inset:39px; border-color:#e8b43c; }
 .chat-page .voice-console .vorb__agent .em svg,.chat-page .voice-console .vorb__agent .em::after { animation:none; }
-.chat-page .voice-console .voice__state { font:700 20px/1.1 var(--font-sub); letter-spacing:-.2px; text-transform:none; }
+.chat-page #panel-voice .voice-console .voice__state { font:700 14px/1.15 var(--font-sub); letter-spacing:.15px; text-transform:none; }
 .chat-page .voice-console .wave { max-width:420px; height:34px; }
 .chat-page .voice-console .wave span { width:4px; background:#e8b43c; box-shadow:0 0 8px rgba(232,180,60,.44); }
 .chat-page .voice-console .wave span:nth-child(9n) { background:var(--voice-live); box-shadow:0 0 8px rgba(53,214,168,.34); }

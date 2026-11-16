@@ -228,11 +228,13 @@ for(const viewport of [{width:1680,height:945},{width:390,height:844}]){
       const result=await page.evaluate(()=>{
         const box=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
         const consoleStyle=getComputedStyle(document.querySelector('.voice-console'));
-        return{pageWidth:document.documentElement.scrollWidth,workspace:box('.chat-shell__workspace'),panel:box('#panel-voice'),panelDisplay:getComputedStyle(document.getElementById('panel-voice')).display,console:box('.voice-console'),consoleDisplay:consoleStyle.display,stage:box('.voice__stage'),leftHud:box('[data-voice-hud]'),rightHud:box('[data-voice-hud-secondary]'),dock:box('.voice-bottom-dock'),columns:consoleStyle.gridTemplateColumns};
+        const label=document.querySelector('[data-orb-label]'),labelStyle=getComputedStyle(label);
+        return{pageWidth:document.documentElement.scrollWidth,workspace:box('.chat-shell__workspace'),panel:box('#panel-voice'),panelDisplay:getComputedStyle(document.getElementById('panel-voice')).display,console:box('.voice-console'),consoleDisplay:consoleStyle.display,stage:box('.voice__stage'),leftHud:box('[data-voice-hud]'),rightHud:box('[data-voice-hud-secondary]'),dock:box('.voice-bottom-dock'),columns:consoleStyle.gridTemplateColumns,label:{fontSize:parseFloat(labelStyle.fontSize),height:label.getBoundingClientRect().height}};
       });
       assert.ok(result.pageWidth<=viewport.width,`Talk causes horizontal overflow ${result.pageWidth}`);
       assert.ok(result.console.left>=result.workspace.left&&result.console.right<=result.workspace.right+1,`voice console ${result.console.left}..${result.console.right} (${result.consoleDisplay}) exceeds workspace ${result.workspace.left}..${result.workspace.right}; panel ${result.panel.left}..${result.panel.right} (${result.panelDisplay})`);
       assert.ok(result.dock.bottom<=result.workspace.bottom+1,'voice dock remains inside workspace');
+      assert.ok(result.label.fontSize<=14&&result.label.height<=18,`voice state label is too large at ${result.label.fontSize}px / ${result.label.height}px`);
       if(viewport.width>900){assert.ok(result.leftHud.right<result.stage.left,'live-process HUD stays left of the orb');assert.ok(result.stage.right<result.rightHud.left,'analysis HUD stays right of the orb');assert.notEqual(result.columns,'none');}
     });
   });

@@ -50,11 +50,11 @@
   var LABELS = {
     idle: 'Tap the mic and start talking',
     connecting: 'Connecting securely…',
-    listening: 'Listening...',
-    hearing: 'Hearing you...',
-    thinking: 'Thinking...',
-    speaking: 'ADAM is talking',
-    paused: 'Voice paused',
+    listening: 'Listening',
+    hearing: 'Hearing you',
+    thinking: 'Thinking',
+    speaking: 'ADAM speaking',
+    paused: 'Talk inactive',
     stopped: 'Voice session ended',
     error: 'Voice needs attention',
     unsupported: 'Use Type on this browser'
