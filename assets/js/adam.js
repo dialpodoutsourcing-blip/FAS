@@ -333,12 +333,23 @@
     if(input&&input.source==='talk'&&voiceInterviewer&&voiceIntent==='talk')return speakVoicePrompt(copy);
     return Promise.resolve(copy);
   }
+  function requestSpokenAnswerDecision(){
+    var copy='That may not answer the current question. Should I save it anyway? Say yes to save it, or no to hear the question again.';
+    setVoiceStatus('Waiting for your spoken yes or no. The answer is not saved yet.',false);
+    return speakVoicePrompt(copy);
+  }
+  function presentAnswerConfirmation(pending){
+    answerConfirmationSource=pending.input.source==='talk'?'talk':'type';
+    if(pending.input.source==='talk')return requestSpokenAnswerDecision();
+    answerConfirmationModal.open({question:pending.question.question,answer:pending.input.text});
+    setVoiceStatus('This answer may not match the question. Confirm whether to save it.',false);
+  }
   answerSubmissionGate=FAS.createAnswerSubmissionGate({
     assess:FAS.answerRelevance.assess,
     getQuestion:function(){return interview&&interview.currentQuestion();},
     onRepeat:repeatHeldQuestion,
     onClarify:clarifyHeldAnswer,
-    onConfirm:function(pending){answerConfirmationSource=pending.input.source==='talk'?'talk':'type';if(answerConfirmationSource==='talk'&&voiceInterviewer)voiceInterviewer.pause();answerConfirmationModal.open({question:pending.question.question,answer:pending.input.text});setVoiceStatus('This answer may not match the question. Confirm whether to save it.',false);}
+    onConfirm:presentAnswerConfirmation
   });
   var lastCaptureActive = false;
   var turnSequence = 0;
@@ -483,7 +494,7 @@
       onCaptureChange:syncVoiceCaptureControl,
       onPartialTranscript:function(partial){FAS.voice.setTranscript(partial.text);},
       onPartialControl:function(partial){
-        if(answerSubmissionGate.hasPending()){var answerDecision=FAS.retry&&FAS.retry.classifyConfirmation(partial.text);if(answerDecision===null)return false;answerConfirmationModal.resolve(answerDecision,'voice');return true;}
+        if(answerSubmissionGate.hasPending()){var answerDecision=FAS.retry&&FAS.retry.classifyConfirmation(partial.text);if(answerDecision===null)return false;answerSubmissionGate.resolve(answerDecision);return true;}
         if(retryConfirmationPending){var decision=FAS.retry&&FAS.retry.classifyConfirmation(partial.text);if(decision===null)return false;handleRetryConfirmation(partial.text,'talk');return true;}
         if(FAS.retry&&FAS.retry.classify(partial.text)==='request'){requestRetryConfirmation(partial.text,'talk');return true;}
         var command=classifyVoiceCommand(partial.text);if(!command)return false;handleVoiceCommand(command);return true;
@@ -593,7 +604,7 @@
   }
 
   function handleVoiceTurn(turn){
-    if(answerSubmissionGate.hasPending()){var answerDecision=FAS.retry&&FAS.retry.classifyConfirmation(turn.text);if(answerDecision!==null)answerConfirmationModal.resolve(answerDecision,'voice');else retryReply('Please say yes to save that answer or no to repeat the question.','talk');return Promise.resolve();}
+    if(answerSubmissionGate.hasPending()){var answerDecision=FAS.retry&&FAS.retry.classifyConfirmation(turn.text);if(answerDecision!==null)answerSubmissionGate.resolve(answerDecision);else requestSpokenAnswerDecision();return Promise.resolve();}
     if(retryConfirmationPending)return handleRetryConfirmation(turn.text,'talk');
     if(FAS.retry&&FAS.retry.classify(turn.text)==='request')return requestRetryConfirmation(turn.text,'talk');
     var command=classifyVoiceCommand(turn.text);

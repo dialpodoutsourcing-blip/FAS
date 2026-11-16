@@ -232,6 +232,22 @@ test('Type and Talk route answer relevance before durable submission',()=>{
  assert.match(adam,/answerConfirmationModal\.resolve\([^,]+,(?:'type'|'voice')\)/,'typed and spoken decisions use the one-shot modal path');
 });
 
+test('Talk confirms questionable answers by voice while Type alone opens the modal',()=>{
+ const spoken=adam.slice(adam.indexOf('function requestSpokenAnswerDecision'),adam.indexOf('function presentAnswerConfirmation'));
+ const presenter=adam.slice(adam.indexOf('function presentAnswerConfirmation'),adam.indexOf('answerSubmissionGate=FAS.createAnswerSubmissionGate'));
+ assert.match(spoken,/speakVoicePrompt\(/,'spoken confirmation waits until ADAM finishes before listening');
+ assert.match(spoken,/may not answer[\s\S]*yes[\s\S]*no/i,'spoken confirmation explains both decisions');
+ const talkBranch=presenter.slice(presenter.indexOf("pending.input.source==='talk'"),presenter.indexOf('answerConfirmationModal.open'));
+ assert.match(talkBranch,/requestSpokenAnswerDecision\(\)/);
+ assert.doesNotMatch(talkBranch,/answerConfirmationModal\.open/);
+ assert.match(presenter,/answerConfirmationModal\.open\(/,'Type retains the native confirmation dialog');
+ const pending=adam.slice(adam.indexOf('if(answerSubmissionGate.hasPending())',adam.indexOf('function handleVoiceTurn')),adam.indexOf('if(retryConfirmationPending)',adam.indexOf('function handleVoiceTurn')));
+ assert.match(pending,/requestSpokenAnswerDecision\(\)/,'invalid spoken decisions ask for yes or no again');
+ assert.match(pending,/answerSubmissionGate\.resolve\(answerDecision\)/,'spoken yes or no resolves the held answer without requiring an open modal');
+ const partial=adam.slice(adam.indexOf('onPartialControl:function(partial)'),adam.indexOf('if(retryConfirmationPending)',adam.indexOf('onPartialControl:function(partial)')));
+ assert.match(partial,/answerSubmissionGate\.resolve\(answerDecision\)/,'partial spoken decisions resolve through the hands-free gate');
+});
+
 test('Talk can navigate directly to EXTRACT after completion',()=>{
  assert.match(adam,/return\{type:'go_to_extract'\}/);
  assert.match(adam,/command\.type==='go_to_extract'/);
