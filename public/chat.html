@@ -376,6 +376,22 @@
     </div>
   </dialog>
 
+  <dialog class="retry-confirmation" data-answer-confirmation aria-labelledby="answer-confirmation-title" aria-describedby="answer-confirmation-description">
+    <div class="retry-confirmation__panel">
+      <p class="eyebrow">CHECK THIS ANSWER</p>
+      <h2 id="answer-confirmation-title" data-answer-confirmation-title>Does this answer the current question?</h2>
+      <p id="answer-confirmation-description" data-answer-confirmation-description>This answer may be unrelated and has not been saved.</p>
+      <p class="answer-confirmation__label">Current question</p>
+      <p class="answer-confirmation__quote" data-answer-confirmation-question></p>
+      <p class="answer-confirmation__label">Your answer</p>
+      <p class="answer-confirmation__quote" data-answer-confirmation-answer></p>
+      <div class="retry-confirmation__actions">
+        <button class="btn" type="button" data-answer-cancel>No, repeat question</button>
+        <button class="btn btn--gold" type="button" data-answer-confirm>Yes, save it</button>
+      </div>
+    </div>
+  </dialog>
+
   <script src="assets/js/runtime-config.js"></script>
   <script src="assets/js/auth-client.js"></script>
   <script src="assets/js/account-context.js"></script>
@@ -388,6 +404,9 @@
   <script src="assets/js/interview-coordinator.js"></script>
   <script src="assets/js/retry-intent.js"></script>
   <script src="assets/js/retry-confirmation-modal.js"></script>
+  <script src="assets/js/answer-relevance.js"></script>
+  <script src="assets/js/answer-confirmation-modal.js"></script>
+  <script src="assets/js/answer-submission-gate.js"></script>
   <script src="assets/js/completion-modal.js"></script>
   <script src="assets/js/completed-work-actions.js"></script>
   <script src="assets/js/realtime-interviewer.js"></script>
