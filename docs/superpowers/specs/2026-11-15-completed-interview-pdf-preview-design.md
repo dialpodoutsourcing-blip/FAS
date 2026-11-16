@@ -39,5 +39,3 @@ When a specialist chat finishes loading and discovers that the user has already 
 After chat state loads and is already complete, the completion dialog identifies the specialist and says the answers are already finished and saved. **View PDF** is the primary action and navigates to `vault.html?agent=<key>&preview=pdf`, including project/session identifiers when applicable. **Retry answering** opens the current retry confirmation; only an explicit confirmation clears the specialist interview.
 
 The Vault uses the route to select the specialist's latest artifact, retains its normal library/detail UI, and opens a PDF viewer over that context. The viewer contains a title, preparation status, embedded PDF surface, download action, and close action. Closing it returns the user to the selected Vault artifact without regenerating or downloading anything.
-
-

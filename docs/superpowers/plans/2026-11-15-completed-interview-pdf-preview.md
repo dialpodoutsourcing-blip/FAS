@@ -184,5 +184,3 @@ Expected: build completes and copies all new browser assets into `public/`.
 git add assets/js/artifact-ui.js assets/js/vault-library.js tests/vault-library.test.js tests/artifact-ui-pdf-preview.test.js public
 git commit -m "feat: preview completed PDFs from the vault"
 ```
-
-
