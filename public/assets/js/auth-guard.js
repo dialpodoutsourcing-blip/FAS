@@ -1,8 +1,6 @@
 (function(root,factory){var api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root){root.FAS=root.FAS||{};root.FAS.authGuard=api;api.mount(root);}})(typeof window!=='undefined'?window:null,function(){
   'use strict';
-  var LAUNCH_OWNER_EMAIL='dialpodoutsourcing@gmail.com';
   function clean(value){return typeof value==='string'?value.trim():'';}
-  function isLaunchOwner(session){return clean(session&&session.user&&session.user.email).toLowerCase()===LAUNCH_OWNER_EMAIL;}
   function userMetadata(session){var user=session&&session.user||{},data=user.user_metadata||{};return{displayName:clean(data.display_name||data.full_name||user.email&&user.email.split('@')[0])||'FAS Member',projectName:clean(data.project_name||data.business_name)||'My Authority Project'};}
   function protect(options){
     options=options||{};var config=options.config||{},auth=options.auth||{},context=options.context||{},location=options.location||{};
@@ -11,7 +9,6 @@
     return auth.requireSession().then(function(session){
       return auth.getUser().then(function(user){
         var verifiedSession=Object.assign({},session,{user:user});
-        if(!isLaunchOwner(verifiedSession)){if(auth.clearSession)auth.clearSession();if(context.clear)context.clear();if(location.assign)location.assign('account.html');return{mode:'redirect',destination:'account.html',reason:'launch-hold'};}
         var account=context.load();if(account)return{mode:'supabase',session:verifiedSession,context:account};var details=userMetadata(verifiedSession);return context.bootstrap(details).then(function(created){return{mode:'supabase',session:verifiedSession,context:created};});
       });
     }).catch(function(){
@@ -40,5 +37,5 @@
     }).then(function(result){settleVisibility(result,root.document);if(result.mode==='config-error'&&root.location&&root.location.assign){var candidate=(root.location.pathname||'')+(root.location.search||'');root.location.assign('account.html?error=config&return='+encodeURIComponent(candidate));}if(root.document&&root.CustomEvent)root.document.dispatchEvent(new root.CustomEvent('fas:auth-ready',{detail:result}));return result;});
     FAS.authReady=ready;return ready;
   }
-  return{protect:protect,renderAccount:renderAccount,signOut:signOut,settleVisibility:settleVisibility,mount:mount,isLaunchOwner:isLaunchOwner};
+  return{protect:protect,renderAccount:renderAccount,signOut:signOut,settleVisibility:settleVisibility,mount:mount};
 });
