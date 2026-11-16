@@ -245,18 +245,19 @@ test('Talk confirms questionable answers by voice while Type alone opens the mod
  assert.match(pending,/requestSpokenAnswerDecision\(\)/,'invalid spoken decisions ask for yes or no again');
  assert.match(pending,/answerSubmissionGate\.resolve\(answerDecision\)/,'spoken yes or no resolves the held answer without requiring an open modal');
  const partial=adam.slice(adam.indexOf('onPartialControl:function(partial)'),adam.indexOf('if(retryConfirmationPending)',adam.indexOf('onPartialControl:function(partial)')));
- assert.match(partial,/answerSubmissionGate\.resolve\(answerDecision\)/,'partial spoken decisions resolve through the hands-free gate');
+ assert.doesNotMatch(partial,/answerSubmissionGate\.resolve/,'a partial yes cannot save before the complete spoken phrase arrives');
 });
 
 test('pending relevance decisions use dedicated semantics in Talk and Type',()=>{
- const partial=adam.slice(adam.indexOf('onPartialControl:function(partial)'),adam.indexOf('if(retryConfirmationPending)',adam.indexOf('onPartialControl:function(partial)')));
  const final=adam.slice(adam.indexOf('function handleVoiceTurn'),adam.indexOf('if(retryConfirmationPending)',adam.indexOf('function handleVoiceTurn')));
  const typed=adam.slice(adam.indexOf('function send()'),adam.indexOf('if(retryConfirmationPending)',adam.indexOf('function send()')));
- for(const path of [partial,final,typed]){
+ for(const path of [final,typed]){
   assert.match(path,/FAS\.answerRelevance\.classifyDecision\(/,'relevance confirmation does not reuse restart semantics');
   assert.match(path,/answerSubmissionGate\.resolve\(answerDecision\)/,'each mode resolves the same held answer gate');
   assert.doesNotMatch(path,/FAS\.retry\.classifyConfirmation\(/,'restart confirmation vocabulary cannot save a relevance answer');
  }
+ const partial=adam.slice(adam.indexOf('onPartialControl:function(partial)'),adam.indexOf('if(retryConfirmationPending)',adam.indexOf('onPartialControl:function(partial)')));
+ assert.doesNotMatch(partial,/classifyDecision|answerSubmissionGate\.resolve/,'partial decisions wait for the complete settled phrase');
  assert.match(final,/requestSpokenAnswerDecision\(\)/,'an invalid Talk decision is acknowledged by voice');
 });
 
